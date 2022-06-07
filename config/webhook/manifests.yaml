@@ -1,0 +1,54 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: mutating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-clustertemplate-rawagner-com-v1alpha1-clustertemplateinstance
+  failurePolicy: Fail
+  name: mclustertemplateinstance.kb.io
+  rules:
+  - apiGroups:
+    - clustertemplate.rawagner.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - clustertemplateinstances
+  sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  creationTimestamp: null
+  name: validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-clustertemplate-rawagner-com-v1alpha1-clustertemplateinstance
+  failurePolicy: Fail
+  name: vclustertemplateinstance.kb.io
+  rules:
+  - apiGroups:
+    - clustertemplate.rawagner.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - clustertemplateinstances
+  sideEffects: None

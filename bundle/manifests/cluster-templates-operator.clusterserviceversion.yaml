@@ -1,0 +1,250 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: |-
+      [
+        {
+          "apiVersion": "clustertemplate.rawagner.com/v1alpha1",
+          "kind": "ClusterTemplateInstance",
+          "metadata": {
+            "name": "clustertemplateinstance-sample"
+          },
+          "spec": null
+        },
+        {
+          "apiVersion": "clustertemplate.rawagner.com/v1alpha1",
+          "kind": "ClusterTemplateQuota",
+          "metadata": {
+            "name": "clustertemplatequota-sample"
+          },
+          "spec": null
+        }
+      ]
+    capabilities: Basic Install
+    operators.operatorframework.io/builder: operator-sdk-v1.19.0+git
+    operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
+  name: cluster-templates-operator.v0.0.1
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: ClusterTemplateInstance is the Schema for the clustertemplateinstance
+        API
+      displayName: Cluster Template Instance
+      kind: ClusterTemplateInstance
+      name: clustertemplateinstances.clustertemplate.rawagner.com
+      version: v1alpha1
+    - kind: ClusterTemplateQuota
+      name: clustertemplatequotas.clustertemplate.rawagner.com
+      version: v1alpha1
+  description: Cluster templates
+  displayName: Cluster templates operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      clusterPermissions:
+      - rules:
+        - apiGroups:
+          - authentication.k8s.io
+          resources:
+          - tokenreviews
+          verbs:
+          - create
+        - apiGroups:
+          - authorization.k8s.io
+          resources:
+          - subjectaccessreviews
+          verbs:
+          - create
+        serviceAccountName: cluster-templates-operator-controller-manager
+      deployments:
+      - label:
+          control-plane: controller-manager
+          app: cluster-templates
+        name: cluster-templates-operator-controller-manager
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              control-plane: controller-manager
+          strategy: {}
+          template:
+            metadata:
+              annotations:
+                kubectl.kubernetes.io/default-container: manager
+              labels:
+                control-plane: controller-manager
+                app: cluster-templates
+            spec:
+              containers:
+              - args:
+                - --secure-listen-address=0.0.0.0:8443
+                - --upstream=http://127.0.0.1:8080/
+                - --logtostderr=true
+                - --v=0
+                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+                name: kube-rbac-proxy
+                ports:
+                - containerPort: 8443
+                  name: https
+                  protocol: TCP
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 128Mi
+                  requests:
+                    cpu: 5m
+                    memory: 128Mi
+              - args:
+                - --health-probe-bind-address=:8081
+                - --metrics-bind-address=127.0.0.1:8080
+                - --leader-elect
+                command:
+                - /manager
+                image: quay.io/rawagner/cluster-templates-operator:latest
+                livenessProbe:
+                  httpGet:
+                    path: /healthz
+                    port: 8081
+                  initialDelaySeconds: 15
+                  periodSeconds: 20
+                name: manager
+                ports:
+                - containerPort: 9443
+                  name: webhook-server
+                  protocol: TCP
+                - containerPort: 8090
+                  name: restapi-server
+                  protocol: TCP
+                readinessProbe:
+                  httpGet:
+                    path: /readyz
+                    port: 8081
+                  initialDelaySeconds: 5
+                  periodSeconds: 10
+                resources:
+                  limits:
+                    cpu: 500m
+                    memory: 512Mi
+                  requests:
+                    cpu: 10m
+                    memory: 128Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
+              securityContext:
+                runAsNonRoot: false
+              serviceAccountName: cluster-templates-operator-controller-manager
+              terminationGracePeriodSeconds: 10
+      permissions:
+      - rules:
+        - apiGroups:
+          - ""
+          resources:
+          - configmaps
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - coordination.k8s.io
+          resources:
+          - leases
+          verbs:
+          - get
+          - list
+          - watch
+          - create
+          - update
+          - patch
+          - delete
+        - apiGroups:
+          - ""
+          resources:
+          - events
+          verbs:
+          - create
+          - patch
+        serviceAccountName: cluster-templates-operator-controller-manager
+    strategy: deployment
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - cluster
+  - templates
+  links:
+  - name: Cluster Templates Operator
+    url: https://cluster-templates-operator.domain
+  maintainers:
+  - email: rawagner@redhat.com
+    name: rawagner@rrawagner
+  maturity: alpha
+  provider:
+    name: rawagner
+  version: 0.0.1
+  webhookdefinitions:
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    conversionCRDs:
+    - clustertemplateinstances.clustertemplate.rawagner.com
+    deploymentName: cluster-templates-operator-controller-manager
+    generateName: cclustertemplateinstances.kb.io
+    sideEffects: None
+    targetPort: 9443
+    type: ConversionWebhook
+    webhookPath: /convert
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: cluster-templates-operator-controller-manager
+    failurePolicy: Fail
+    generateName: mclustertemplateinstance.kb.io
+    rules:
+    - apiGroups:
+      - clustertemplate.rawagner.com
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - clustertemplateinstances
+    sideEffects: None
+    targetPort: 9443
+    type: MutatingAdmissionWebhook
+    webhookPath: /mutate-clustertemplate-rawagner-com-v1alpha1-clustertemplateinstance
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: cluster-templates-operator-controller-manager
+    failurePolicy: Fail
+    generateName: vclustertemplateinstance.kb.io
+    rules:
+    - apiGroups:
+      - clustertemplate.rawagner.com
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - clustertemplateinstances
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-clustertemplate-rawagner-com-v1alpha1-clustertemplateinstance

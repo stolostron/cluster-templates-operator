@@ -1,0 +1,55 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: cluster-templates-operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: ClusterTemplateInstance is the Schema for the clustertemplateinstance
+        API
+      displayName: Cluster Template Instance
+      kind: ClusterTemplateInstance
+      name: clustertemplateinstances.clustertemplate.rawagner.com
+      version: v1alpha1
+    - description: ClusterTemplateQuota is the Schema for the clustertemplatequota
+        API
+      displayName: Cluster Template Quota
+      kind: ClusterTemplateQuota
+      name: clustertemplatequota.clustertemplate.rawagner.com
+      version: v1alpha1
+  description: Cluster templates
+  displayName: Cluster templates operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - cluster
+  - templates
+  links:
+  - name: Cluster Templates Operator
+    url: https://cluster-templates-operator.domain
+  maintainers:
+  - email: rawagner@redhat.com
+    name: rawagner@rrawagner
+  maturity: alpha
+  provider:
+    name: rawagner
+  version: 0.0.0
