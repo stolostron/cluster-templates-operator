@@ -30,7 +30,6 @@ func (h *K8sHandler) getClusters(c *gin.Context) {
 	err := h.ControllerClient.List(c, instanceList, opts...)
 
 	if err != nil {
-		fmt.Println(err)
 		c.AbortWithError(500, err)
 	}
 
@@ -66,7 +65,6 @@ func (h *K8sHandler) createCluster(c *gin.Context) {
 	err := h.ControllerClient.Get(c, client.ObjectKey{Name: username, Namespace: "default"}, template)
 
 	if err != nil {
-		fmt.Println(err)
 		c.AbortWithError(500, err)
 	}
 
@@ -78,7 +76,6 @@ func (h *K8sHandler) createCluster(c *gin.Context) {
 	values, err := json.Marshal(createClusterBody.Values)
 
 	if err != nil {
-		fmt.Println(err)
 		c.AbortWithError(500, err)
 	}
 
@@ -97,7 +94,6 @@ func (h *K8sHandler) createCluster(c *gin.Context) {
 	err = h.ControllerClient.Create(c, instance)
 
 	if err != nil {
-		fmt.Println("+++++ERRR++++")
 		c.String(403, err.Error())
 	}
 	c.String(202, "Created")
@@ -118,18 +114,15 @@ func (h *K8sHandler) deleteCluster(c *gin.Context) {
 	err := h.ControllerClient.Get(c, client.ObjectKey{Name: deleteClusterBody.ClusterName, Namespace: "default"}, clusterInstance)
 
 	if err != nil {
-		fmt.Println(err)
 		c.AbortWithError(500, err)
 	}
 
 	if clusterInstance.Labels["username"] != username {
-		fmt.Println("NOOOT FOUND")
 		c.AbortWithStatus(404)
 	}
 
 	err = h.ControllerClient.Delete(c, clusterInstance)
 	if err != nil {
-		fmt.Println(err)
 		c.AbortWithError(500, err)
 	}
 }

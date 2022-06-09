@@ -1,8 +1,6 @@
 package helm
 
 import (
-	"fmt"
-
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -15,15 +13,13 @@ func (h *HelmClient) GetChart(chartURL string) (*chart.Chart, error) {
 	//"https://github.com/openshift-helm-charts/charts/releases/download/redhat-dotnet-0.0.1/redhat-dotnet-0.0.1.tgz"
 	chartLocation, err := cmd.ChartPathOptions.LocateChart(chartURL, settings)
 	if err != nil {
-		fmt.Println("helm err")
-		fmt.Println(err)
+		return nil, err
 	}
 
 	return loader.Load(chartLocation)
 }
 
 func (h *HelmClient) InstallChart(chartURL string, releaseName string, values map[string]interface{}) error {
-	fmt.Println("Chart install")
 	cmd := action.NewInstall(h.actionConfig)
 
 	releaseName, chartName, err := cmd.NameAndChart([]string{releaseName, chartURL})
@@ -32,13 +28,11 @@ func (h *HelmClient) InstallChart(chartURL string, releaseName string, values ma
 	}
 	cmd.ReleaseName = releaseName
 
-	fmt.Println("Chart install 1")
 	cp, err := cmd.ChartPathOptions.LocateChart(chartName, settings)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Chart install 2")
 	ch, err := loader.Load(cp)
 	if err != nil {
 		return err
@@ -53,13 +47,11 @@ func (h *HelmClient) InstallChart(chartURL string, releaseName string, values ma
 	}
 	ch.Metadata.Annotations["chart_url"] = chartURL
 
-	fmt.Println("Chart install 3")
 	cmd.Namespace = "default"
 	_, err = cmd.Run(ch, values)
 	if err != nil {
 		return err
 	}
-	fmt.Println("Chart install 4")
 	return nil
 }
 

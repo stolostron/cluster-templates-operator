@@ -31,6 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	clustertemplatev1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 	"github.com/rawagner/cluster-templates-operator/controllers"
 	"github.com/rawagner/cluster-templates-operator/helm"
@@ -47,6 +48,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(clustertemplatev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(hypershiftv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

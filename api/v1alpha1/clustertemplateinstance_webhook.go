@@ -75,7 +75,6 @@ func (r *ClusterTemplateInstance) ValidateCreate() error {
 		return errors.New("not enough quota")
 	}
 
-	fmt.Println("Webhook OK")
 	return nil
 }
 

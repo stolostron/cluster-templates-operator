@@ -56,7 +56,6 @@ func NewHelmClient(config *rest.Config) *HelmClient {
 	helmClient.actionConfig = actionConfig
 
 	if err != nil {
-		fmt.Println("err Init")
 		fmt.Println(err)
 	}
 

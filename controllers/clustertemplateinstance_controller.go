@@ -121,6 +121,8 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 		return ctrl.Result{}, err
 	}
 	newStatus.Status = string(release.Info.Status)
+	fmt.Println("Status:")
+	fmt.Println(release.Info.Status)
 	fmt.Println("Instance reconciler: get release ok")
 
 	stringObjects := strings.Split(release.Manifest, "---\n")
@@ -134,8 +136,8 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 		}
 		if yamlObj["kind"] == "HostedCluster" {
 
-			hypershiftInfo, err := hypershift.GetHypershiftInfo(obj)
-
+			hypershiftInfo, status, err := hypershift.GetHypershiftInfo(ctx, obj, r.Client)
+			newStatus.Status = status
 			fmt.Println("has hypershift info")
 			if err != nil {
 				return ctrl.Result{}, err
@@ -179,7 +181,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 		return ctrl.Result{}, err
 	}
 
-	requeue := newStatus.APIserverURL == "" || newStatus.KubeadminPassword == ""
+	requeue := newStatus.APIserverURL == "" || newStatus.KubeadminPassword == "" || newStatus.Status != "Available"
 
 	return ctrl.Result{Requeue: requeue}, nil
 }

@@ -49,11 +49,9 @@ type ClusterTemplateQuotaReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *ClusterTemplateQuotaReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	fmt.Println("rec start")
 	clusterTemplateQuota := &clustertemplatev1alpha1.ClusterTemplateQuota{}
 	err := r.Get(ctx, req.NamespacedName, clusterTemplateQuota)
 	if err != nil {
-		fmt.Println("rec end1")
 		return ctrl.Result{}, err
 	}
 
@@ -87,15 +85,12 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(ctx context.Context, req ctrl
 		}
 	}
 
-	fmt.Println(clusterTemplateQuota.Status.Quota)
 	err = r.Status().Update(ctx, clusterTemplateQuota)
 
 	if err != nil {
-		fmt.Println("err end2")
 		return ctrl.Result{}, err
 	}
 
-	fmt.Println("rec end3")
 	return ctrl.Result{}, nil
 }
 

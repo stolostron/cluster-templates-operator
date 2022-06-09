@@ -48,7 +48,7 @@ func newHandler(config *rest.Config, scheme *runtime.Scheme, helmClient *helm.He
 	})
 
 	if err != nil {
-		fmt.Println("err")
+		fmt.Println(err)
 	}
 
 	return &K8sHandler{

@@ -28,7 +28,6 @@ func (h *K8sHandler) validateUserToken(c *gin.Context) {
 
 	tokenResult, err := h.K8sClient.AuthenticationV1().TokenReviews().Create(c, tokenReview, metav1.CreateOptions{})
 	if err != nil {
-		fmt.Println(err)
 		fmt.Fprint(c.Writer, "Error creating token review")
 		c.Abort()
 		return
