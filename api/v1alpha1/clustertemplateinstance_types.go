@@ -17,6 +17,8 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"encoding/json"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,8 +31,12 @@ type ClusterTemplateInstanceSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of ClusterTemplateInstance. Edit clustertemplateinstance_types.go to remove/update
-	HelmRepositoryRef string `json:"helmRepositoryRef"`
-	Values            string `json:"values"`
+	Template string `json:"template"`
+
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Type=object
+	Values json.RawMessage `json:"values"`
 }
 
 type ClusterTemplateInstanceStatus struct {

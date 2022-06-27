@@ -28,6 +28,8 @@ var (
 	// GroupVersion is group version used to register these objects
 	GroupVersion = schema.GroupVersion{Group: "clustertemplate.rawagner.com", Version: "v1alpha1"}
 
+	APIVersion = GroupVersion.Group + "/" + GroupVersion.Version
+
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
 	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 

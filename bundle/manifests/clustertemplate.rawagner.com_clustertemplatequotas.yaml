@@ -6,6 +6,16 @@ metadata:
   creationTimestamp: null
   name: clustertemplatequotas.clustertemplate.rawagner.com
 spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        service:
+          name: cluster-templates-operator-webhook-service
+          namespace: cluster-templates-operator-system
+          path: /convert
+      conversionReviewVersions:
+      - v1
   group: clustertemplate.rawagner.com
   names:
     kind: ClusterTemplateQuota
@@ -36,41 +46,16 @@ spec:
             description: ClusterTemplateQuotaSpec defines the desired state of ClusterTemplateQuota
             properties:
               quota:
-                additionalProperties:
-                  properties:
-                    count:
-                      format: int32
-                      type: integer
-                    helmRepositoryRef:
-                      type: string
-                  required:
-                  - count
-                  - helmRepositoryRef
-                  type: object
                 description: Foo is an example field of ClusterTemplateQuota. Edit
                   clustertemplatequota_types.go to remove/update
-                type: object
+                type: integer
             type: object
           status:
             description: ClusterTemplateQuotaStatus defines the observed state of
               ClusterTemplateQuota
             properties:
-              quota:
-                additionalProperties:
-                  properties:
-                    count:
-                      format: int32
-                      type: integer
-                    helmRepositoryRef:
-                      type: string
-                  required:
-                  - count
-                  - helmRepositoryRef
-                  type: object
-                description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
-                  of cluster Important: Run "make" to regenerate code after modifying
-                  this file'
-                type: object
+              instancesCount:
+                type: integer
             type: object
         type: object
     served: true

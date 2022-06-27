@@ -19,7 +19,6 @@ package v1alpha1
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -31,10 +30,10 @@ import (
 // log is for logging in this package.
 var clustertemplateinstancelog = logf.Log.WithName("clustertemplateinstance-resource")
 
-var controllerClient client.Client
+var instanceControllerClient client.Client
 
 func (r *ClusterTemplateInstance) SetupWebhookWithManager(mgr ctrl.Manager) error {
-	controllerClient = mgr.GetClient()
+	instanceControllerClient = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
 		Complete()
@@ -62,16 +61,20 @@ var _ webhook.Validator = &ClusterTemplateInstance{}
 func (r *ClusterTemplateInstance) ValidateCreate() error {
 	clustertemplateinstancelog.Info("validate create", "name", r.Name)
 
-	clusterType := r.Labels["type"]
-	username := r.Labels["username"]
+	quotas := ClusterTemplateQuotaList{}
 
-	quota := ClusterTemplateQuota{}
-	err := controllerClient.Get(context.TODO(), client.ObjectKey{Name: username, Namespace: "default"}, &quota)
-	if err != nil {
-		return errors.New("could not find quota for user")
+	opts := []client.ListOption{
+		client.InNamespace(r.Namespace),
 	}
 
-	if quota.Status.Quota[clusterType].Count >= quota.Spec.Quota[clusterType].Count {
+	err := instanceControllerClient.List(context.TODO(), &quotas, opts...)
+	if err != nil {
+		return errors.New("could not find quota for namespace")
+	}
+
+	quota := quotas.Items[0]
+
+	if quota.Status.InstancesCount >= quota.Spec.Quota {
 		return errors.New("not enough quota")
 	}
 

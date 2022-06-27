@@ -31,7 +31,7 @@ spec:
         - /manager
         args:
         - --leader-elect
-        image: controller:latest
+        image: quay.io/rawagner/cluster-templates-operator:latest
         name: manager
         securityContext:
           allowPrivilegeEscalation: false

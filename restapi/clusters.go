@@ -1,9 +1,6 @@
 package restapi
 
 import (
-	"encoding/json"
-	"fmt"
-
 	gin "github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/rawagner/cluster-templates-operator/api/v1alpha1"
@@ -68,12 +65,12 @@ func (h *K8sHandler) createCluster(c *gin.Context) {
 		c.AbortWithError(500, err)
 	}
 
-	templateURL := template.Spec.Quota[createClusterBody.Type].HelmRepositoryRef
+	// templateURL := template.Spec.Quota[createClusterBody.Type].HelmRepositoryRef
 
 	labels := make(map[string]string)
 	labels["username"] = username
 	labels["type"] = createClusterBody.Type
-	values, err := json.Marshal(createClusterBody.Values)
+	// values, err := json.Marshal(createClusterBody.Values)
 
 	if err != nil {
 		c.AbortWithError(500, err)
@@ -86,8 +83,8 @@ func (h *K8sHandler) createCluster(c *gin.Context) {
 			Labels:    labels,
 		},
 		Spec: v1alpha1.ClusterTemplateInstanceSpec{
-			HelmRepositoryRef: templateURL,
-			Values:            string(values),
+			// HelmRepositoryRef: templateURL,
+			// Values:            string(values),
 		},
 	}
 

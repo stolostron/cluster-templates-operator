@@ -22,6 +22,11 @@ spec:
       kind: ClusterTemplateQuota
       name: clustertemplatequota.clustertemplate.rawagner.com
       version: v1alpha1
+    - description: ClusterTemplate is the Schema for the clustertemplates API
+      displayName: Cluster Template
+      kind: ClusterTemplate
+      name: clustertemplates.clustertemplate.rawagner.com
+      version: v1alpha1
   description: Cluster templates
   displayName: Cluster templates operator
   icon:

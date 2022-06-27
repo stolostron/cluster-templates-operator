@@ -2,7 +2,6 @@ package hypershift
 
 import (
 	"context"
-	"fmt"
 
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	k8sYaml "k8s.io/apimachinery/pkg/util/yaml"

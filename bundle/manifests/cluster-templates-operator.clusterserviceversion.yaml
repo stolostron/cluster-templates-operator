@@ -6,6 +6,14 @@ metadata:
       [
         {
           "apiVersion": "clustertemplate.rawagner.com/v1alpha1",
+          "kind": "ClusterTemplate",
+          "metadata": {
+            "name": "clustertemplate-sample"
+          },
+          "spec": null
+        },
+        {
+          "apiVersion": "clustertemplate.rawagner.com/v1alpha1",
           "kind": "ClusterTemplateInstance",
           "metadata": {
             "name": "clustertemplateinstance-sample"
@@ -39,6 +47,11 @@ spec:
     - kind: ClusterTemplateQuota
       name: clustertemplatequotas.clustertemplate.rawagner.com
       version: v1alpha1
+    - description: ClusterTemplate is the Schema for the clustertemplates API
+      displayName: Cluster Template
+      kind: ClusterTemplate
+      name: clustertemplates.clustertemplate.rawagner.com
+      version: v1alpha1
   description: Cluster templates
   displayName: Cluster templates operator
   icon:
@@ -64,7 +77,6 @@ spec:
       deployments:
       - label:
           control-plane: controller-manager
-          app: cluster-templates
         name: cluster-templates-operator-controller-manager
         spec:
           replicas: 1
@@ -78,7 +90,6 @@ spec:
                 kubectl.kubernetes.io/default-container: manager
               labels:
                 control-plane: controller-manager
-                app: cluster-templates
             spec:
               containers:
               - args:
@@ -98,7 +109,7 @@ spec:
                     memory: 128Mi
                   requests:
                     cpu: 5m
-                    memory: 128Mi
+                    memory: 64Mi
               - args:
                 - --health-probe-bind-address=:8081
                 - --metrics-bind-address=127.0.0.1:8080
@@ -117,9 +128,6 @@ spec:
                 - containerPort: 9443
                   name: webhook-server
                   protocol: TCP
-                - containerPort: 8090
-                  name: restapi-server
-                  protocol: TCP
                 readinessProbe:
                   httpGet:
                     path: /readyz
@@ -129,10 +137,10 @@ spec:
                 resources:
                   limits:
                     cpu: 500m
-                    memory: 512Mi
+                    memory: 128Mi
                   requests:
                     cpu: 10m
-                    memory: 128Mi
+                    memory: 64Mi
                 securityContext:
                   allowPrivilegeEscalation: false
               securityContext:
@@ -202,8 +210,9 @@ spec:
     containerPort: 443
     conversionCRDs:
     - clustertemplateinstances.clustertemplate.rawagner.com
+    - clustertemplatequotas.clustertemplate.rawagner.com
     deploymentName: cluster-templates-operator-controller-manager
-    generateName: cclustertemplateinstances.kb.io
+    generateName: cclustertemplateinstancesclustertemplatequotas.kb.io
     sideEffects: None
     targetPort: 9443
     type: ConversionWebhook
@@ -233,6 +242,26 @@ spec:
     containerPort: 443
     deploymentName: cluster-templates-operator-controller-manager
     failurePolicy: Fail
+    generateName: mclustertemplatequota.kb.io
+    rules:
+    - apiGroups:
+      - clustertemplate.rawagner.com
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - clustertemplatequotas
+    sideEffects: None
+    targetPort: 9443
+    type: MutatingAdmissionWebhook
+    webhookPath: /mutate-clustertemplate-rawagner-com-v1alpha1-clustertemplatequota
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: cluster-templates-operator-controller-manager
+    failurePolicy: Fail
     generateName: vclustertemplateinstance.kb.io
     rules:
     - apiGroups:
@@ -248,3 +277,23 @@ spec:
     targetPort: 9443
     type: ValidatingAdmissionWebhook
     webhookPath: /validate-clustertemplate-rawagner-com-v1alpha1-clustertemplateinstance
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: cluster-templates-operator-controller-manager
+    failurePolicy: Fail
+    generateName: vclustertemplatequota.kb.io
+    rules:
+    - apiGroups:
+      - clustertemplate.rawagner.com
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - clustertemplatequotas
+    sideEffects: None
+    targetPort: 9443
+    type: ValidatingAdmissionWebhook
+    webhookPath: /validate-clustertemplate-rawagner-com-v1alpha1-clustertemplatequota

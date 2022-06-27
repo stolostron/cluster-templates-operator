@@ -1,8 +1,6 @@
 package restapi
 
 import (
-	"fmt"
-
 	gin "github.com/gin-gonic/gin"
 	"github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -25,10 +23,12 @@ func (h *K8sHandler) getClusterTemplates(c *gin.Context) {
 	}
 
 	response := []TemplatesResponse{}
+	/*
 
-	for key, element := range template.Status.Quota {
-		response = append(response, TemplatesResponse{Type: key, Available: template.Spec.Quota[key].Count - element.Count})
-	}
+		for key, element := range template.Status.Quota {
+			response = append(response, TemplatesResponse{Type: key, Available: template.Spec.Quota[key].Count - element.Count})
+		}
+	*/
 
 	c.JSON(200, &response)
 }

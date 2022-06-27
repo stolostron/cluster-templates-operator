@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -56,7 +57,6 @@ const clusterTemplateInstanceFinalizer = "clustertemplateinstance.rawagner.com/f
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	fmt.Println("Instance reconciler: start")
 	clusterTemplateInstance := &clustertemplatev1alpha1.ClusterTemplateInstance{}
 	err := r.Get(ctx, req.NamespacedName, clusterTemplateInstance)
 	if err != nil {
@@ -64,7 +64,6 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 	}
 
 	if clusterTemplateInstance.GetDeletionTimestamp() != nil {
-		fmt.Println("run delete finalizer")
 		if controllerutil.ContainsFinalizer(clusterTemplateInstance, clusterTemplateInstanceFinalizer) {
 			_, err = r.HelmClient.UninstallRelease(clusterTemplateInstance.Name)
 			if err != nil {
@@ -88,42 +87,49 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 		}
 	}
 
-	fmt.Println("Instance reconciler: created ?")
 	if !clusterTemplateInstance.Status.Created {
-		fmt.Println("Instance reconciler: created no")
 		values := make(map[string]interface{})
-		err = json.Unmarshal([]byte(clusterTemplateInstance.Spec.Values), &values)
+		err = json.Unmarshal(clusterTemplateInstance.Spec.Values, &values)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		fmt.Println("Instance reconciler: call helm")
+
+		templates := clustertemplatev1alpha1.ClusterTemplateList{}
+
+		err := r.Client.List(context.TODO(), &templates)
+		if err != nil {
+			return ctrl.Result{}, errors.New("could not find quota for namespace")
+		}
+
+		var clusterTemplate clustertemplatev1alpha1.ClusterTemplate
+		for _, template := range templates.Items {
+			if template.Name == clusterTemplateInstance.Spec.Template {
+				clusterTemplate = template
+				break
+			}
+		}
+
 		err = r.HelmClient.InstallChart(
-			clusterTemplateInstance.Spec.HelmRepositoryRef,
+			clusterTemplate.Spec.HelmChartURL,
 			clusterTemplateInstance.Name,
+			clusterTemplateInstance.Namespace,
 			values,
 		)
 		if err != nil {
-			fmt.Println("err creating chart")
 			return ctrl.Result{}, err
 		}
-		fmt.Println("Instance reconciler: call helm ok")
 	}
 
 	newStatus := clustertemplatev1alpha1.ClusterTemplateInstanceStatus{
 		Created: true,
 	}
 
-	fmt.Println("Instance reconciler: get release")
 	release, err := r.HelmClient.GetRelease(clusterTemplateInstance.Name)
 
 	if err != nil {
-		fmt.Println("err release info")
 		return ctrl.Result{}, err
 	}
 	newStatus.Status = string(release.Info.Status)
-	fmt.Println("Status:")
-	fmt.Println(release.Info.Status)
-	fmt.Println("Instance reconciler: get release ok")
 
 	stringObjects := strings.Split(release.Manifest, "---\n")
 
@@ -131,14 +137,12 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 		var yamlObj map[string]interface{}
 		err = yaml.Unmarshal([]byte(obj), &yamlObj)
 		if err != nil {
-			fmt.Println("ERR decoding yaml")
 			return ctrl.Result{}, err
 		}
 		if yamlObj["kind"] == "HostedCluster" {
 
 			hypershiftInfo, status, err := hypershift.GetHypershiftInfo(ctx, obj, r.Client)
 			newStatus.Status = status
-			fmt.Println("has hypershift info")
 			if err != nil {
 				return ctrl.Result{}, err
 			}
@@ -171,13 +175,11 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 		}
 	}
 
-	fmt.Println("Instance reconciler: status updates")
 	clusterTemplateInstance.Status = newStatus
 
 	err = r.Status().Update(ctx, clusterTemplateInstance)
 
 	if err != nil {
-		fmt.Println("err instance status")
 		return ctrl.Result{}, err
 	}
 

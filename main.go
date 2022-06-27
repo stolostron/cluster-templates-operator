@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+
 	clustertemplatev1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 	"github.com/rawagner/cluster-templates-operator/controllers"
 	"github.com/rawagner/cluster-templates-operator/helm"
@@ -109,6 +110,17 @@ func main() {
 
 	if err = (&clustertemplatev1alpha1.ClusterTemplateInstance{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateInstance")
+		os.Exit(1)
+	}
+	if err = (&controllers.ClusterTemplateReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplate")
+		os.Exit(1)
+	}
+	if err = (&clustertemplatev1alpha1.ClusterTemplateQuota{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateQuota")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

@@ -20,11 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type Quota struct {
-	HelmRepositoryRef string `json:"helmRepositoryRef"`
-	Count             int32  `json:"count"`
-}
-
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -34,14 +29,12 @@ type ClusterTemplateQuotaSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of ClusterTemplateQuota. Edit clustertemplatequota_types.go to remove/update
-	Quota map[string]Quota `json:"quota,omitempty"`
+	Quota int `json:"quota,omitempty"`
 }
 
 // ClusterTemplateQuotaStatus defines the observed state of ClusterTemplateQuota
 type ClusterTemplateQuotaStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-	Quota map[string]Quota `json:"quota,omitempty"`
+	InstancesCount int `json:"instancesCount"`
 }
 
 //+kubebuilder:object:root=true
@@ -53,7 +46,7 @@ type ClusterTemplateQuota struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec   ClusterTemplateQuotaSpec   `json:"spec,omitempty"`
-	Status ClusterTemplateQuotaStatus `json:"status,omitempty"`
+	Status ClusterTemplateQuotaStatus `json:"status"`
 }
 
 //+kubebuilder:object:root=true

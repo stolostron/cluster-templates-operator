@@ -25,6 +25,26 @@ webhooks:
     resources:
     - clustertemplateinstances
   sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /mutate-clustertemplate-rawagner-com-v1alpha1-clustertemplatequota
+  failurePolicy: Fail
+  name: mclustertemplatequota.kb.io
+  rules:
+  - apiGroups:
+    - clustertemplate.rawagner.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - clustertemplatequotas
+  sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: ValidatingWebhookConfiguration
@@ -51,4 +71,24 @@ webhooks:
     - UPDATE
     resources:
     - clustertemplateinstances
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-clustertemplate-rawagner-com-v1alpha1-clustertemplatequota
+  failurePolicy: Fail
+  name: vclustertemplatequota.kb.io
+  rules:
+  - apiGroups:
+    - clustertemplate.rawagner.com
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - clustertemplatequotas
   sideEffects: None

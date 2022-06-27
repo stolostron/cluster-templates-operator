@@ -19,7 +19,7 @@ func (h *HelmClient) GetChart(chartURL string) (*chart.Chart, error) {
 	return loader.Load(chartLocation)
 }
 
-func (h *HelmClient) InstallChart(chartURL string, releaseName string, values map[string]interface{}) error {
+func (h *HelmClient) InstallChart(chartURL string, releaseName string, releaseNamespace string, values map[string]interface{}) error {
 	cmd := action.NewInstall(h.actionConfig)
 
 	releaseName, chartName, err := cmd.NameAndChart([]string{releaseName, chartURL})
@@ -47,7 +47,7 @@ func (h *HelmClient) InstallChart(chartURL string, releaseName string, values ma
 	}
 	ch.Metadata.Annotations["chart_url"] = chartURL
 
-	cmd.Namespace = "default"
+	cmd.Namespace = releaseNamespace
 	_, err = cmd.Run(ch, values)
 	if err != nil {
 		return err

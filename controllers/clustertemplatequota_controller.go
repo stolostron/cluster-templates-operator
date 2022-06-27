@@ -60,31 +60,23 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(ctx context.Context, req ctrl
 	clusterTemplateInstanceList := &clustertemplatev1alpha1.ClusterTemplateInstanceList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(req.NamespacedName.Namespace),
-		client.MatchingLabels{"username": req.NamespacedName.Name},
 	}
 
 	r.List(ctx, clusterTemplateInstanceList, listOpts...)
 
-	quotaStatus := make(map[string]clustertemplatev1alpha1.Quota)
+	instancesCount := 0
 
-	for key, quota := range clusterTemplateQuota.Spec.Quota {
-		quotaStatus[key] = clustertemplatev1alpha1.Quota{
-			HelmRepositoryRef: quota.HelmRepositoryRef,
-			Count:             0,
+	for _, instance := range clusterTemplateInstanceList.Items {
+		if instance.Namespace == clusterTemplateQuota.Namespace && instance.Spec.Template == clusterTemplateQuota.Name {
+			instancesCount++
 		}
 	}
 
 	clusterTemplateQuota.Status = clustertemplatev1alpha1.ClusterTemplateQuotaStatus{
-		Quota: quotaStatus,
+		InstancesCount: instancesCount,
 	}
 
-	for _, instance := range clusterTemplateInstanceList.Items {
-		if entry, ok := clusterTemplateQuota.Status.Quota[instance.Labels["type"]]; ok {
-			entry.Count++
-			clusterTemplateQuota.Status.Quota[instance.Labels["type"]] = entry
-		}
-	}
-
+	fmt.Printf("Instances %v", clusterTemplateQuota.Status.InstancesCount)
 	err = r.Status().Update(ctx, clusterTemplateQuota)
 
 	if err != nil {
@@ -99,13 +91,18 @@ func (r *ClusterTemplateQuotaReconciler) SetupWithManager(mgr ctrl.Manager) erro
 
 	mapInstanceToQuota := func(instance client.Object) []reconcile.Request {
 		quotas := &clustertemplatev1alpha1.ClusterTemplateQuotaList{}
-		if err := r.List(context.Background(), quotas); err != nil {
+
+		listOpts := []client.ListOption{
+			client.InNamespace(instance.GetNamespace()),
+		}
+
+		if err := r.List(context.Background(), quotas, listOpts...); err != nil {
 			return []reconcile.Request{}
 		}
 
 		reply := make([]reconcile.Request, 0, len(quotas.Items))
 		for _, quota := range quotas.Items {
-			if instance.GetLabels()["username"] == quota.Name {
+			if instance.GetNamespace() == quota.Namespace {
 				reply = append(reply, reconcile.Request{NamespacedName: types.NamespacedName{
 					Namespace: quota.Namespace,
 					Name:      quota.Name,

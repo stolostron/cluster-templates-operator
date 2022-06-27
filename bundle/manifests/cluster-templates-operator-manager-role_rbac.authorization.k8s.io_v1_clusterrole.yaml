@@ -10,3 +10,29 @@ rules:
   - '*'
   verbs:
   - '*'
+- apiGroups:
+  - clustertemplate.rawagner.com
+  resources:
+  - clustertemplates
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - clustertemplate.rawagner.com
+  resources:
+  - clustertemplates/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - clustertemplate.rawagner.com
+  resources:
+  - clustertemplates/status
+  verbs:
+  - get
+  - patch
+  - update

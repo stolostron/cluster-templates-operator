@@ -37,14 +37,15 @@ spec:
             description: ClusterTemplateInstanceSpec defines the desired state of
               ClusterTemplateInstance
             properties:
-              helmRepositoryRef:
+              template:
                 description: Foo is an example field of ClusterTemplateInstance. Edit
                   clustertemplateinstance_types.go to remove/update
                 type: string
               values:
-                type: string
+                type: object
+                x-kubernetes-preserve-unknown-fields: true
             required:
-            - helmRepositoryRef
+            - template
             - values
             type: object
           status:
