@@ -44,8 +44,8 @@ func GetHypershiftInfo(ctx context.Context, manifest string, k8sClient client.Cl
 	}
 
 	return &KubeSecret{
-		Namespace:    hostedC.Namespace + "-" + hostedC.Name,
-		PassSecret:   "kubeadmin-password",
-		ConfigSecret: "admin-kubeconfig",
+		Namespace:    hostedC.Namespace,
+		PassSecret:   hostedC.Name + "-kubeadmin-password", //TODO load from status
+		ConfigSecret: hostedC.Name + "-admin-kubeconfig",   //TODO load from status
 	}, status, nil
 }

@@ -18,7 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -76,7 +75,6 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(ctx context.Context, req ctrl
 		InstancesCount: instancesCount,
 	}
 
-	fmt.Printf("Instances %v", clusterTemplateQuota.Status.InstancesCount)
 	err = r.Status().Update(ctx, clusterTemplateQuota)
 
 	if err != nil {

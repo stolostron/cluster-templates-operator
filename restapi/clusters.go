@@ -38,7 +38,7 @@ func (h *K8sHandler) getClusters(c *gin.Context) {
 			Type:              instance.Labels["type"],
 			URL:               instance.Status.APIserverURL,
 			KubeadminPassword: instance.Status.KubeadminPassword,
-			Status:            instance.Status.Status,
+			Status:            instance.Status.ClusterStatus,
 		})
 	}
 

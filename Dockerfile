@@ -16,6 +16,7 @@ COPY controllers/ controllers/
 COPY helm/ helm/
 COPY hypershift/ hypershift/
 COPY restapi/ restapi/
+COPY clustersetup/ clustersetup/
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go

@@ -5,9 +5,8 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
- 
 
-# Make data base, printed on Tue Jun 28 09:53:29 2022
+# Make data base, printed on Tue Aug  2 22:49:38 2022
 
 # Variables
 
@@ -20,7 +19,7 @@ NO_AT_BRIDGE = 1
 # environment
 GJS_DEBUG_OUTPUT = stderr
 # environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-f2891d7f-404d-4d43-abf6-11286b47fae5.sock
+VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-7823d0f7-e2c9-4e17-9983-faba75b66d9a.sock
 # makefile (from 'Makefile', line 25)
 BUNDLE_METADATA_OPTS = $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # environment
@@ -68,7 +67,7 @@ SSH_ASKPASS = /usr/libexec/openssh/gnome-ssh-askpass
 # environment
 LANG = C
 # environment
-XAUTHORITY = /run/user/1000/.mutter-Xwaylandauth.Z09FO1
+XAUTHORITY = /run/user/1000/.mutter-Xwaylandauth.SUGIQ1
 # default
 .LOADED := 
 # default
@@ -110,7 +109,7 @@ ZSH = /home/rawagner/.oh-my-zsh
 # environment
 VSCODE_VERBOSE_LOGGING = true
 # environment
-VSCODE_PID = 5008
+VSCODE_PID = 583407
 # environment
 XDG_SESSION_TYPE = wayland
 # automatic
@@ -120,7 +119,7 @@ IMAGE_TAG_BASE = rawagner.com/cluster-templates-operator
 # makefile (from 'Makefile', line 166)
 PROJECT_DIR := /home/rawagner/Redhat/git/forks/cluster-templates-operator
 # environment
-SESSION_MANAGER = local/unix:@/tmp/.ICE-unix/3156,unix/unix:/tmp/.ICE-unix/3156
+SESSION_MANAGER = local/unix:@/tmp/.ICE-unix/2254,unix/unix:/tmp/.ICE-unix/2254
 # automatic
 *F = $(notdir $*)
 # makefile (from 'Makefile', line 216)
@@ -170,7 +169,7 @@ BUNDLE_IMGS = $(BUNDLE_IMG)
 # makefile (from 'Makefile', line 56)
 GOBIN = $(shell go env GOPATH)/bin
 # environment
-INVOCATION_ID = 642aeacbf11346fa9c297b305d88edb4
+INVOCATION_ID = 256a81b763184cd1b9edeb3c3539842a
 # environment
 VSCODE_LOG_NATIVE = false
 # environment
@@ -204,7 +203,7 @@ GIO_LAUNCHED_DESKTOP_FILE = /usr/share/applications/code.desktop
 # makefile
 .DEFAULT_GOAL := all
 # environment
-SYSTEMD_EXEC_PID = 3210
+SYSTEMD_EXEC_PID = 2308
 # environment
 HISTCONTROL = ignoredups
 # environment
@@ -220,13 +219,13 @@ MAKE_VERSION := 4.3
 # makefile (from 'Makefile', line 195)
 OPM = ./bin/opm
 # environment
-MANAGERPID = 3051
+MANAGERPID = 2149
 # environment
 which_declare = typeset -f
 # environment
 DEBUGINFOD_URLS = https://debuginfod.fedoraproject.org/ 
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 5008
+GIO_LAUNCHED_DESKTOP_FILE_PID = 583407
 # environment
 PAGER = less
 # environment
@@ -236,7 +235,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 # environment
 GOMODCACHE = /home/rawagner/go/pkg/mod
 # environment
-JOURNAL_STREAM = 8:40067
+JOURNAL_STREAM = 8:28583
 # environment
 XDG_SESSION_CLASS = user
 # environment
@@ -280,9 +279,9 @@ GDMSESSION = gnome
 
 # Directories
 
-# . (device 41, inode 79867821): 24 files, no impossibilities.
+# . (device 41, inode 79867821): 25 files, no impossibilities.
 
-# 24 files, no impossibilities in 1 directories.
+# 25 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -323,7 +322,6 @@ opm:
 
 generate: controller-gen
 #  Phony target (prerequisite of .PHONY).
- 
 #  Implicit rule search has not been done.
 #  File does not exist.
 #  File has been updated.
@@ -339,6 +337,7 @@ bundle: manifests kustomize
 #  File does not exist.
 #  File has not been updated.
 #  recipe to execute (from 'Makefile', line 181):
+ 
 	operator-sdk generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
@@ -355,7 +354,7 @@ undeploy:
 # Not a target:
 Makefile:
 #  Implicit rule search has been done.
-#  Last modified 2022-06-24 20:10:13.464610919
+#  Last modified 2022-06-28 09:54:50.272150306
 #  File has been updated.
 #  Successfully updated.
 
@@ -555,12 +554,12 @@ catalog-push:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 52 / storage = 440 B / avg = 8 B
-# current buf: size = 8162 B / used = 440 B / count = 52 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 53 / storage = 453 B / avg = 8 B
+# current buf: size = 8162 B / used = 453 B / count = 53 / avg = 8 B
 
-# strcache performance: lookups = 179 / hit rate = 70%
+# strcache performance: lookups = 180 / hit rate = 70%
 # hash-table stats:
-# Load=52/8192=1%, Rehash=0, Collisions=0/179=0%
-# Finished Make data base on Tue Jun 28 09:53:29 2022
+# Load=53/8192=1%, Rehash=0, Collisions=0/180=0%
+# Finished Make data base on Tue Aug  2 22:49:38 2022
 
  

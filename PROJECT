@@ -41,4 +41,12 @@ resources:
   kind: ClusterTemplate
   path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: rawagner.com
+  group: clustertemplate
+  kind: ClusterTemplateSetup
+  path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

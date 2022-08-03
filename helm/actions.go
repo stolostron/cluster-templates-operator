@@ -1,6 +1,8 @@
 package helm
 
 import (
+	"fmt"
+
 	"helm.sh/helm/v3/pkg/action"
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
@@ -24,17 +26,20 @@ func (h *HelmClient) InstallChart(chartURL string, releaseName string, releaseNa
 
 	releaseName, chartName, err := cmd.NameAndChart([]string{releaseName, chartURL})
 	if err != nil {
+		fmt.Println("1")
 		return err
 	}
 	cmd.ReleaseName = releaseName
 
 	cp, err := cmd.ChartPathOptions.LocateChart(chartName, settings)
 	if err != nil {
+		fmt.Println("2")
 		return err
 	}
 
 	ch, err := loader.Load(cp)
 	if err != nil {
+		fmt.Println("3")
 		return err
 	}
 

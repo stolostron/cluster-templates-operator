@@ -17,47 +17,49 @@ limitations under the License.
 package v1alpha1
 
 import (
+	batchv1 "k8s.io/api/batch/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// ClusterTemplateQuotaSpec defines the desired state of ClusterTemplateQuota
-type ClusterTemplateQuotaSpec struct {
+// ClusterTemplateSetupSpec defines the desired state of ClusterTemplateSetup
+type ClusterTemplateSetupSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of ClusterTemplateQuota. Edit clustertemplatequota_types.go to remove/update
-	Quota int `json:"quota,omitempty"`
+	// Foo is an example field of ClusterTemplateSetup. Edit clustertemplatesetup_types.go to remove/update
+	JobSpec batchv1.JobSpec `json:"jobSpec"`
 }
 
-// ClusterTemplateQuotaStatus defines the observed state of ClusterTemplateQuota
-type ClusterTemplateQuotaStatus struct {
-	InstancesCount int `json:"instancesCount"`
+// ClusterTemplateSetupStatus defines the observed state of ClusterTemplateSetup
+type ClusterTemplateSetupStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// ClusterTemplateQuota is the Schema for the clustertemplatequota API
-type ClusterTemplateQuota struct {
+// ClusterTemplateSetup is the Schema for the clustertemplatesetups API
+type ClusterTemplateSetup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ClusterTemplateQuotaSpec   `json:"spec,omitempty"`
-	Status ClusterTemplateQuotaStatus `json:"status,omitempty"`
+	Spec   ClusterTemplateSetupSpec   `json:"spec,omitempty"`
+	Status ClusterTemplateSetupStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// ClusterTemplateQuotaList contains a list of ClusterTemplateQuota
-type ClusterTemplateQuotaList struct {
+// ClusterTemplateSetupList contains a list of ClusterTemplateSetup
+type ClusterTemplateSetupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ClusterTemplateQuota `json:"items"`
+	Items           []ClusterTemplateSetup `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ClusterTemplateQuota{}, &ClusterTemplateQuotaList{})
+	SchemeBuilder.Register(&ClusterTemplateSetup{}, &ClusterTemplateSetupList{})
 }

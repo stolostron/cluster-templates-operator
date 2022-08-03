@@ -39,11 +39,18 @@ type ClusterTemplateInstanceSpec struct {
 	Values json.RawMessage `json:"values"`
 }
 
+type ClusterSetupStatus struct {
+	Name      string `json:"name"`
+	Completed bool   `json:"completed"`
+}
+
 type ClusterTemplateInstanceStatus struct {
-	Created           bool   `json:"created"`
-	KubeadminPassword string `json:"kubeadminPassword"`
-	APIserverURL      string `json:"apiServerURL"`
-	Status            string `json:"status"`
+	Created             bool                 `json:"created"`
+	KubeadminPassword   string               `json:"kubeadminPassword"`
+	APIserverURL        string               `json:"apiServerURL"`
+	ClusterStatus       string               `json:"clusterStatus"`
+	ClusterSetupStarted bool                 `json:"clusterSetupStarted"`
+	ClusterSetup        []ClusterSetupStatus `json:"clusterSetup,omitempty"`
 }
 
 //+kubebuilder:object:root=true

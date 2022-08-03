@@ -34,11 +34,24 @@ spec:
           spec:
             description: ClusterTemplateSpec defines the desired state of ClusterTemplate
             properties:
+              clusterSetup:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    type:
+                      type: string
+                  required:
+                  - name
+                  - type
+                  type: object
+                type: array
               helmChartURL:
                 description: Foo is an example field of ClusterTemplate. Edit clustertemplate_types.go
                   to remove/update
                 type: string
             required:
+            - clusterSetup
             - helmChartURL
             type: object
           status:

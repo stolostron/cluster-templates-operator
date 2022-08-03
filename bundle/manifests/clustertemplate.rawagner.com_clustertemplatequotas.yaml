@@ -56,7 +56,11 @@ spec:
             properties:
               instancesCount:
                 type: integer
+            required:
+            - instancesCount
             type: object
+        required:
+        - status
         type: object
     served: true
     storage: true
