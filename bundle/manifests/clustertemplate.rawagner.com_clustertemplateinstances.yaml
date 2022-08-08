@@ -61,17 +61,41 @@ spec:
             properties:
               apiServerURL:
                 type: string
+              clusterSetup:
+                items:
+                  properties:
+                    completionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
+                    name:
+                      type: string
+                    reason:
+                      type: string
+                    succeeded:
+                      type: string
+                  required:
+                  - message
+                  - name
+                  - reason
+                  - succeeded
+                  type: object
+                type: array
+              clusterSetupStarted:
+                type: boolean
+              clusterStatus:
+                type: string
               created:
                 type: boolean
               kubeadminPassword:
                 type: string
-              status:
-                type: string
             required:
             - apiServerURL
+            - clusterSetupStarted
+            - clusterStatus
             - created
             - kubeadminPassword
-            - status
             type: object
         type: object
     served: true

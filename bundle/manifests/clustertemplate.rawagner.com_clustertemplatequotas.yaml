@@ -59,8 +59,6 @@ spec:
             required:
             - instancesCount
             type: object
-        required:
-        - status
         type: object
     served: true
     storage: true

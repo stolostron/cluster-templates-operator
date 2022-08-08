@@ -72,7 +72,18 @@ func (r *ClusterTemplateInstance) ValidateCreate() error {
 		return errors.New("could not find quota for namespace")
 	}
 
-	quota := quotas.Items[0]
+	quotaIndex := -1
+	for index, _ := range quotas.Items {
+		if quotas.Items[index].Name == r.Spec.Template {
+			quotaIndex = index
+		}
+	}
+
+	if quotaIndex == -1 {
+		return errors.New("not enough quota")
+	}
+
+	quota := quotas.Items[quotaIndex]
 
 	if quota.Status.InstancesCount >= quota.Spec.Quota {
 		return errors.New("not enough quota")
