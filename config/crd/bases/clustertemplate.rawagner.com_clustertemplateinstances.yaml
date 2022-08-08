@@ -55,13 +55,22 @@ spec:
               clusterSetup:
                 items:
                   properties:
-                    completed:
-                      type: boolean
+                    completionTime:
+                      format: date-time
+                      type: string
+                    message:
+                      type: string
                     name:
                       type: string
+                    reason:
+                      type: string
+                    succeeded:
+                      type: string
                   required:
-                  - completed
+                  - message
                   - name
+                  - reason
+                  - succeeded
                   type: object
                 type: array
               clusterSetupStarted:

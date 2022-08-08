@@ -27,12 +27,6 @@ spec:
       kind: ClusterTemplate
       name: clustertemplates.clustertemplate.rawagner.com
       version: v1alpha1
-    - description: ClusterTemplateSetup is the Schema for the clustertemplatesetups
-        API
-      displayName: Cluster Template Setup
-      kind: ClusterTemplateSetup
-      name: clustertemplatesetups.clustertemplate.rawagner.com
-      version: v1alpha1
   description: Cluster templates
   displayName: Cluster templates operator
   icon:

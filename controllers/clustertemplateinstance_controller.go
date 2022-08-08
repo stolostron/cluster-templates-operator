@@ -39,8 +39,9 @@ import (
 	"github.com/rawagner/cluster-templates-operator/helm"
 	"github.com/rawagner/cluster-templates-operator/hypershift"
 	"gopkg.in/yaml.v2"
-	batchv1 "k8s.io/api/batch/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
+	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 )
 
 // ClusterTemplateInstanceReconciler reconciles a ClusterTemplateInstance object
@@ -227,8 +228,8 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 		return true, nil
 	}
 	if !newStatus.ClusterSetupStarted {
-		log.Info("Create cluster setup jobs for clustertemplateinstance", "name", clusterTemplateInstance.Name)
-		err := clustersetup.CreateSetupJobs(ctx, r.Client, clusterTemplate, clusterTemplateInstance, kubeconfigSecret)
+		log.Info("Create cluster setup tekton pipelines for clustertemplateinstance", "name", clusterTemplateInstance.Name)
+		err := clustersetup.CreateSetupPipelines(ctx, log, r.Client, clusterTemplate, clusterTemplateInstance, kubeconfigSecret)
 		if err != nil {
 			return true, err
 		}
@@ -237,36 +238,44 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 	}
 
 	log.Info("reconcile setup jobs for clustertemplateinstance", "name", clusterTemplateInstance.Name)
-	jobs := &batchv1.JobList{}
+	pipelineRuns := &pipeline.PipelineRunList{}
 
-	jobLabelReq, _ := labels.NewRequirement("clusterinstance", selection.Equals, []string{clusterTemplateInstance.Name})
-	selector := labels.NewSelector().Add(*jobLabelReq)
+	pipelineLabelReq, _ := labels.NewRequirement(clustersetup.ClusterSetupInstance, selection.Equals, []string{clusterTemplateInstance.Name})
+	selector := labels.NewSelector().Add(*pipelineLabelReq)
 
-	err := r.Client.List(ctx, jobs, &client.ListOptions{LabelSelector: selector, Namespace: clusterTemplateInstance.Namespace})
+	err := r.Client.List(ctx, pipelineRuns, &client.ListOptions{LabelSelector: selector, Namespace: clusterTemplateInstance.Namespace})
 	if err != nil {
 		return true, err
 	}
 	newStatus.ClusterSetup = make([]clustertemplatev1alpha1.ClusterSetupStatus, 0)
-	for _, job := range jobs.Items {
+	for _, pipelineRun := range pipelineRuns.Items {
 		setupStatus := clustertemplatev1alpha1.ClusterSetupStatus{}
-		setupName := job.Labels["setupname"]
+		setupName := pipelineRun.Labels[clustersetup.ClusterSetupLabel]
 		if setupName != "" {
 			setupStatus.Name = setupName
 
-			completed := false
-			for i := range job.Status.Conditions {
-				if job.Status.Conditions[i].Type == "Complete" {
-					completed = job.Status.Conditions[i].Status == "True"
+			succeeded := v1.ConditionUnknown
+			message := ""
+			reason := ""
+			for i := range pipelineRun.Status.Conditions {
+				if pipelineRun.Status.Conditions[i].Type == "Succeeded" {
+					succeeded = pipelineRun.Status.Conditions[i].Status
+					message = pipelineRun.Status.Conditions[i].Message
+					reason = pipelineRun.Status.Conditions[i].Reason
 				}
 			}
 
-			setupStatus.Completed = completed
+			setupStatus.Succeeded = succeeded
+			setupStatus.Reason = reason
+			setupStatus.Message = message
+			setupStatus.CompletionTime = pipelineRun.Status.CompletionTime
+
 			newStatus.ClusterSetup = append(newStatus.ClusterSetup, setupStatus)
 		}
 	}
 	setupComplete := true
 	for _, setupStatus := range newStatus.ClusterSetup {
-		setupComplete = setupComplete && setupStatus.Completed
+		setupComplete = setupComplete && setupStatus.CompletionTime != nil
 	}
 	return !setupComplete, nil
 }

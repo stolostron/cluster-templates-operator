@@ -36,6 +36,7 @@ import (
 	clustertemplatev1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 	"github.com/rawagner/cluster-templates-operator/controllers"
 	"github.com/rawagner/cluster-templates-operator/helm"
+	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -49,6 +50,7 @@ func init() {
 
 	utilruntime.Must(clustertemplatev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(hypershiftv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(pipeline.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -105,12 +107,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// go restapi.StartHTTPServer(config, scheme, helmClient)
-
-	//if err = (&clustertemplatev1alpha1.ClusterTemplateInstance{}).SetupWebhookWithManager(mgr); err != nil {
-	//	setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateInstance")
-	//	os.Exit(1)
-	//}
+	if err = (&clustertemplatev1alpha1.ClusterTemplateInstance{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateInstance")
+		os.Exit(1)
+	}
 	if err = (&controllers.ClusterTemplateReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -118,10 +118,10 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplate")
 		os.Exit(1)
 	}
-	//if err = (&clustertemplatev1alpha1.ClusterTemplateQuota{}).SetupWebhookWithManager(mgr); err != nil {
-	//	setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateQuota")
-	//	os.Exit(1)
-	//}
+	if err = (&clustertemplatev1alpha1.ClusterTemplateQuota{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateQuota")
+		os.Exit(1)
+	}
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

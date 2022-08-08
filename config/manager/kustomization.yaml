@@ -13,4 +13,3 @@ kind: Kustomization
 images:
 - name: controller
   newName: quay.io/rawagner/cluster-templates-operator
-  newTag: latest

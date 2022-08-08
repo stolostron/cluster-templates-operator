@@ -15,7 +15,6 @@ COPY api/ api/
 COPY controllers/ controllers/
 COPY helm/ helm/
 COPY hypershift/ hypershift/
-COPY restapi/ restapi/
 COPY clustersetup/ clustersetup/
 
 # Build

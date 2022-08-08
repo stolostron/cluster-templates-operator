@@ -5,8 +5,9 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
+ 
 
-# Make data base, printed on Tue Aug  2 22:49:38 2022
+# Make data base, printed on Mon Aug  8 09:24:52 2022
 
 # Variables
 
@@ -18,8 +19,6 @@ LC_ALL = C
 NO_AT_BRIDGE = 1
 # environment
 GJS_DEBUG_OUTPUT = stderr
-# environment
-VSCODE_IPC_HOOK_EXTHOST = /run/user/1000/vscode-ipc-7823d0f7-e2c9-4e17-9983-faba75b66d9a.sock
 # makefile (from 'Makefile', line 25)
 BUNDLE_METADATA_OPTS = $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # environment
@@ -54,12 +53,10 @@ XDG_DATA_DIRS = /home/rawagner/.local/share/flatpak/exports/share:/var/lib/flatp
 OLDPWD = /home/rawagner
 # automatic
 ^D = $(patsubst %/,%,$(dir $^))
-# environment
-VSCODE_LOG_STACK = false
 # automatic
 %F = $(notdir $%)
 # environment
-VSCODE_CODE_CACHE_PATH = /home/rawagner/.config/Code/CachedData/30d9c6cd9483b2cc586687151bcbcd635f373630
+VSCODE_CODE_CACHE_PATH = /home/rawagner/.config/Code/CachedData/3b889b090b5ad5793f524b5d1d39fda662b96a2a
 # makefile (from 'Makefile', line 36)
 BUNDLE_IMG = $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 # environment
@@ -67,7 +64,7 @@ SSH_ASKPASS = /usr/libexec/openssh/gnome-ssh-askpass
 # environment
 LANG = C
 # environment
-XAUTHORITY = /run/user/1000/.mutter-Xwaylandauth.SUGIQ1
+XAUTHORITY = /run/user/1000/.mutter-Xwaylandauth.M9HZP1
 # default
 .LOADED := 
 # default
@@ -77,9 +74,7 @@ MAKEFLAGS = pqrR
 # makefile
 CURDIR := /home/rawagner/Redhat/git/forks/cluster-templates-operator
 # environment
-VSCODE_PIPE_LOGGING = true
-# environment
-APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = 1
+APPLICATION_INSIGHTS_NO_DIAGNOSTIC_CHANNEL = true
 # environment
 LESSOPEN = ||/usr/bin/lesspipe.sh %s
 # automatic
@@ -107,9 +102,7 @@ MAKEFILE_LIST := Makefile
 # environment
 ZSH = /home/rawagner/.oh-my-zsh
 # environment
-VSCODE_VERBOSE_LOGGING = true
-# environment
-VSCODE_PID = 583407
+VSCODE_PID = 27121
 # environment
 XDG_SESSION_TYPE = wayland
 # automatic
@@ -119,7 +112,7 @@ IMAGE_TAG_BASE = rawagner.com/cluster-templates-operator
 # makefile (from 'Makefile', line 166)
 PROJECT_DIR := /home/rawagner/Redhat/git/forks/cluster-templates-operator
 # environment
-SESSION_MANAGER = local/unix:@/tmp/.ICE-unix/2254,unix/unix:/tmp/.ICE-unix/2254
+SESSION_MANAGER = local/unix:@/tmp/.ICE-unix/2208,unix/unix:/tmp/.ICE-unix/2208
 # automatic
 *F = $(notdir $*)
 # makefile (from 'Makefile', line 216)
@@ -169,9 +162,7 @@ BUNDLE_IMGS = $(BUNDLE_IMG)
 # makefile (from 'Makefile', line 56)
 GOBIN = $(shell go env GOPATH)/bin
 # environment
-INVOCATION_ID = 256a81b763184cd1b9edeb3c3539842a
-# environment
-VSCODE_LOG_NATIVE = false
+INVOCATION_ID = c25497b37da0493a94a6356ff08261f0
 # environment
 USERNAME = rawagner
 # environment
@@ -203,7 +194,7 @@ GIO_LAUNCHED_DESKTOP_FILE = /usr/share/applications/code.desktop
 # makefile
 .DEFAULT_GOAL := all
 # environment
-SYSTEMD_EXEC_PID = 2308
+SYSTEMD_EXEC_PID = 2261
 # environment
 HISTCONTROL = ignoredups
 # environment
@@ -219,13 +210,13 @@ MAKE_VERSION := 4.3
 # makefile (from 'Makefile', line 195)
 OPM = ./bin/opm
 # environment
-MANAGERPID = 2149
+MANAGERPID = 2101
 # environment
 which_declare = typeset -f
 # environment
 DEBUGINFOD_URLS = https://debuginfod.fedoraproject.org/ 
 # environment
-GIO_LAUNCHED_DESKTOP_FILE_PID = 583407
+GIO_LAUNCHED_DESKTOP_FILE_PID = 27121
 # environment
 PAGER = less
 # environment
@@ -235,7 +226,7 @@ XDG_RUNTIME_DIR = /run/user/1000
 # environment
 GOMODCACHE = /home/rawagner/go/pkg/mod
 # environment
-JOURNAL_STREAM = 8:28583
+JOURNAL_STREAM = 8:35365
 # environment
 XDG_SESSION_CLASS = user
 # environment
@@ -251,7 +242,7 @@ ENVTEST = $(shell pwd)/bin/setup-envtest
 # environment
 ELECTRON_RUN_AS_NODE = 1
 # environment
-VSCODE_IPC_HOOK = /run/user/1000/vscode-286f3edf-1.68.1-main.sock
+VSCODE_IPC_HOOK = /run/user/1000/vscode-286f3edf-1.69.2-main.sock
 # environment
 GOPROXY = https://proxy.golang.org,direct
 # default
@@ -271,7 +262,7 @@ go-get-tool = @[ -f $(1) ] || { set -e ; TMP_DIR=$$(mktemp -d) ; cd $$TMP_DIR ; 
 # environment
 GDMSESSION = gnome
 # variable set hash-table stats:
-# Load=130/1024=13%, Rehash=0, Collisions=8/199=4%
+# Load=125/1024=12%, Rehash=0, Collisions=7/194=4%
 
 # Pattern-specific Variable Values
 
@@ -296,6 +287,7 @@ deploy: manifests kustomize
 #  File has not been updated.
 #  recipe to execute (from 'Makefile', line 143):
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+ 
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 catalog-build: opm
@@ -337,7 +329,6 @@ bundle: manifests kustomize
 #  File does not exist.
 #  File has not been updated.
 #  recipe to execute (from 'Makefile', line 181):
- 
 	operator-sdk generate kustomize manifests -q
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
@@ -521,6 +512,7 @@ install: manifests kustomize
 
 docker-build: test
 #  Phony target (prerequisite of .PHONY).
+ 
 #  Implicit rule search has not been done.
 #  File does not exist.
 #  File has not been updated.
@@ -560,6 +552,6 @@ catalog-push:
 # strcache performance: lookups = 180 / hit rate = 70%
 # hash-table stats:
 # Load=53/8192=1%, Rehash=0, Collisions=0/180=0%
-# Finished Make data base on Tue Aug  2 22:49:38 2022
+# Finished Make data base on Mon Aug  8 09:24:52 2022
 
  

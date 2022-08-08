@@ -17,12 +17,13 @@ limitations under the License.
 package v1alpha1
 
 import (
+	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type ClusterSetup struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
+	Name        string               `json:"name"`
+	PipelineRef pipeline.PipelineRef `json:"pipelineRef"`
 }
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!

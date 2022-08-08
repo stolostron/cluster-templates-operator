@@ -27,14 +27,6 @@ metadata:
             "name": "clustertemplatequota-sample"
           },
           "spec": null
-        },
-        {
-          "apiVersion": "clustertemplate.rawagner.com/v1alpha1",
-          "kind": "ClusterTemplateSetup",
-          "metadata": {
-            "name": "clustertemplatesetup-sample"
-          },
-          "spec": null
         }
       ]
     capabilities: Basic Install
@@ -59,12 +51,6 @@ spec:
       displayName: Cluster Template
       kind: ClusterTemplate
       name: clustertemplates.clustertemplate.rawagner.com
-      version: v1alpha1
-    - description: ClusterTemplateSetup is the Schema for the clustertemplatesetups
-        API
-      displayName: Cluster Template Setup
-      kind: ClusterTemplateSetup
-      name: clustertemplatesetups.clustertemplate.rawagner.com
       version: v1alpha1
   description: Cluster templates
   displayName: Cluster templates operator
@@ -158,7 +144,7 @@ spec:
                 securityContext:
                   allowPrivilegeEscalation: false
               securityContext:
-                runAsNonRoot: false
+                runAsNonRoot: true
               serviceAccountName: cluster-templates-operator-controller-manager
               terminationGracePeriodSeconds: 10
       permissions:

@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"encoding/json"
 
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -40,8 +41,11 @@ type ClusterTemplateInstanceSpec struct {
 }
 
 type ClusterSetupStatus struct {
-	Name      string `json:"name"`
-	Completed bool   `json:"completed"`
+	Name           string             `json:"name"`
+	Succeeded      v1.ConditionStatus `json:"succeeded"`
+	Message        string             `json:"message"`
+	Reason         string             `json:"reason"`
+	CompletionTime *metav1.Time       `json:"completionTime,omitempty"`
 }
 
 type ClusterTemplateInstanceStatus struct {
