@@ -30,7 +30,7 @@ metadata:
         }
       ]
     capabilities: Basic Install
-    operators.operatorframework.io/builder: operator-sdk-v1.19.0+git
+    operators.operatorframework.io/builder: operator-sdk-v1.22.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
   name: cluster-templates-operator.v0.0.1
   namespace: placeholder
@@ -38,7 +38,7 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: ClusterTemplateInstance is the Schema for the clustertemplateinstance
+    - description: ClusterTemplateInstance is the Schema for the clustertemplateinstances
         API
       displayName: Cluster Template Instance
       kind: ClusterTemplateInstance
@@ -53,7 +53,7 @@ spec:
       name: clustertemplates.clustertemplate.rawagner.com
       version: v1alpha1
   description: Cluster templates
-  displayName: Cluster templates operator
+  displayName: Cluster Templates
   icon:
   - base64data: ""
     mediatype: ""
@@ -61,6 +61,12 @@ spec:
     spec:
       clusterPermissions:
       - rules:
+        - apiGroups:
+          - '*'
+          resources:
+          - '*'
+          verbs:
+          - '*'
         - apiGroups:
           - authentication.k8s.io
           resources:
@@ -97,7 +103,7 @@ spec:
                 - --upstream=http://127.0.0.1:8080/
                 - --logtostderr=true
                 - --v=0
-                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+                image: gcr.io/kubebuilder/kube-rbac-proxy:v0.11.0
                 name: kube-rbac-proxy
                 ports:
                 - containerPort: 8443
@@ -110,6 +116,8 @@ spec:
                   requests:
                     cpu: 5m
                     memory: 64Mi
+                securityContext:
+                  allowPrivilegeEscalation: false
               - args:
                 - --health-probe-bind-address=:8081
                 - --metrics-bind-address=127.0.0.1:8080
@@ -195,11 +203,11 @@ spec:
   - cluster
   - templates
   links:
-  - name: Cluster Templates Operator
+  - name: Cluster Templates Operator1
     url: https://cluster-templates-operator.domain
   maintainers:
   - email: rawagner@redhat.com
-    name: rawagner@rrawagner
+    name: rawagner
   maturity: alpha
   provider:
     name: rawagner
@@ -217,46 +225,6 @@ spec:
     targetPort: 9443
     type: ConversionWebhook
     webhookPath: /convert
-  - admissionReviewVersions:
-    - v1
-    containerPort: 443
-    deploymentName: cluster-templates-operator-controller-manager
-    failurePolicy: Fail
-    generateName: mclustertemplateinstance.kb.io
-    rules:
-    - apiGroups:
-      - clustertemplate.rawagner.com
-      apiVersions:
-      - v1alpha1
-      operations:
-      - CREATE
-      - UPDATE
-      resources:
-      - clustertemplateinstances
-    sideEffects: None
-    targetPort: 9443
-    type: MutatingAdmissionWebhook
-    webhookPath: /mutate-clustertemplate-rawagner-com-v1alpha1-clustertemplateinstance
-  - admissionReviewVersions:
-    - v1
-    containerPort: 443
-    deploymentName: cluster-templates-operator-controller-manager
-    failurePolicy: Fail
-    generateName: mclustertemplatequota.kb.io
-    rules:
-    - apiGroups:
-      - clustertemplate.rawagner.com
-      apiVersions:
-      - v1alpha1
-      operations:
-      - CREATE
-      - UPDATE
-      resources:
-      - clustertemplatequotas
-    sideEffects: None
-    targetPort: 9443
-    type: MutatingAdmissionWebhook
-    webhookPath: /mutate-clustertemplate-rawagner-com-v1alpha1-clustertemplatequota
   - admissionReviewVersions:
     - v1
     containerPort: 443

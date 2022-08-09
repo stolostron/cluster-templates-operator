@@ -60,7 +60,7 @@ type ClusterTemplateInstanceStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// ClusterTemplateInstance is the Schema for the clustertemplateinstance API
+// ClusterTemplateInstance is the Schema for the clustertemplateinstances API
 type ClusterTemplateInstance struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -71,7 +71,7 @@ type ClusterTemplateInstance struct {
 
 //+kubebuilder:object:root=true
 
-// ClusterTemplateInstaceList contains a list of ClusterTemplateInstance
+// ClusterTemplateInstanceList contains a list of ClusterTemplateInstance
 type ClusterTemplateInstanceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

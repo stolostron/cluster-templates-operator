@@ -136,16 +136,19 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 		log.Info("Create cluster from clustertemplateinstance", "name", clusterTemplateInstance.Name)
 		values := make(map[string]interface{})
 		err := json.Unmarshal(clusterTemplateInstance.Spec.Values, &values)
+		log.Info("1")
 		if err != nil {
 			return err
 		}
 
+		log.Info("2")
 		err = r.HelmClient.InstallChart(
 			clusterTemplate.Spec.HelmChartURL,
 			clusterTemplateInstance.Name,
 			clusterTemplateInstance.Namespace,
 			values,
 		)
+		log.Info("3")
 		if err != nil {
 			return err
 		}

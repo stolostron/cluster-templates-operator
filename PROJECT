@@ -9,6 +9,13 @@ repo: github.com/rawagner/cluster-templates-operator
 resources:
 - api:
     crdVersion: v1
+  domain: rawagner.com
+  group: clustertemplate
+  kind: ClusterTemplate
+  path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
     namespaced: true
   controller: true
   domain: rawagner.com
@@ -17,7 +24,6 @@ resources:
   path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
   version: v1alpha1
   webhooks:
-    defaulting: true
     validation: true
     webhookVersion: v1
 - api:
@@ -30,15 +36,6 @@ resources:
   path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
   version: v1alpha1
   webhooks:
-    defaulting: true
     validation: true
     webhookVersion: v1
-- api:
-    crdVersion: v1
-  controller: true
-  domain: rawagner.com
-  group: clustertemplate
-  kind: ClusterTemplate
-  path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
-  version: v1alpha1
 version: "3"

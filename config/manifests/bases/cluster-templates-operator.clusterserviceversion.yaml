@@ -10,17 +10,17 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: ClusterTemplateInstance is the Schema for the clustertemplateinstance
+    - description: ClusterTemplateInstance is the Schema for the clustertemplateinstances
         API
       displayName: Cluster Template Instance
       kind: ClusterTemplateInstance
       name: clustertemplateinstances.clustertemplate.rawagner.com
       version: v1alpha1
-    - description: ClusterTemplateQuota is the Schema for the clustertemplatequota
+    - description: ClusterTemplateQuota is the Schema for the clustertemplatequotas
         API
       displayName: Cluster Template Quota
       kind: ClusterTemplateQuota
-      name: clustertemplatequota.clustertemplate.rawagner.com
+      name: clustertemplatequotas.clustertemplate.rawagner.com
       version: v1alpha1
     - description: ClusterTemplate is the Schema for the clustertemplates API
       displayName: Cluster Template
@@ -28,7 +28,7 @@ spec:
       name: clustertemplates.clustertemplate.rawagner.com
       version: v1alpha1
   description: Cluster templates
-  displayName: Cluster templates operator
+  displayName: Cluster Templates
   icon:
   - base64data: ""
     mediatype: ""
@@ -49,11 +49,11 @@ spec:
   - cluster
   - templates
   links:
-  - name: Cluster Templates Operator
+  - name: Cluster Templates Operator1
     url: https://cluster-templates-operator.domain
   maintainers:
   - email: rawagner@redhat.com
-    name: rawagner@rrawagner
+    name: rawagner
   maturity: alpha
   provider:
     name: rawagner

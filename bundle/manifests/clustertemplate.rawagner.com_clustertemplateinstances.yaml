@@ -2,7 +2,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.8.0
+    controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
   name: clustertemplateinstances.clustertemplate.rawagner.com
 spec:
@@ -27,7 +27,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ClusterTemplateInstance is the Schema for the clustertemplateinstance
+        description: ClusterTemplateInstance is the Schema for the clustertemplateinstances
           API
         properties:
           apiVersion:
@@ -106,5 +106,5 @@ status:
   acceptedNames:
     kind: ""
     plural: ""
-  conditions: []
-  storedVersions: []
+  conditions: null
+  storedVersions: null

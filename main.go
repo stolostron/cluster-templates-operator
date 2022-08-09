@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
-
 	clustertemplatev1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 	"github.com/rawagner/cluster-templates-operator/controllers"
 	"github.com/rawagner/cluster-templates-operator/helm"
@@ -47,7 +46,6 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
 	utilruntime.Must(clustertemplatev1alpha1.AddToScheme(scheme))
 	utilruntime.Must(hypershiftv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(pipeline.AddToScheme(scheme))
@@ -80,46 +78,46 @@ func main() {
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "135184d5.rawagner.com",
+		// LeaderElectionReleaseOnCancel defines if the leader should step down voluntarily
+		// when the Manager ends. This requires the binary to immediately end when the
+		// Manager is stopped, otherwise, this setting is unsafe. Setting this significantly
+		// speeds up voluntary leader transitions as the new leader don't have to wait
+		// LeaseDuration time first.
+		//
+		// In the default scaffold provided, the program ends immediately after
+		// the manager stops, so would be fine to enable this option. However,
+		// if you are doing or is intended to do any operation such as perform cleanups
+		// after the manager stops then its usage might be unsafe.
+		// LeaderElectionReleaseOnCancel: true,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
 
-	client := mgr.GetClient()
+	helmClient := helm.NewHelmClient(config)
 
 	if err = (&controllers.ClusterTemplateQuotaReconciler{
-		Client: client,
+		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplateQuota")
 		os.Exit(1)
 	}
-
-	helmClient := helm.NewHelmClient(config)
-
 	if err = (&controllers.ClusterTemplateInstanceReconciler{
-		Client:     client,
+		Client:     mgr.GetClient(),
 		Scheme:     mgr.GetScheme(),
 		HelmClient: helmClient,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplateInstance")
 		os.Exit(1)
 	}
-
-	if err = (&clustertemplatev1alpha1.ClusterTemplateInstance{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateInstance")
-		os.Exit(1)
-	}
-	if err = (&controllers.ClusterTemplateReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplate")
-		os.Exit(1)
-	}
 	if err = (&clustertemplatev1alpha1.ClusterTemplateQuota{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateQuota")
+		os.Exit(1)
+	}
+	if err = (&clustertemplatev1alpha1.ClusterTemplateInstance{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateInstance")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

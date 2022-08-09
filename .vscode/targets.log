@@ -5,9 +5,8 @@ make all --print-data-base --no-builtin-variables --no-builtin-rules --question
 # License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 # This is free software: you are free to change and redistribute it.
 # There is NO WARRANTY, to the extent permitted by law.
- 
 
-# Make data base, printed on Mon Aug  8 09:24:52 2022
+# Make data base, printed on Mon Aug  8 16:26:05 2022
 
 # Variables
 
@@ -270,9 +269,9 @@ GDMSESSION = gnome
 
 # Directories
 
-# . (device 41, inode 79867821): 25 files, no impossibilities.
+# . (device 41, inode 79867821): 24 files, no impossibilities.
 
-# 25 files, no impossibilities in 1 directories.
+# 24 files, no impossibilities in 1 directories.
 
 # Implicit Rules
 
@@ -287,7 +286,6 @@ deploy: manifests kustomize
 #  File has not been updated.
 #  recipe to execute (from 'Makefile', line 143):
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
- 
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 catalog-build: opm
@@ -317,6 +315,7 @@ generate: controller-gen
 #  Implicit rule search has not been done.
 #  File does not exist.
 #  File has been updated.
+ 
 #  Needs to be updated (-q is set).
 # variable set hash-table stats:
 # Load=0/32=0%, Rehash=0, Collisions=0/10=0%
@@ -512,7 +511,6 @@ install: manifests kustomize
 
 docker-build: test
 #  Phony target (prerequisite of .PHONY).
- 
 #  Implicit rule search has not been done.
 #  File does not exist.
 #  File has not been updated.
@@ -546,12 +544,12 @@ catalog-push:
 
 # No general ('VPATH' variable) search path.
 
-# strcache buffers: 1 (0) / strings = 53 / storage = 453 B / avg = 8 B
-# current buf: size = 8162 B / used = 453 B / count = 53 / avg = 8 B
+# strcache buffers: 1 (0) / strings = 52 / storage = 445 B / avg = 8 B
+# current buf: size = 8162 B / used = 445 B / count = 52 / avg = 8 B
 
-# strcache performance: lookups = 180 / hit rate = 70%
+# strcache performance: lookups = 179 / hit rate = 70%
 # hash-table stats:
-# Load=53/8192=1%, Rehash=0, Collisions=0/180=0%
-# Finished Make data base on Mon Aug  8 09:24:52 2022
+# Load=52/8192=1%, Rehash=0, Collisions=0/179=0%
+# Finished Make data base on Mon Aug  8 16:26:05 2022
 
  

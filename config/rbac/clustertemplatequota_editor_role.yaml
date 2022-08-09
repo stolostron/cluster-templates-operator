@@ -7,7 +7,7 @@ rules:
 - apiGroups:
   - clustertemplate.rawagner.com
   resources:
-  - clustertemplatequota
+  - clustertemplatequotas
   verbs:
   - create
   - delete
@@ -19,6 +19,6 @@ rules:
 - apiGroups:
   - clustertemplate.rawagner.com
   resources:
-  - clustertemplatequota/status
+  - clustertemplatequotas/status
   verbs:
   - get

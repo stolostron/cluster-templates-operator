@@ -29,7 +29,6 @@ import (
 
 // log is for logging in this package.
 var clustertemplateinstancelog = logf.Log.WithName("clustertemplateinstance-resource")
-
 var instanceControllerClient client.Client
 
 func (r *ClusterTemplateInstance) SetupWebhookWithManager(mgr ctrl.Manager) error {
@@ -40,17 +39,6 @@ func (r *ClusterTemplateInstance) SetupWebhookWithManager(mgr ctrl.Manager) erro
 }
 
 // TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-
-//+kubebuilder:webhook:path=/mutate-clustertemplate-rawagner-com-v1alpha1-clustertemplateinstance,mutating=true,failurePolicy=fail,sideEffects=None,groups=clustertemplate.rawagner.com,resources=clustertemplateinstances,verbs=create;update,versions=v1alpha1,name=mclustertemplateinstance.kb.io,admissionReviewVersions=v1
-
-var _ webhook.Defaulter = &ClusterTemplateInstance{}
-
-// Default implements webhook.Defaulter so a webhook will be registered for the type
-func (r *ClusterTemplateInstance) Default() {
-	clustertemplateinstancelog.Info("default", "name", r.Name)
-
-	// TODO(user): fill in your defaulting logic.
-}
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 //+kubebuilder:webhook:path=/validate-clustertemplate-rawagner-com-v1alpha1-clustertemplateinstance,mutating=false,failurePolicy=fail,sideEffects=None,groups=clustertemplate.rawagner.com,resources=clustertemplateinstances,verbs=create;update,versions=v1alpha1,name=vclustertemplateinstance.kb.io,admissionReviewVersions=v1
@@ -73,7 +61,7 @@ func (r *ClusterTemplateInstance) ValidateCreate() error {
 	}
 
 	quotaIndex := -1
-	for index, _ := range quotas.Items {
+	for index := range quotas.Items {
 		if quotas.Items[index].Name == r.Spec.Template {
 			quotaIndex = index
 		}
