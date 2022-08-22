@@ -35,8 +35,10 @@ type ClusterTemplateSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of ClusterTemplate. Edit clustertemplate_types.go to remove/update
-	HelmChartURL string         `json:"helmChartURL"`
-	ClusterSetup []ClusterSetup `json:"clusterSetup"`
+	HelmChart        string         `json:"helmChart"`
+	HelmChartVersion string         `json:"helmChartVersion"`
+	HelmRepository   string         `json:"helmRepository"`
+	ClusterSetup     []ClusterSetup `json:"clusterSetup"`
 }
 
 // ClusterTemplateStatus defines the observed state of ClusterTemplate

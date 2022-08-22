@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -38,10 +39,12 @@ import (
 	"github.com/rawagner/cluster-templates-operator/clustersetup"
 	"github.com/rawagner/cluster-templates-operator/helm"
 	"github.com/rawagner/cluster-templates-operator/hypershift"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
+	openshiftAPI "github.com/openshift/api/helm/v1beta1"
 	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	helmRepo "helm.sh/helm/v3/pkg/repo"
 )
 
 // ClusterTemplateInstanceReconciler reconciles a ClusterTemplateInstance object
@@ -105,7 +108,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 		return ctrl.Result{}, fmt.Errorf("failed to fetch clustertemplate %q", err)
 	}
 
-	if err := r.reconcileClusterCreate(log, clusterTemplateInstance, clusterTemplate); err != nil {
+	if err := r.reconcileClusterCreate(ctx, log, clusterTemplateInstance, clusterTemplate); err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to create cluster %q", err)
 	}
 
@@ -128,6 +131,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 }
 
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
+	ctx context.Context,
 	log logr.Logger,
 	clusterTemplateInstance *clustertemplatev1alpha1.ClusterTemplateInstance,
 	clusterTemplate clustertemplatev1alpha1.ClusterTemplate,
@@ -136,19 +140,62 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 		log.Info("Create cluster from clustertemplateinstance", "name", clusterTemplateInstance.Name)
 		values := make(map[string]interface{})
 		err := json.Unmarshal(clusterTemplateInstance.Spec.Values, &values)
-		log.Info("1")
 		if err != nil {
 			return err
 		}
 
-		log.Info("2")
+		helmRepositories := &openshiftAPI.HelmChartRepositoryList{}
+		err = r.Client.List(ctx, helmRepositories, &client.ListOptions{})
+		if err != nil {
+			return err
+		}
+		var helmRepository *openshiftAPI.HelmChartRepository
+		for _, item := range helmRepositories.Items {
+			if item.Name == clusterTemplate.Spec.HelmRepository {
+				helmRepository = &item
+				break
+			}
+		}
+
+		if helmRepository == nil {
+			return errors.New("could not find helm repository CR")
+		}
+
+		indexFile, err := helm.GetIndexFile(helmRepository.Spec.ConnectionConfig.URL)
+
+		if err != nil {
+			return err
+		}
+
+		var helmChartURL string
+		entry := indexFile.Entries[clusterTemplate.Spec.HelmChart]
+		for _, chartVersion := range entry {
+			if chartVersion.Version == clusterTemplate.Spec.HelmChartVersion {
+				helmChartURL = chartVersion.URLs[0]
+				break
+			}
+		}
+
+		if helmChartURL == "" {
+			return errors.New("could not find helm chart")
+		}
+
+		repoURL := helmRepository.Spec.ConnectionConfig.URL
+		if strings.HasSuffix(repoURL, "/index.yaml") {
+			repoURL = strings.TrimSuffix(repoURL, "index.yaml")
+		}
+
+		helmChartURL, err = helmRepo.ResolveReferenceURL(repoURL, helmChartURL)
+		if err != nil {
+			return errors.New("error resolving chart url")
+		}
+
 		err = r.HelmClient.InstallChart(
-			clusterTemplate.Spec.HelmChartURL,
+			helmChartURL,
 			clusterTemplateInstance.Name,
 			clusterTemplateInstance.Namespace,
 			values,
 		)
-		log.Info("3")
 		if err != nil {
 			return err
 		}

@@ -86,13 +86,19 @@ spec:
                   - pipelineRef
                   type: object
                 type: array
-              helmChartURL:
+              helmChart:
                 description: Foo is an example field of ClusterTemplate. Edit clustertemplate_types.go
                   to remove/update
                 type: string
+              helmChartVersion:
+                type: string
+              helmRepository:
+                type: string
             required:
             - clusterSetup
-            - helmChartURL
+            - helmChart
+            - helmChartVersion
+            - helmRepository
             type: object
           status:
             description: ClusterTemplateStatus defines the observed state of ClusterTemplate
