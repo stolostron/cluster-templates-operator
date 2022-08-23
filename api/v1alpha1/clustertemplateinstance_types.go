@@ -32,7 +32,7 @@ const (
 	ClusterNotReadyReason       string = "ClusterNotReady"
 	ClusterSetupStartedReason   string = "ClusterSetupStarted"
 	ClusterSetupFailedReason    string = "ClusterSetupFailed"
-	InstalledReason             string = "InstalledReason"
+	InstalledReason             string = "Installed"
 	HelmReleaseInstallingReason string = "HelmReleaseInstalling"
 	HelmChartInstallErrReason   string = "HelmChartInstallErr"
 	HelmChartRepoErrReason      string = "HelmChartRepoErr"
@@ -58,6 +58,7 @@ type ClusterTemplateInstanceSpec struct {
 
 type ClusterTemplateInstanceStatus struct {
 	KubeadminPassword string             `json:"kubeadminPassword,omitempty"`
+	Kubeconfig        string             `json:"kubeconfig,omitempty"`
 	APIserverURL      string             `json:"apiServerURL,omitempty"`
 	Conditions        []metav1.Condition `json:"conditions"`
 	CompletionTime    *metav1.Time       `json:"completionTime,omitempty"`
@@ -69,6 +70,7 @@ type ClusterTemplateInstanceStatus struct {
 //+kubebuilder:printcolumn:name="Install succeeded",type="string",JSONPath=".status.conditions[?(@.type==\"InstallSucceeded\")].status",description="Cluster installed"
 //+kubebuilder:printcolumn:name="Setup succeeded",type="string",JSONPath=".status.conditions[?(@.type==\"SetupSucceeded\")].status",description="Cluster setup"
 //+kubebuilder:printcolumn:name="Kubeadmin",type="string",JSONPath=".status.kubeadminPassword",description="Kubeadmin Secret"
+//+kubebuilder:printcolumn:name="Kubeconfig",type="string",JSONPath=".status.kubeconfig",description="Kubeconfig Secret"
 //+kubebuilder:printcolumn:name="API URL",type="string",JSONPath=".status.apiServerURL",description="API URL"
 
 // ClusterTemplateInstance is the Schema for the clustertemplateinstances API

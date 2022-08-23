@@ -45,19 +45,46 @@ spec:
           spec:
             description: ClusterTemplateQuotaSpec defines the desired state of ClusterTemplateQuota
             properties:
-              quota:
+              allowedTemplates:
+                items:
+                  properties:
+                    count:
+                      type: integer
+                    name:
+                      type: string
+                  required:
+                  - count
+                  - name
+                  type: object
+                type: array
+              cost:
                 description: Foo is an example field of ClusterTemplateQuota. Edit
                   clustertemplatequota_types.go to remove/update
                 type: integer
+            required:
+            - cost
             type: object
           status:
             description: ClusterTemplateQuotaStatus defines the observed state of
               ClusterTemplateQuota
             properties:
-              instancesCount:
+              cost:
                 type: integer
+              templateInstances:
+                items:
+                  properties:
+                    count:
+                      type: integer
+                    name:
+                      type: string
+                  required:
+                  - count
+                  - name
+                  type: object
+                type: array
             required:
-            - instancesCount
+            - cost
+            - templateInstances
             type: object
         type: object
     served: true

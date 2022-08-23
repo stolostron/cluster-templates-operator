@@ -54,25 +54,49 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(ctx context.Context, req ctrl
 		return ctrl.Result{}, err
 	}
 
-	// TODO(user): your logic here
-
 	clusterTemplateInstanceList := &clustertemplatev1alpha1.ClusterTemplateInstanceList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(req.NamespacedName.Namespace),
 	}
+	err = r.List(ctx, clusterTemplateInstanceList, listOpts...)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
-	r.List(ctx, clusterTemplateInstanceList, listOpts...)
+	clusterTemplateList := &clustertemplatev1alpha1.ClusterTemplateList{}
+	err = r.List(ctx, clusterTemplateList, []client.ListOption{}...)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
-	instancesCount := 0
+	currentInstances := []clustertemplatev1alpha1.AllowedTemplate{}
+	currentConst := 0
+	for _, template := range clusterTemplateQuota.Spec.AllowedTemplates {
+		count := 0
 
-	for _, instance := range clusterTemplateInstanceList.Items {
-		if instance.Namespace == clusterTemplateQuota.Namespace && instance.Spec.Template == clusterTemplateQuota.Name {
-			instancesCount++
+		templateCost := 0
+		for _, cTemplate := range clusterTemplateList.Items {
+			if cTemplate.Name == template.Name {
+				templateCost = cTemplate.Spec.Cost
+			}
 		}
+
+		for _, instance := range clusterTemplateInstanceList.Items {
+			if instance.Spec.Template == template.Name {
+				count++
+				currentConst += templateCost
+			}
+		}
+
+		currentInstances = append(currentInstances, clustertemplatev1alpha1.AllowedTemplate{
+			Name:  template.Name,
+			Count: count,
+		})
 	}
 
 	clusterTemplateQuota.Status = clustertemplatev1alpha1.ClusterTemplateQuotaStatus{
-		InstancesCount: instancesCount,
+		Cost:              currentConst,
+		TemplateInstances: currentInstances,
 	}
 
 	err = r.Status().Update(ctx, clusterTemplateQuota)

@@ -40,6 +40,10 @@ spec:
       jsonPath: .status.kubeadminPassword
       name: Kubeadmin
       type: string
+    - description: Kubeconfig Secret
+      jsonPath: .status.kubeconfig
+      name: Kubeconfig
+      type: string
     - description: API URL
       jsonPath: .status.apiServerURL
       name: API URL
@@ -153,6 +157,8 @@ spec:
                   type: object
                 type: array
               kubeadminPassword:
+                type: string
+              kubeconfig:
                 type: string
             required:
             - conditions

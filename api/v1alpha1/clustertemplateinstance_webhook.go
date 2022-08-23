@@ -50,31 +50,58 @@ func (r *ClusterTemplateInstance) ValidateCreate() error {
 	clustertemplateinstancelog.Info("validate create", "name", r.Name)
 
 	quotas := ClusterTemplateQuotaList{}
-
 	opts := []client.ListOption{
 		client.InNamespace(r.Namespace),
 	}
-
 	err := instanceControllerClient.List(context.TODO(), &quotas, opts...)
-	if err != nil {
+	if err != nil || len(quotas.Items) == 0 {
 		return errors.New("could not find quota for namespace")
 	}
 
-	quotaIndex := -1
-	for index := range quotas.Items {
-		if quotas.Items[index].Name == r.Spec.Template {
-			quotaIndex = index
+	templates := ClusterTemplateList{}
+	err = instanceControllerClient.List(context.TODO(), &templates, []client.ListOption{}...)
+	if err != nil {
+		return errors.New("could not list cluster templates")
+	}
+
+	templateIdx := -1
+	for index := range templates.Items {
+		if templates.Items[index].Name == r.Spec.Template {
+			templateIdx = index
+			break
 		}
 	}
 
-	if quotaIndex == -1 {
-		return errors.New("not enough quota")
+	if templateIdx == -1 {
+		return errors.New("could not find cluster template")
 	}
 
-	quota := quotas.Items[quotaIndex]
+	templateAllowed := false
+	for _, quota := range quotas.Items {
 
-	if quota.Status.InstancesCount >= quota.Spec.Quota {
-		return errors.New("not enough quota")
+		if quota.Spec.Cost < quota.Status.Cost+templates.Items[templateIdx].Spec.Cost {
+			return errors.New("cost is too much")
+		}
+
+		maxAllowed := 0
+		for _, tempInstance := range quota.Spec.AllowedTemplates {
+			if tempInstance.Name == r.Spec.Template {
+				templateAllowed = true
+				maxAllowed = tempInstance.Count
+			}
+		}
+
+		for _, tempInstance := range quota.Status.TemplateInstances {
+			if tempInstance.Name == r.Spec.Template {
+				if tempInstance.Count >= maxAllowed {
+					return errors.New("not enough quota")
+				}
+			}
+		}
+	}
+
+	if !templateAllowed {
+		return errors.New("template not allowed")
 	}
 
 	return nil

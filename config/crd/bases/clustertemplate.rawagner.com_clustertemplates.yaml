@@ -87,6 +87,8 @@ spec:
                   - pipelineRef
                   type: object
                 type: array
+              cost:
+                type: integer
               helmChart:
                 description: Foo is an example field of ClusterTemplate. Edit clustertemplate_types.go
                   to remove/update
@@ -97,6 +99,7 @@ spec:
                 type: string
             required:
             - clusterSetup
+            - cost
             - helmChart
             - helmChartVersion
             - helmRepository

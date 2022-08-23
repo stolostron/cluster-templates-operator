@@ -330,6 +330,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCredentials(
 		yaml.Unmarshal(kubeconfigSecret.Data["kubeconfig"], &kubeconfig)
 		clusterTemplateInstance.Status.APIserverURL = kubeconfig.Clusters[0].Cluster.Server
 		clusterTemplateInstance.Status.KubeadminPassword = kubeadminSecretName
+		clusterTemplateInstance.Status.Kubeconfig = kubeconfigSecretName
 	}
 
 	return nil

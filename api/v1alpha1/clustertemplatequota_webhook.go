@@ -58,15 +58,16 @@ func (r *ClusterTemplateQuota) ValidateCreate() error {
 		return errors.New("could not find template")
 	}
 
-	templateFound := false
-	for _, template := range templates.Items {
-		if template.Name == r.Name {
-			templateFound = true
+	for _, allowedTemplate := range r.Spec.AllowedTemplates {
+		templateFound := false
+		for _, template := range templates.Items {
+			if template.Name == allowedTemplate.Name {
+				templateFound = true
+			}
 		}
-	}
-
-	if !templateFound {
-		return errors.New("template not found")
+		if !templateFound {
+			return errors.New("template not found")
+		}
 	}
 
 	// TODO(user): fill in your validation logic upon object creation.

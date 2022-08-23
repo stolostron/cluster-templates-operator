@@ -20,6 +20,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type AllowedTemplate struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -29,12 +34,14 @@ type ClusterTemplateQuotaSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of ClusterTemplateQuota. Edit clustertemplatequota_types.go to remove/update
-	Quota int `json:"quota,omitempty"`
+	Cost             int               `json:"cost"`
+	AllowedTemplates []AllowedTemplate `json:"allowedTemplates,omitempty"`
 }
 
 // ClusterTemplateQuotaStatus defines the observed state of ClusterTemplateQuota
 type ClusterTemplateQuotaStatus struct {
-	InstancesCount int `json:"instancesCount"`
+	Cost              int               `json:"cost"`
+	TemplateInstances []AllowedTemplate `json:"templateInstances"`
 }
 
 //+kubebuilder:object:root=true

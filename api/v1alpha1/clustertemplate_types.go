@@ -39,6 +39,7 @@ type ClusterTemplateSpec struct {
 	HelmChartVersion string         `json:"helmChartVersion"`
 	HelmRepository   string         `json:"helmRepository"`
 	ClusterSetup     []ClusterSetup `json:"clusterSetup"`
+	Cost             int            `json:"cost"`
 }
 
 // ClusterTemplateStatus defines the observed state of ClusterTemplate
