@@ -19,8 +19,24 @@ package v1alpha1
 import (
 	"encoding/json"
 
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	InstallSucceeded string = "InstallSucceeded"
+	SetupSucceeded   string = "SetupSucceeded"
+)
+
+const (
+	HelmReleasePreparingReason  string = "HelmReleasePreparing"
+	ClusterNotReadyReason       string = "ClusterNotReady"
+	ClusterSetupStartedReason   string = "ClusterSetupStarted"
+	ClusterSetupFailedReason    string = "ClusterSetupFailed"
+	InstalledReason             string = "InstalledReason"
+	HelmReleaseInstallingReason string = "HelmReleaseInstalling"
+	HelmChartInstallErrReason   string = "HelmChartInstallErr"
+	HelmChartRepoErrReason      string = "HelmChartRepoErr"
+	HelmReleaseValuesErrReason  string = "HelmReleaseValuesErr"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -40,25 +56,20 @@ type ClusterTemplateInstanceSpec struct {
 	Values json.RawMessage `json:"values"`
 }
 
-type ClusterSetupStatus struct {
-	Name           string             `json:"name"`
-	Succeeded      v1.ConditionStatus `json:"succeeded"`
-	Message        string             `json:"message"`
-	Reason         string             `json:"reason"`
-	CompletionTime *metav1.Time       `json:"completionTime,omitempty"`
-}
-
 type ClusterTemplateInstanceStatus struct {
-	Created             bool                 `json:"created"`
-	KubeadminPassword   string               `json:"kubeadminPassword"`
-	APIserverURL        string               `json:"apiServerURL"`
-	ClusterStatus       string               `json:"clusterStatus"`
-	ClusterSetupStarted bool                 `json:"clusterSetupStarted"`
-	ClusterSetup        []ClusterSetupStatus `json:"clusterSetup,omitempty"`
+	KubeadminPassword string             `json:"kubeadminPassword,omitempty"`
+	APIserverURL      string             `json:"apiServerURL,omitempty"`
+	Conditions        []metav1.Condition `json:"conditions"`
+	CompletionTime    *metav1.Time       `json:"completionTime,omitempty"`
 }
 
 //+kubebuilder:object:root=true
+//+kubebuilder:resource:path=clustertemplateinstances,shortName=cti;ctis,scope=Namespaced
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Install succeeded",type="string",JSONPath=".status.conditions[?(@.type==\"InstallSucceeded\")].status",description="Cluster installed"
+//+kubebuilder:printcolumn:name="Setup succeeded",type="string",JSONPath=".status.conditions[?(@.type==\"SetupSucceeded\")].status",description="Cluster setup"
+//+kubebuilder:printcolumn:name="Kubeadmin",type="string",JSONPath=".status.kubeadminPassword",description="Kubeadmin Secret"
+//+kubebuilder:printcolumn:name="API URL",type="string",JSONPath=".status.apiServerURL",description="API URL"
 
 // ClusterTemplateInstance is the Schema for the clustertemplateinstances API
 type ClusterTemplateInstance struct {

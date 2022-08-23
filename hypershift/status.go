@@ -9,16 +9,16 @@ import (
 )
 
 type KubeSecret struct {
-	Namespace    string
-	PassSecret   string
-	ConfigSecret string
+	Kubeadmin  string
+	Kubeconfig string
 }
 
-func GetHypershiftInfo(ctx context.Context, manifest string, k8sClient client.Client) (*KubeSecret, string, error) {
+func GetHypershiftInfo(ctx context.Context, manifest string, k8sClient client.Client) (KubeSecret, bool, string, error) {
 	var hostedC hypershiftv1alpha1.HostedCluster
+	kubeSecret := KubeSecret{}
 	err := k8sYaml.Unmarshal([]byte(manifest), &hostedC)
 	if err != nil {
-		return nil, "", err
+		return kubeSecret, false, "", err
 	}
 
 	hostedCluster := &hypershiftv1alpha1.HostedCluster{}
@@ -28,24 +28,27 @@ func GetHypershiftInfo(ctx context.Context, manifest string, k8sClient client.Cl
 		hostedCluster,
 	)
 
-	status := "Not available"
-	if err == nil {
-		for _, condition := range hostedCluster.Status.Conditions {
-			if condition.Type == "Available" {
-				if condition.Status == "True" {
-					status = "Available"
-				} else {
-					status = "Not available - " + condition.Reason
-				}
-			}
-		}
-	} else {
-		return nil, "", err
+	if err != nil {
+		return kubeSecret, false, "", err
 	}
 
-	return &KubeSecret{
-		Namespace:    hostedC.Namespace,
-		PassSecret:   hostedC.Name + "-kubeadmin-password", //TODO load from status
-		ConfigSecret: hostedC.Name + "-admin-kubeconfig",   //TODO load from status
-	}, status, nil
+	status := "Not available"
+	ready := false
+	for _, condition := range hostedCluster.Status.Conditions {
+		if condition.Type == "Available" {
+			if condition.Status == "True" {
+				status = "Available"
+				ready = true
+			} else {
+				status = "Not available - " + condition.Reason
+			}
+		}
+	}
+
+	if hostedCluster.Status.KubeadminPassword != nil && hostedCluster.Status.KubeConfig != nil {
+		kubeSecret.Kubeadmin = hostedCluster.Status.KubeadminPassword.Name
+		kubeSecret.Kubeconfig = hostedCluster.Status.KubeConfig.Name
+	}
+
+	return kubeSecret, ready, status, nil
 }

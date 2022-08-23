@@ -37,3 +37,33 @@ func GetIndexFile(indexURL string) (*repo.IndexFile, error) {
 	err = yaml.Unmarshal(body, indexFile)
 	return indexFile, err
 }
+
+func GetChartURL(indexURL string, chartName string, chartVersion string) (string, error) {
+	indexFile, err := GetIndexFile(indexURL)
+	if err != nil {
+		return "", err
+	}
+
+	var helmChartURL string
+	entry := indexFile.Entries[chartName]
+	for _, e := range entry {
+		if e.Version == chartVersion {
+			helmChartURL = e.URLs[0]
+			break
+		}
+	}
+
+	if helmChartURL == "" {
+		return "", errors.New("could not find helm chart")
+	}
+
+	if strings.HasSuffix(indexURL, "/index.yaml") {
+		indexURL = strings.TrimSuffix(indexURL, "index.yaml")
+	}
+
+	helmChartURL, err = repo.ResolveReferenceURL(indexURL, helmChartURL)
+	if err != nil {
+		return "", errors.New("error resolving chart url")
+	}
+	return helmChartURL, nil
+}
