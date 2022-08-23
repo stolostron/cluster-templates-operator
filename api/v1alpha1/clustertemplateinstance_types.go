@@ -25,6 +25,7 @@ import (
 const (
 	InstallSucceeded string = "InstallSucceeded"
 	SetupSucceeded   string = "SetupSucceeded"
+	Ready            string = "Ready"
 )
 
 const (
@@ -37,6 +38,10 @@ const (
 	HelmChartInstallErrReason   string = "HelmChartInstallErr"
 	HelmChartRepoErrReason      string = "HelmChartRepoErr"
 	HelmReleaseValuesErrReason  string = "HelmReleaseValuesErr"
+
+	CreationInProgressReason   string = "CreationInProgress"
+	ClusterInstallFailedReason string = "ClusterInstallFailed"
+	ClusterReadyReason         string = "ClusterReady"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -67,8 +72,7 @@ type ClusterTemplateInstanceStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:resource:path=clustertemplateinstances,shortName=cti;ctis,scope=Namespaced
 //+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="Install succeeded",type="string",JSONPath=".status.conditions[?(@.type==\"InstallSucceeded\")].status",description="Cluster installed"
-//+kubebuilder:printcolumn:name="Setup succeeded",type="string",JSONPath=".status.conditions[?(@.type==\"SetupSucceeded\")].status",description="Cluster setup"
+//+kubebuilder:printcolumn:name="Available",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description="Cluster available"
 //+kubebuilder:printcolumn:name="Kubeadmin",type="string",JSONPath=".status.kubeadminPassword",description="Kubeadmin Secret"
 //+kubebuilder:printcolumn:name="Kubeconfig",type="string",JSONPath=".status.kubeconfig",description="Kubeconfig Secret"
 //+kubebuilder:printcolumn:name="API URL",type="string",JSONPath=".status.apiServerURL",description="API URL"

@@ -50,7 +50,7 @@ type ClusterTemplateStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:scope=Cluster
+//+kubebuilder:resource:path=clustertemplates,shortName=ct;cts,scope=Cluster
 
 // ClusterTemplate is the Schema for the clustertemplates API
 type ClusterTemplate struct {

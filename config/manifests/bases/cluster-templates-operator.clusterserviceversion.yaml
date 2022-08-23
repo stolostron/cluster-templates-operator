@@ -20,7 +20,7 @@ spec:
         API
       displayName: Cluster Template Quota
       kind: ClusterTemplateQuota
-      name: clustertemplatequota.clustertemplate.rawagner.com
+      name: clustertemplatequotas.clustertemplate.rawagner.com
       version: v1alpha1
     - description: ClusterTemplate is the Schema for the clustertemplates API
       displayName: Cluster Template

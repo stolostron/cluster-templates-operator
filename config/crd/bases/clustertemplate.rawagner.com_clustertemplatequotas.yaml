@@ -12,6 +12,9 @@ spec:
     kind: ClusterTemplateQuota
     listKind: ClusterTemplateQuotaList
     plural: clustertemplatequotas
+    shortNames:
+    - ctq
+    - ctqs
     singular: clustertemplatequota
   scope: Namespaced
   versions:

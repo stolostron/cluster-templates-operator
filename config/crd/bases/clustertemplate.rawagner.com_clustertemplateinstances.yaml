@@ -19,13 +19,9 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - description: Cluster installed
-      jsonPath: .status.conditions[?(@.type=="InstallSucceeded")].status
-      name: Install succeeded
-      type: string
-    - description: Cluster setup
-      jsonPath: .status.conditions[?(@.type=="SetupSucceeded")].status
-      name: Setup succeeded
+    - description: Cluster available
+      jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: Available
       type: string
     - description: Kubeadmin Secret
       jsonPath: .status.kubeadminPassword

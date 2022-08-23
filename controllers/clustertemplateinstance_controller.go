@@ -110,12 +110,40 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 
 	updErr := r.reconcile(ctx, log, clusterTemplateInstance)
 
+	requeue := true
+	if clusterTemplateInstance.Status.CompletionTime != nil {
+		requeue = false
+		installCondition := meta.FindStatusCondition(clusterTemplateInstance.Status.Conditions, clustertemplatev1alpha1.InstallSucceeded)
+		setupCondition := meta.FindStatusCondition(clusterTemplateInstance.Status.Conditions, clustertemplatev1alpha1.SetupSucceeded)
+
+		if installCondition.Status == metav1.ConditionTrue && setupCondition.Status == metav1.ConditionTrue {
+			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
+				Type:               clustertemplatev1alpha1.Ready,
+				Status:             metav1.ConditionTrue,
+				Reason:             clustertemplatev1alpha1.ClusterReadyReason,
+				Message:            "Cluster is ready",
+				LastTransitionTime: metav1.Now(),
+			})
+		} else {
+			reason := clustertemplatev1alpha1.ClusterInstallFailedReason
+			if setupCondition.Status == metav1.ConditionFalse {
+				reason = clustertemplatev1alpha1.ClusterSetupFailedReason
+			}
+			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
+				Type:               clustertemplatev1alpha1.Ready,
+				Status:             metav1.ConditionFalse,
+				Reason:             reason,
+				Message:            "Failed",
+				LastTransitionTime: metav1.Now(),
+			})
+		}
+	}
+
 	err = r.Status().Update(ctx, clusterTemplateInstance)
 	if err != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to reconcile cluster setup %q", err)
 	}
 
-	requeue := clusterTemplateInstance.Status.CompletionTime == nil
 	return ctrl.Result{Requeue: requeue, RequeueAfter: 60 * time.Second}, updErr
 }
 
@@ -430,6 +458,13 @@ func SetDefaultConditions(clusterInstance *clustertemplatev1alpha1.ClusterTempla
 		Status:             metav1.ConditionFalse,
 		Reason:             clustertemplatev1alpha1.ClusterNotReadyReason,
 		Message:            "Waiting for cluster to be ready",
+		LastTransitionTime: metav1.Now(),
+	})
+	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
+		Type:               clustertemplatev1alpha1.Ready,
+		Status:             metav1.ConditionFalse,
+		Reason:             clustertemplatev1alpha1.CreationInProgressReason,
+		Message:            "Creation in progress",
 		LastTransitionTime: metav1.Now(),
 	})
 }

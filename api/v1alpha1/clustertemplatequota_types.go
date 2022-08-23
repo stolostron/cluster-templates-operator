@@ -46,6 +46,7 @@ type ClusterTemplateQuotaStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:resource:path=clustertemplatequotas,shortName=ctq;ctqs,scope=Namespaced
 
 // ClusterTemplateQuota is the Schema for the clustertemplatequota API
 type ClusterTemplateQuota struct {

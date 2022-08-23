@@ -11,6 +11,9 @@ spec:
     kind: ClusterTemplate
     listKind: ClusterTemplateList
     plural: clustertemplates
+    shortNames:
+    - ct
+    - cts
     singular: clustertemplate
   scope: Cluster
   versions:
