@@ -11,7 +11,7 @@ data:
       port: 9443
     leaderElection:
       leaderElect: true
-      resourceName: 135184d5.rawagner.com
+      resourceName: 135184d5.openshift.io
 kind: ConfigMap
 metadata:
   name: cluster-templates-operator-manager-config

@@ -1,4 +1,4 @@
-apiVersion: clustertemplate.rawagner.com/v1alpha1
+apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateInstance
 metadata:
   name: clustertemplateinstance-sample

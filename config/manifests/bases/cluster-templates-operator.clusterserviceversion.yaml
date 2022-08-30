@@ -14,18 +14,18 @@ spec:
         API
       displayName: Cluster Template Instance
       kind: ClusterTemplateInstance
-      name: clustertemplateinstances.clustertemplate.rawagner.com
+      name: clustertemplateinstances.clustertemplate.openshift.io
       version: v1alpha1
     - description: ClusterTemplateQuota is the Schema for the clustertemplatequota
         API
       displayName: Cluster Template Quota
       kind: ClusterTemplateQuota
-      name: clustertemplatequotas.clustertemplate.rawagner.com
+      name: clustertemplatequotas.clustertemplate.openshift.io
       version: v1alpha1
     - description: ClusterTemplate is the Schema for the clustertemplates API
       displayName: Cluster Template
       kind: ClusterTemplate
-      name: clustertemplates.clustertemplate.rawagner.com
+      name: clustertemplates.clustertemplate.openshift.io
       version: v1alpha1
   description: Cluster templates
   displayName: Cluster Templates

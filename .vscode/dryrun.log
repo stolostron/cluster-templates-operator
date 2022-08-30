@@ -7,7 +7,6 @@ GOBIN=/home/rawagner/Redhat/git/forks/cluster-templates-operator/bin go install 
  
 /home/rawagner/Redhat/git/forks/cluster-templates-operator/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
 go fmt ./...
- 
 go vet ./...
 go build -o bin/manager main.go
 make: Leaving directory '/home/rawagner/Redhat/git/forks/cluster-templates-operator'

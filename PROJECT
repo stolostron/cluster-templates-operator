@@ -1,4 +1,4 @@
-domain: rawagner.com
+domain: openshift.io
 layout:
 - go.kubebuilder.io/v3
 plugins:
@@ -9,7 +9,7 @@ repo: github.com/rawagner/cluster-templates-operator
 resources:
 - api:
     crdVersion: v1
-  domain: rawagner.com
+  domain: openshift.io
   group: clustertemplate
   kind: ClusterTemplate
   path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
@@ -18,7 +18,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: rawagner.com
+  domain: openshift.io
   group: clustertemplate
   kind: ClusterTemplateQuota
   path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
@@ -30,7 +30,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: rawagner.com
+  domain: openshift.io
   group: clustertemplate
   kind: ClusterTemplateInstance
   path: github.com/rawagner/cluster-templates-operator/api/v1alpha1

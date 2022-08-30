@@ -1,6 +1,7 @@
 package helm
 
 import (
+	"crypto/tls"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -11,11 +12,11 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-func GetIndexFile(indexURL string) (*repo.IndexFile, error) {
+func GetIndexFile(tlsConfig *tls.Config, indexURL string) (*repo.IndexFile, error) {
 	indexFile := &repo.IndexFile{}
-
 	tr := &http.Transport{
-		Proxy: http.ProxyFromEnvironment,
+		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig: tlsConfig,
 	}
 	httpClient := &http.Client{Transport: tr}
 
@@ -38,8 +39,8 @@ func GetIndexFile(indexURL string) (*repo.IndexFile, error) {
 	return indexFile, err
 }
 
-func GetChartURL(indexURL string, chartName string, chartVersion string) (string, error) {
-	indexFile, err := GetIndexFile(indexURL)
+func GetChartURL(tlsConfig *tls.Config, indexURL string, chartName string, chartVersion string) (string, error) {
+	indexFile, err := GetIndexFile(tlsConfig, indexURL)
 	if err != nil {
 		return "", err
 	}

@@ -5,7 +5,7 @@ metadata:
     alm-examples: |-
       [
         {
-          "apiVersion": "clustertemplate.rawagner.com/v1alpha1",
+          "apiVersion": "clustertemplate.openshift.io/v1alpha1",
           "kind": "ClusterTemplate",
           "metadata": {
             "name": "clustertemplate-sample"
@@ -13,7 +13,7 @@ metadata:
           "spec": null
         },
         {
-          "apiVersion": "clustertemplate.rawagner.com/v1alpha1",
+          "apiVersion": "clustertemplate.openshift.io/v1alpha1",
           "kind": "ClusterTemplateInstance",
           "metadata": {
             "name": "clustertemplateinstance-sample"
@@ -21,7 +21,7 @@ metadata:
           "spec": null
         },
         {
-          "apiVersion": "clustertemplate.rawagner.com/v1alpha1",
+          "apiVersion": "clustertemplate.openshift.io/v1alpha1",
           "kind": "ClusterTemplateQuota",
           "metadata": {
             "name": "clustertemplatequota-sample"
@@ -42,18 +42,18 @@ spec:
         API
       displayName: Cluster Template Instance
       kind: ClusterTemplateInstance
-      name: clustertemplateinstances.clustertemplate.rawagner.com
+      name: clustertemplateinstances.clustertemplate.openshift.io
       version: v1alpha1
     - description: ClusterTemplateQuota is the Schema for the clustertemplatequota
         API
       displayName: Cluster Template Quota
       kind: ClusterTemplateQuota
-      name: clustertemplatequotas.clustertemplate.rawagner.com
+      name: clustertemplatequotas.clustertemplate.openshift.io
       version: v1alpha1
     - description: ClusterTemplate is the Schema for the clustertemplates API
       displayName: Cluster Template
       kind: ClusterTemplate
-      name: clustertemplates.clustertemplate.rawagner.com
+      name: clustertemplates.clustertemplate.openshift.io
       version: v1alpha1
   description: Cluster templates
   displayName: Cluster Templates
@@ -220,8 +220,8 @@ spec:
     - v1
     containerPort: 443
     conversionCRDs:
-    - clustertemplateinstances.clustertemplate.rawagner.com
-    - clustertemplatequotas.clustertemplate.rawagner.com
+    - clustertemplateinstances.clustertemplate.openshift.io
+    - clustertemplatequotas.clustertemplate.openshift.io
     deploymentName: cluster-templates-operator-controller-manager
     generateName: cclustertemplateinstancesclustertemplatequotas.kb.io
     sideEffects: None
@@ -236,7 +236,7 @@ spec:
     generateName: vclustertemplateinstance.kb.io
     rules:
     - apiGroups:
-      - clustertemplate.rawagner.com
+      - clustertemplate.openshift.io
       apiVersions:
       - v1alpha1
       operations:
@@ -247,7 +247,7 @@ spec:
     sideEffects: None
     targetPort: 9443
     type: ValidatingAdmissionWebhook
-    webhookPath: /validate-clustertemplate-rawagner-com-v1alpha1-clustertemplateinstance
+    webhookPath: /validate-clustertemplate-openshift-io-v1alpha1-clustertemplateinstance
   - admissionReviewVersions:
     - v1
     containerPort: 443
@@ -256,7 +256,7 @@ spec:
     generateName: vclustertemplatequota.kb.io
     rules:
     - apiGroups:
-      - clustertemplate.rawagner.com
+      - clustertemplate.openshift.io
       apiVersions:
       - v1alpha1
       operations:
@@ -267,4 +267,4 @@ spec:
     sideEffects: None
     targetPort: 9443
     type: ValidatingAdmissionWebhook
-    webhookPath: /validate-clustertemplate-rawagner-com-v1alpha1-clustertemplatequota
+    webhookPath: /validate-clustertemplate-openshift-io-v1alpha1-clustertemplatequota

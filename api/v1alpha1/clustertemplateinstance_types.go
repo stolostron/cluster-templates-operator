@@ -61,18 +61,31 @@ type ClusterTemplateInstanceSpec struct {
 	Values json.RawMessage `json:"values"`
 }
 
+type TaskStatus struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
+type PipelineStatus struct {
+	Name        string       `json:"name"`
+	PipelineRef string       `json:"pipelineRef"`
+	Status      string       `json:"status"`
+	Tasks       []TaskStatus `json:"tasks"`
+}
+
 type ClusterTemplateInstanceStatus struct {
 	KubeadminPassword string             `json:"kubeadminPassword,omitempty"`
 	Kubeconfig        string             `json:"kubeconfig,omitempty"`
 	APIserverURL      string             `json:"apiServerURL,omitempty"`
 	Conditions        []metav1.Condition `json:"conditions"`
 	CompletionTime    *metav1.Time       `json:"completionTime,omitempty"`
+	ClusterSetup      []PipelineStatus   `json:"clusterSetup,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:resource:path=clustertemplateinstances,shortName=cti;ctis,scope=Namespaced
 //+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="Available",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description="Cluster available"
+//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description="Cluster is ready"
 //+kubebuilder:printcolumn:name="Kubeadmin",type="string",JSONPath=".status.kubeadminPassword",description="Kubeadmin Secret"
 //+kubebuilder:printcolumn:name="Kubeconfig",type="string",JSONPath=".status.kubeconfig",description="Kubeconfig Secret"
 //+kubebuilder:printcolumn:name="API URL",type="string",JSONPath=".status.apiServerURL",description="API URL"

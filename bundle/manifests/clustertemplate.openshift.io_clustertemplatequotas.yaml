@@ -4,7 +4,7 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
-  name: clustertemplatequotas.clustertemplate.rawagner.com
+  name: clustertemplatequotas.clustertemplate.openshift.io
 spec:
   conversion:
     strategy: Webhook
@@ -16,7 +16,7 @@ spec:
           path: /convert
       conversionReviewVersions:
       - v1
-  group: clustertemplate.rawagner.com
+  group: clustertemplate.openshift.io
   names:
     kind: ClusterTemplateQuota
     listKind: ClusterTemplateQuotaList

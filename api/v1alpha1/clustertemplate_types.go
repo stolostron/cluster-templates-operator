@@ -26,6 +26,12 @@ type ClusterSetup struct {
 	PipelineRef pipeline.PipelineRef `json:"pipelineRef"`
 }
 
+type HelmChartRef struct {
+	Name       string `json:"name"`
+	Version    string `json:"version"`
+	Repository string `json:"repository"`
+}
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -35,11 +41,9 @@ type ClusterTemplateSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of ClusterTemplate. Edit clustertemplate_types.go to remove/update
-	HelmChart        string         `json:"helmChart"`
-	HelmChartVersion string         `json:"helmChartVersion"`
-	HelmRepository   string         `json:"helmRepository"`
-	ClusterSetup     []ClusterSetup `json:"clusterSetup"`
-	Cost             int            `json:"cost"`
+	HelmChartRef HelmChartRef   `json:"helmChartRef"`
+	ClusterSetup []ClusterSetup `json:"clusterSetup"`
+	Cost         int            `json:"cost"`
 }
 
 // ClusterTemplateStatus defines the observed state of ClusterTemplate

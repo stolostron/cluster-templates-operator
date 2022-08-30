@@ -4,4 +4,4 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     cert-manager.io/inject-ca-from: $(CERTIFICATE_NAMESPACE)/$(CERTIFICATE_NAME)
-  name: clustertemplates.clustertemplate.rawagner.com
+  name: clustertemplates.clustertemplate.openshift.io

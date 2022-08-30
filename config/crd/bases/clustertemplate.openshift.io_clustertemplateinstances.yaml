@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
-  name: clustertemplateinstances.clustertemplate.rawagner.com
+  name: clustertemplateinstances.clustertemplate.openshift.io
 spec:
-  group: clustertemplate.rawagner.com
+  group: clustertemplate.openshift.io
   names:
     kind: ClusterTemplateInstance
     listKind: ClusterTemplateInstanceList
@@ -19,9 +19,9 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - description: Cluster available
+    - description: Cluster is ready
       jsonPath: .status.conditions[?(@.type=="Ready")].status
-      name: Available
+      name: Ready
       type: string
     - description: Kubeadmin Secret
       jsonPath: .status.kubeadminPassword
@@ -72,6 +72,34 @@ spec:
             properties:
               apiServerURL:
                 type: string
+              clusterSetup:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    pipelineRef:
+                      type: string
+                    status:
+                      type: string
+                    tasks:
+                      items:
+                        properties:
+                          name:
+                            type: string
+                          status:
+                            type: string
+                        required:
+                        - name
+                        - status
+                        type: object
+                      type: array
+                  required:
+                  - name
+                  - pipelineRef
+                  - status
+                  - tasks
+                  type: object
+                type: array
               completionTime:
                 format: date-time
                 type: string

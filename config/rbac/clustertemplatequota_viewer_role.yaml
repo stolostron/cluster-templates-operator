@@ -5,7 +5,7 @@ metadata:
   name: clustertemplatequota-viewer-role
 rules:
 - apiGroups:
-  - clustertemplate.rawagner.com
+  - clustertemplate.openshift.io
   resources:
   - clustertemplatequotas
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - clustertemplate.rawagner.com
+  - clustertemplate.openshift.io
   resources:
   - clustertemplatequotas/status
   verbs:

@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	ClusterSetupLabel    = "clustertemplate.rawagner.com/setup-name"
-	ClusterSetupInstance = "clustertemplate.rawagner.com/cluster-instance"
+	ClusterSetupLabel    = "clustertemplate.openshift.io/setup-name"
+	ClusterSetupInstance = "clustertemplate.openshift.io/cluster-instance"
 )
 
 func CreateSetupPipelines(

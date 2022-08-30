@@ -16,7 +16,7 @@ limitations under the License.
 
 // Package v1alpha1 contains API Schema definitions for the clustertemplate v1alpha1 API group
 //+kubebuilder:object:generate=true
-//+groupName=clustertemplate.rawagner.com
+//+groupName=clustertemplate.openshift.io
 package v1alpha1
 
 import (
@@ -26,7 +26,7 @@ import (
 
 var (
 	// GroupVersion is group version used to register these objects
-	GroupVersion = schema.GroupVersion{Group: "clustertemplate.rawagner.com", Version: "v1alpha1"}
+	GroupVersion = schema.GroupVersion{Group: "clustertemplate.openshift.io", Version: "v1alpha1"}
 
 	APIVersion = GroupVersion.Group + "/" + GroupVersion.Version
 
