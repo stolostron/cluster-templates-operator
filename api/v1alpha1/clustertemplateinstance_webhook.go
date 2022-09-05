@@ -18,7 +18,10 @@ package v1alpha1
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"reflect"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,6 +52,74 @@ var _ webhook.Validator = &ClusterTemplateInstance{}
 func (r *ClusterTemplateInstance) ValidateCreate() error {
 	clustertemplateinstancelog.Info("validate create", "name", r.Name)
 
+	if err := r.checkQuota(); err != nil {
+		return err
+	}
+	if err := r.checkProps(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *ClusterTemplateInstance) checkProps() error {
+	template := ClusterTemplate{}
+	err := instanceControllerClient.Get(context.TODO(), client.ObjectKey{Name: r.Spec.Template}, &template)
+	if err != nil {
+		return errors.New("could not find template")
+	}
+
+	values := make(map[string]interface{})
+	if err := json.Unmarshal(r.Spec.Values, &values); err != nil {
+		return errors.New("could not unmarshal values")
+	}
+
+	for key, element := range values {
+		index := -1
+		for idx := range template.Spec.Properties {
+			if template.Spec.Properties[idx].Name == key {
+				index = idx
+				break
+			}
+		}
+
+		if index == -1 {
+			return fmt.Errorf("Property %v not found", key)
+		}
+
+		if !template.Spec.Properties[index].Overwritable {
+			return fmt.Errorf("Property %v is not overwriable", key)
+		}
+
+		kind := reflect.TypeOf(element).Kind()
+
+		switch template.Spec.Properties[index].Type {
+		case "int64":
+			if kind != reflect.Int64 {
+				return fmt.Errorf("Incorrect property type '%s' for %v but should be %v", kind, key, template.Spec.Properties[index].Type)
+			}
+		case "float64":
+			if kind != reflect.Float64 {
+				return fmt.Errorf("Incorrect property type '%s' for %v but should be %v", kind, key, template.Spec.Properties[index].Type)
+			}
+		case "bool":
+			if kind != reflect.Bool {
+				return fmt.Errorf("Incorrect property type '%s' for %v but should be %v", kind, key, template.Spec.Properties[index].Type)
+			}
+		case "string":
+			if kind != reflect.String {
+				return fmt.Errorf("Incorrect property type '%s' for %v but should be %v", kind, key, template.Spec.Properties[index].Type)
+			}
+		default:
+			return fmt.Errorf("Unknown property type '%s' for %v", kind, key)
+		}
+
+	}
+	return nil
+
+}
+
+func (r *ClusterTemplateInstance) checkQuota() error {
 	quotas := ClusterTemplateQuotaList{}
 	opts := []client.ListOption{
 		client.InNamespace(r.Namespace),
@@ -103,7 +174,6 @@ func (r *ClusterTemplateInstance) ValidateCreate() error {
 	if !templateAllowed {
 		return errors.New("template not allowed")
 	}
-
 	return nil
 }
 

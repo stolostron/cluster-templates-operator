@@ -17,19 +17,44 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"encoding/json"
+
 	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type PipelineRef struct {
+	pipeline.PipelineRef `json:",omitempty"`
+	Namespace            string `json:"namespace,omitempty"`
+}
+
 type ClusterSetup struct {
-	Name        string               `json:"name"`
-	PipelineRef pipeline.PipelineRef `json:"pipelineRef"`
+	Name        string      `json:"name"`
+	PipelineRef PipelineRef `json:"pipelineRef"`
 }
 
 type HelmChartRef struct {
 	Name       string `json:"name"`
 	Version    string `json:"version"`
 	Repository string `json:"repository"`
+}
+
+type ResourceRef struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+}
+
+// TODO add admission webhook
+type Property struct {
+	Name         string `json:"name"`
+	Description  string `json:"description"`
+	Type         string `json:"type"` //string, bool, int, float
+	Overwritable bool   `json:"overwritable"`
+	// +kubebuilder:validation:Schemaless
+	// +kubebuilder:pruning:PreserveUnknownFields
+	// +kubebuilder:validation:Type=object
+	DefaultValue *json.RawMessage `json:"defaultValue,omitempty"`
+	SecretRef    *ResourceRef     `json:"secretRef,omitempty"`
 }
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -44,6 +69,7 @@ type ClusterTemplateSpec struct {
 	HelmChartRef HelmChartRef   `json:"helmChartRef"`
 	ClusterSetup []ClusterSetup `json:"clusterSetup"`
 	Cost         int            `json:"cost"`
+	Properties   []Property     `json:"properties"`
 }
 
 // ClusterTemplateStatus defines the observed state of ClusterTemplate

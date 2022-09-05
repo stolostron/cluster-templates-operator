@@ -66,36 +66,64 @@ const clusterTemplateInstanceFinalizer = "clustertemplateinstance.openshift.io/f
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
-func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *ClusterTemplateInstanceReconciler) Reconcile(
+	ctx context.Context,
+	req ctrl.Request,
+) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 	clusterTemplateInstance := &clustertemplatev1alpha1.ClusterTemplateInstance{}
 	err := r.Get(ctx, req.NamespacedName, clusterTemplateInstance)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("clustertemplateinstance not found, aborting reconcile", "name", req.NamespacedName)
+			log.Info(
+				"clustertemplateinstance not found, aborting reconcile",
+				"name",
+				req.NamespacedName,
+			)
 			return ctrl.Result{}, nil
 		}
-		return ctrl.Result{}, fmt.Errorf("failed to get clustertemplateinstance %q: %w", req.NamespacedName, err)
+		return ctrl.Result{}, fmt.Errorf(
+			"failed to get clustertemplateinstance %q: %w",
+			req.NamespacedName,
+			err,
+		)
 	}
 
 	if clusterTemplateInstance.GetDeletionTimestamp() != nil {
-		if controllerutil.ContainsFinalizer(clusterTemplateInstance, clusterTemplateInstanceFinalizer) {
+		if controllerutil.ContainsFinalizer(
+			clusterTemplateInstance,
+			clusterTemplateInstanceFinalizer,
+		) {
 			_, err = r.HelmClient.UninstallRelease(clusterTemplateInstance.Name)
 			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to uninstall clustertemplateinstance %q: %w", req.NamespacedName, err)
+				return ctrl.Result{}, fmt.Errorf(
+					"failed to uninstall clustertemplateinstance %q: %w",
+					req.NamespacedName,
+					err,
+				)
 			}
 
-			controllerutil.RemoveFinalizer(clusterTemplateInstance, clusterTemplateInstanceFinalizer)
+			controllerutil.RemoveFinalizer(
+				clusterTemplateInstance,
+				clusterTemplateInstanceFinalizer,
+			)
 			err := r.Update(ctx, clusterTemplateInstance)
 			if err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to remove finalizer clustertemplateinstance %q: %w", req.NamespacedName, err)
+				return ctrl.Result{}, fmt.Errorf(
+					"failed to remove finalizer clustertemplateinstance %q: %w",
+					req.NamespacedName,
+					err,
+				)
 			}
 		}
 		log.Info("Deleted clustertemplateinstance", "name", req.NamespacedName)
 		return ctrl.Result{}, nil
 	}
 
-	if !controllerutil.ContainsFinalizer(clusterTemplateInstance, clusterTemplateInstanceFinalizer) {
+	if !controllerutil.ContainsFinalizer(
+		clusterTemplateInstance,
+		clusterTemplateInstanceFinalizer,
+	) {
 		controllerutil.AddFinalizer(clusterTemplateInstance, clusterTemplateInstanceFinalizer)
 		err = r.Update(ctx, clusterTemplateInstance)
 		if err != nil {
@@ -112,10 +140,17 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(ctx context.Context, req c
 	requeue := true
 	if clusterTemplateInstance.Status.CompletionTime != nil {
 		requeue = false
-		installCondition := meta.FindStatusCondition(clusterTemplateInstance.Status.Conditions, clustertemplatev1alpha1.InstallSucceeded)
-		setupCondition := meta.FindStatusCondition(clusterTemplateInstance.Status.Conditions, clustertemplatev1alpha1.SetupSucceeded)
+		installCondition := meta.FindStatusCondition(
+			clusterTemplateInstance.Status.Conditions,
+			clustertemplatev1alpha1.InstallSucceeded,
+		)
+		setupCondition := meta.FindStatusCondition(
+			clusterTemplateInstance.Status.Conditions,
+			clustertemplatev1alpha1.SetupSucceeded,
+		)
 
-		if installCondition.Status == metav1.ConditionTrue && setupCondition.Status == metav1.ConditionTrue {
+		if installCondition.Status == metav1.ConditionTrue &&
+			setupCondition.Status == metav1.ConditionTrue {
 			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
 				Type:               clustertemplatev1alpha1.Ready,
 				Status:             metav1.ConditionTrue,
@@ -160,7 +195,11 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 		return fmt.Errorf("failed to create cluster %q", err)
 	}
 
-	kubeconfigSecretName, kubepassName, err := r.reconcileClusterStatus(ctx, log, clusterTemplateInstance)
+	kubeconfigSecretName, kubepassName, err := r.reconcileClusterStatus(
+		ctx,
+		log,
+		clusterTemplateInstance,
+	)
 	if err != nil {
 		return fmt.Errorf("failed to reconcile cluster status %q", err)
 	}
@@ -183,10 +222,18 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	clusterTemplate clustertemplatev1alpha1.ClusterTemplate,
 ) error {
 
-	condition := meta.FindStatusCondition(clusterTemplateInstance.Status.Conditions, clustertemplatev1alpha1.InstallSucceeded)
+	condition := meta.FindStatusCondition(
+		clusterTemplateInstance.Status.Conditions,
+		clustertemplatev1alpha1.InstallSucceeded,
+	)
 
-	if condition.Status == metav1.ConditionFalse && condition.Reason != clustertemplatev1alpha1.HelmReleaseInstallingReason {
-		log.Info("Create cluster from clustertemplateinstance", "name", clusterTemplateInstance.Name)
+	if condition.Status == metav1.ConditionFalse &&
+		condition.Reason != clustertemplatev1alpha1.HelmReleaseInstallingReason {
+		log.Info(
+			"Create cluster from clustertemplateinstance",
+			"name",
+			clusterTemplateInstance.Name,
+		)
 
 		helmRepositories := &openshiftAPI.HelmChartRepositoryList{}
 		err := r.Client.List(ctx, helmRepositories, &client.ListOptions{})
@@ -229,6 +276,8 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 		)
 
 		if err != nil {
+			fmt.Println("++++ERRR+++")
+			fmt.Println(err)
 			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
 				Type:               clustertemplatev1alpha1.InstallSucceeded,
 				Status:             metav1.ConditionFalse,
@@ -263,7 +312,11 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 
 	stringObjects := strings.Split(release.Manifest, "---\n")
 
-	log.Info("Find kubeconfig/kubeadmin secrets for clustertemplateinstance", "name", clusterTemplateInstance.Name)
+	log.Info(
+		"Find kubeconfig/kubeadmin secrets for clustertemplateinstance",
+		"name",
+		clusterTemplateInstance.Name,
+	)
 	for _, obj := range stringObjects {
 		var yamlObj map[string]interface{}
 		err = yaml.Unmarshal([]byte(obj), &yamlObj)
@@ -278,13 +331,16 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 			}
 
 			if ready && kubeSecret.Kubeconfig != "" && kubeSecret.Kubeadmin != "" {
-				meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
-					Type:               clustertemplatev1alpha1.InstallSucceeded,
-					Status:             metav1.ConditionTrue,
-					Reason:             clustertemplatev1alpha1.InstalledReason,
-					Message:            status,
-					LastTransitionTime: metav1.Now(),
-				})
+				meta.SetStatusCondition(
+					&clusterTemplateInstance.Status.Conditions,
+					metav1.Condition{
+						Type:               clustertemplatev1alpha1.InstallSucceeded,
+						Status:             metav1.ConditionTrue,
+						Reason:             clustertemplatev1alpha1.InstalledReason,
+						Message:            status,
+						LastTransitionTime: metav1.Now(),
+					},
+				)
 			} else {
 				meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
 					Type:               clustertemplatev1alpha1.InstallSucceeded,
@@ -308,17 +364,27 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCredentials(
 	kubeconfigSecretName string,
 	kubeadminSecretName string,
 ) error {
-	condition := meta.FindStatusCondition(clusterTemplateInstance.Status.Conditions, clustertemplatev1alpha1.InstallSucceeded)
-	setupCondition := meta.FindStatusCondition(clusterTemplateInstance.Status.Conditions, clustertemplatev1alpha1.SetupSucceeded)
+	condition := meta.FindStatusCondition(
+		clusterTemplateInstance.Status.Conditions,
+		clustertemplatev1alpha1.InstallSucceeded,
+	)
+	setupCondition := meta.FindStatusCondition(
+		clusterTemplateInstance.Status.Conditions,
+		clustertemplatev1alpha1.SetupSucceeded,
+	)
 
-	if condition.Status == metav1.ConditionTrue && condition.Reason == clustertemplatev1alpha1.InstalledReason &&
+	if condition.Status == metav1.ConditionTrue &&
+		condition.Reason == clustertemplatev1alpha1.InstalledReason &&
 		setupCondition.Status == metav1.ConditionTrue {
 
 		kubeconfigSecret := corev1.Secret{}
 
 		err := r.Client.Get(
 			ctx,
-			client.ObjectKey{Name: kubeconfigSecretName, Namespace: clusterTemplateInstance.Namespace},
+			client.ObjectKey{
+				Name:      kubeconfigSecretName,
+				Namespace: clusterTemplateInstance.Namespace,
+			},
 			&kubeconfigSecret,
 		)
 		if err != nil {
@@ -342,24 +408,44 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 	clusterTemplate clustertemplatev1alpha1.ClusterTemplate,
 	kubeconfigSecret string,
 ) error {
-	condition := meta.FindStatusCondition(clusterTemplateInstance.Status.Conditions, clustertemplatev1alpha1.InstallSucceeded)
-	setupCondition := meta.FindStatusCondition(clusterTemplateInstance.Status.Conditions, clustertemplatev1alpha1.SetupSucceeded)
+	condition := meta.FindStatusCondition(
+		clusterTemplateInstance.Status.Conditions,
+		clustertemplatev1alpha1.InstallSucceeded,
+	)
+	setupCondition := meta.FindStatusCondition(
+		clusterTemplateInstance.Status.Conditions,
+		clustertemplatev1alpha1.SetupSucceeded,
+	)
 
 	if condition.Status == metav1.ConditionTrue &&
 		setupCondition.Status != metav1.ConditionTrue &&
 		kubeconfigSecret != "" {
 
 		if setupCondition.Reason == clustertemplatev1alpha1.ClusterNotReadyReason {
-			log.Info("Create cluster setup tekton pipelines for clustertemplateinstance", "name", clusterTemplateInstance.Name)
-			err := clustersetup.CreateSetupPipelines(ctx, log, r.Client, clusterTemplate, clusterTemplateInstance, kubeconfigSecret)
+			log.Info(
+				"Create cluster setup tekton pipelines for clustertemplateinstance",
+				"name",
+				clusterTemplateInstance.Name,
+			)
+			err := clustersetup.CreateSetupPipelines(
+				ctx,
+				log,
+				r.Client,
+				clusterTemplate,
+				clusterTemplateInstance,
+				kubeconfigSecret,
+			)
 			if err != nil {
-				meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
-					Type:               clustertemplatev1alpha1.SetupSucceeded,
-					Status:             metav1.ConditionFalse,
-					Reason:             clustertemplatev1alpha1.ClusterSetupFailedReason,
-					Message:            "Failed to create tekton pipeline",
-					LastTransitionTime: metav1.Now(),
-				})
+				meta.SetStatusCondition(
+					&clusterTemplateInstance.Status.Conditions,
+					metav1.Condition{
+						Type:               clustertemplatev1alpha1.SetupSucceeded,
+						Status:             metav1.ConditionFalse,
+						Reason:             clustertemplatev1alpha1.ClusterSetupFailedReason,
+						Message:            "Failed to create tekton pipeline",
+						LastTransitionTime: metav1.Now(),
+					},
+				)
 				return err
 			}
 			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
@@ -371,13 +457,28 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 			})
 		}
 
-		log.Info("reconcile setup jobs for clustertemplateinstance", "name", clusterTemplateInstance.Name)
+		log.Info(
+			"reconcile setup jobs for clustertemplateinstance",
+			"name",
+			clusterTemplateInstance.Name,
+		)
 		pipelineRuns := &pipeline.PipelineRunList{}
 
-		pipelineLabelReq, _ := labels.NewRequirement(clustersetup.ClusterSetupInstance, selection.Equals, []string{clusterTemplateInstance.Name})
+		pipelineLabelReq, _ := labels.NewRequirement(
+			clustersetup.ClusterSetupInstance,
+			selection.Equals,
+			[]string{clusterTemplateInstance.Name},
+		)
 		selector := labels.NewSelector().Add(*pipelineLabelReq)
 
-		err := r.Client.List(ctx, pipelineRuns, &client.ListOptions{LabelSelector: selector, Namespace: clusterTemplateInstance.Namespace})
+		err := r.Client.List(
+			ctx,
+			pipelineRuns,
+			&client.ListOptions{
+				LabelSelector: selector,
+				Namespace:     clusterTemplateInstance.Namespace,
+			},
+		)
 		if err != nil {
 			return err
 		}
@@ -390,7 +491,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 
 		for _, pipelineRun := range pipelineRuns.Items {
 			clusterSetupStatus := clustertemplatev1alpha1.PipelineStatus{
-				Name:        pipelineRun.Labels[clustersetup.ClusterSetupLabel],
+				Description: pipelineRun.Labels[clustersetup.ClusterSetupLabel],
 				PipelineRef: pipelineRun.Name,
 				Status:      "Running",
 			}

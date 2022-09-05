@@ -28,7 +28,14 @@ func GetIndexFile(tlsConfig *tls.Config, indexURL string) (*repo.IndexFile, erro
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		return nil, errors.New(fmt.Sprintf("Response for %v returned %v with status code %v", indexURL, resp, resp.StatusCode))
+		return nil, errors.New(
+			fmt.Sprintf(
+				"Response for %v returned %v with status code %v",
+				indexURL,
+				resp,
+				resp.StatusCode,
+			),
+		)
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
@@ -39,7 +46,12 @@ func GetIndexFile(tlsConfig *tls.Config, indexURL string) (*repo.IndexFile, erro
 	return indexFile, err
 }
 
-func GetChartURL(tlsConfig *tls.Config, indexURL string, chartName string, chartVersion string) (string, error) {
+func GetChartURL(
+	tlsConfig *tls.Config,
+	indexURL string,
+	chartName string,
+	chartVersion string,
+) (string, error) {
 	indexFile, err := GetIndexFile(tlsConfig, indexURL)
 	if err != nil {
 		return "", err

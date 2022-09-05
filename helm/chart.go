@@ -15,6 +15,7 @@ import (
 	"helm.sh/helm/v3/pkg/release"
 
 	clustertemplatev1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	openshiftAPI "github.com/openshift/api/helm/v1beta1"
@@ -68,7 +69,14 @@ func (h *HelmClient) InstallChart(
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return errors.New(fmt.Sprintf("Response for %v returned %v with status code %v", chartURL, resp, resp.StatusCode))
+		return errors.New(
+			fmt.Sprintf(
+				"Response for %v returned %v with status code %v",
+				chartURL,
+				resp,
+				resp.StatusCode,
+			),
+		)
 	}
 	defer resp.Body.Close()
 
@@ -102,11 +110,7 @@ func (h *HelmClient) InstallChart(
 	ch.Metadata.Annotations["chart_url"] = chartURL
 
 	cmd := action.NewInstall(h.actionConfig)
-	releaseName, _, err := cmd.NameAndChart([]string{clusterTemplateInstance.Name, chartURL})
-	if err != nil {
-		return err
-	}
-	cmd.ReleaseName = releaseName
+	cmd.ReleaseName = clusterTemplateInstance.Name
 	cmd.Namespace = clusterTemplateInstance.Namespace
 
 	values := make(map[string]interface{})
@@ -116,7 +120,40 @@ func (h *HelmClient) InstallChart(
 		return err
 	}
 
-	_, err = cmd.Run(ch, values)
+	templateValues := make(map[string]interface{})
+	for _, element := range clusterTemplate.Spec.Properties {
+		if element.DefaultValue != nil {
+			value := new(interface{})
+			err = json.Unmarshal(*element.DefaultValue, &value)
+			if err != nil {
+				return err
+			}
+			templateValues[element.Name] = &value
+		} else if element.SecretRef != nil {
+			valueSecret := corev1.Secret{}
+
+			err := k8sClient.Get(
+				ctx,
+				client.ObjectKey{
+					Name:      element.SecretRef.Name,
+					Namespace: element.SecretRef.Namespace,
+				},
+				&valueSecret,
+			)
+			if err != nil {
+				return err
+			}
+			templateValues[element.Name] = string(valueSecret.Data[element.Name])
+
+		} else {
+			if val, ok := values[element.Name]; ok {
+				templateValues[element.Name] = val
+			}
+		}
+
+	}
+
+	_, err = cmd.Run(ch, templateValues)
 	if err != nil {
 		return err
 	}
@@ -128,7 +165,9 @@ func (h *HelmClient) GetRelease(releaseName string) (*release.Release, error) {
 	return cmd.Run(releaseName)
 }
 
-func (h *HelmClient) UninstallRelease(releaseName string) (*release.UninstallReleaseResponse, error) {
+func (h *HelmClient) UninstallRelease(
+	releaseName string,
+) (*release.UninstallReleaseResponse, error) {
 	cmd := action.NewUninstall(h.actionConfig)
 	return cmd.Run(releaseName)
 }

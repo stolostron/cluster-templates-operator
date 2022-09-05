@@ -67,8 +67,8 @@ type TaskStatus struct {
 }
 
 type PipelineStatus struct {
-	Name        string       `json:"name"`
 	PipelineRef string       `json:"pipelineRef"`
+	Description string       `json:"description"`
 	Status      string       `json:"status"`
 	Tasks       []TaskStatus `json:"tasks"`
 }

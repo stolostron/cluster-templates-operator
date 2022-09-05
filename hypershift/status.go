@@ -13,7 +13,11 @@ type KubeSecret struct {
 	Kubeconfig string
 }
 
-func GetHypershiftInfo(ctx context.Context, manifest string, k8sClient client.Client) (KubeSecret, bool, string, error) {
+func GetHypershiftInfo(
+	ctx context.Context,
+	manifest string,
+	k8sClient client.Client,
+) (KubeSecret, bool, string, error) {
 	var hostedC hypershiftv1alpha1.HostedCluster
 	kubeSecret := KubeSecret{}
 	err := k8sYaml.Unmarshal([]byte(manifest), &hostedC)

@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"os"
 
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -17,13 +16,14 @@ const (
 	configNamespace  = "openshift-config"
 	tlsSecretCertKey = "tls.crt"
 	tlsSecretKey     = "tls.key"
-	tlsSecretPattern = "tlscrt-*"
-	tlsKeyPattern    = "tlskey-*"
 	caBundleKey      = "ca-bundle.crt"
-	cacertPattern    = "cacert-*"
 )
 
-func getTlsCert(ctx context.Context, secretName string, k8sClient client.Client) ([]byte, []byte, error) {
+func getTlsCert(
+	ctx context.Context,
+	secretName string,
+	k8sClient client.Client,
+) ([]byte, []byte, error) {
 	//set up tls cert and key
 	secret := corev1.Secret{}
 	err := k8sClient.Get(ctx,
@@ -34,28 +34,26 @@ func getTlsCert(ctx context.Context, secretName string, k8sClient client.Client)
 		&secret)
 
 	if err != nil {
-		return nil, nil, fmt.Errorf("Failed to GET secret %q from %v reason %v", secretName, configNamespace, err)
+		return nil, nil, fmt.Errorf(
+			"Failed to GET secret %q from %v reason %v",
+			secretName,
+			configNamespace,
+			err,
+		)
 	}
 	tlsCertBytes, found := secret.Data[tlsSecretCertKey]
 	if !found {
-		return nil, nil, fmt.Errorf("Failed to find %q key in secret %q", tlsSecretCertKey, secretName)
+		return nil, nil, fmt.Errorf(
+			"Failed to find %q key in secret %q",
+			tlsSecretCertKey,
+			secretName,
+		)
 	}
-	/*
-		tlsCertFile, err := writeTempFile((tlsCertBytes), tlsSecretPattern)
-		if err != nil {
-			return nil, nil, err
-		}
-	*/
+
 	tlsKeyBytes, found := secret.Data[tlsSecretKey]
 	if !found {
 		return nil, nil, fmt.Errorf("Failed to find %q key in secret %q", tlsSecretKey, secretName)
 	}
-	/*
-		tlsKeyFile, err := writeTempFile(tlsKeyBytes, tlsKeyPattern)
-		if err != nil {
-			return nil, nil, err
-		}
-	*/
 
 	if err != nil {
 		return nil, nil, err
@@ -91,7 +89,11 @@ func GetTLSClientConfig(
 		return nil, nil
 	}
 
-	tlsCertBytes, tlsKeyBytes, err := getTlsCert(ctx, connectionCofig.TLSClientConfig.Name, k8sClient)
+	tlsCertBytes, tlsKeyBytes, err := getTlsCert(
+		ctx,
+		connectionCofig.TLSClientConfig.Name,
+		k8sClient,
+	)
 
 	if err != nil {
 		return nil, err
@@ -117,25 +119,4 @@ func GetTLSClientConfig(
 	}
 
 	return &tlsConfig, nil
-}
-
-// writeTempFile creates a temporary file with the given `data`. `pattern`
-// is used by `os.CreateTemp` to create a file in the filesystem.
-func writeTempFile(data []byte, pattern string) (*os.File, error) {
-	f, createErr := os.CreateTemp("", pattern)
-	if createErr != nil {
-		return nil, createErr
-	}
-
-	_, writeErr := f.Write(data)
-	if writeErr != nil {
-		return nil, writeErr
-	}
-
-	closeErr := f.Close()
-	if closeErr != nil {
-		return nil, closeErr
-	}
-
-	return f, nil
 }
