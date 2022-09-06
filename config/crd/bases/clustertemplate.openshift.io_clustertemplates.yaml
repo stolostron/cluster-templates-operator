@@ -43,7 +43,19 @@ spec:
                   properties:
                     name:
                       type: string
+                    pipeline:
+                      properties:
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      type: object
                     pipelineRef:
+                      description: PipelineRef can be used to refer to a specific
+                        instance of a Pipeline.
                       properties:
                         apiVersion:
                           description: API version of the referent
@@ -53,8 +65,6 @@ spec:
                           type: string
                         name:
                           description: 'Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names'
-                          type: string
-                        namespace:
                           type: string
                         resolver:
                           description: Resolver is the name of the resolver that should
@@ -87,7 +97,6 @@ spec:
                       type: object
                   required:
                   - name
-                  - pipelineRef
                   type: object
                 type: array
               cost:
@@ -112,7 +121,6 @@ spec:
                   description: TODO add admission webhook
                   properties:
                     defaultValue:
-                      type: object
                       x-kubernetes-preserve-unknown-fields: true
                     description:
                       type: string

@@ -276,8 +276,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 		)
 
 		if err != nil {
-			fmt.Println("++++ERRR+++")
-			fmt.Println(err)
 			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
 				Type:               clustertemplatev1alpha1.InstallSucceeded,
 				Status:             metav1.ConditionFalse,
@@ -408,7 +406,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 	clusterTemplate clustertemplatev1alpha1.ClusterTemplate,
 	kubeconfigSecret string,
 ) error {
-	condition := meta.FindStatusCondition(
+	installCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
 		clustertemplatev1alpha1.InstallSucceeded,
 	)
@@ -417,7 +415,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 		clustertemplatev1alpha1.SetupSucceeded,
 	)
 
-	if condition.Status == metav1.ConditionTrue &&
+	if installCondition.Status == metav1.ConditionTrue &&
 		setupCondition.Status != metav1.ConditionTrue &&
 		kubeconfigSecret != "" {
 
@@ -481,6 +479,17 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 		)
 		if err != nil {
 			return err
+		}
+
+		if len(pipelineRuns.Items) != len(clusterTemplate.Spec.ClusterSetup) {
+			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
+				Type:               clustertemplatev1alpha1.SetupSucceeded,
+				Status:             metav1.ConditionFalse,
+				Reason:             "MissingPipelineRun",
+				Message:            "Some pipeline runs were not found",
+				LastTransitionTime: metav1.Now(),
+			})
+			return nil
 		}
 
 		total := len(pipelineRuns.Items)
@@ -556,15 +565,13 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 			status := metav1.ConditionFalse
 			reason := "ClusterSetupRunning"
 			message := "Cluster setup is running"
-			if running == 0 {
-				status = metav1.ConditionTrue
-			}
 			if failed > 0 {
 				reason = "ClusterSetupFailed"
 				message = "Cluster setup failed"
 			} else if succeeded == total {
 				reason = "ClusterSetupSucceeded"
 				message = "Cluster setup succeeded"
+				status = metav1.ConditionTrue
 			}
 			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
 				Type:               clustertemplatev1alpha1.SetupSucceeded,

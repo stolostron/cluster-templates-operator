@@ -84,7 +84,7 @@ spec:
               clusterSetup:
                 items:
                   properties:
-                    name:
+                    description:
                       type: string
                     pipelineRef:
                       type: string
@@ -103,7 +103,7 @@ spec:
                         type: object
                       type: array
                   required:
-                  - name
+                  - description
                   - pipelineRef
                   - status
                   - tasks

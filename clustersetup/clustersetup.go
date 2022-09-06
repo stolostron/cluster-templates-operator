@@ -29,7 +29,7 @@ func CreateSetupPipelines(
 
 	usesNsReference := false
 	for _, clusterSetup := range clusterTemplate.Spec.ClusterSetup {
-		if clusterSetup.PipelineRef.Namespace != "" {
+		if clusterSetup.Pipeline.Name != "" {
 			usesNsReference = true
 			break
 		}
@@ -74,11 +74,11 @@ func CreateSetupPipelines(
 			},
 		}
 
-		if clusterSetup.PipelineRef.Namespace != "" {
+		if clusterSetup.Pipeline.Namespace != "" {
 			var pipeline pipelinev1beta1.Pipeline
 			for _, p := range pipelines.Items {
-				if p.Name == clusterSetup.PipelineRef.Name &&
-					p.Namespace == clusterSetup.PipelineRef.Namespace {
+				if p.Name == clusterSetup.Pipeline.Name &&
+					p.Namespace == clusterSetup.Pipeline.Namespace {
 					pipeline = p
 					break
 				}
@@ -86,7 +86,7 @@ func CreateSetupPipelines(
 
 			pipelineRun.Spec.PipelineSpec = &pipeline.Spec
 		} else {
-			pipelineRun.Spec.PipelineRef = &clusterSetup.PipelineRef.PipelineRef
+			pipelineRun.Spec.PipelineRef = &clusterSetup.PipelineRef
 		}
 		log.Info("Submit PipelineRun ", "name", clusterSetup.Name)
 		err := k8sClient.Create(ctx, pipelineRun)

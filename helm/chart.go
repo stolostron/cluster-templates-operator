@@ -122,9 +122,9 @@ func (h *HelmClient) InstallChart(
 
 	templateValues := make(map[string]interface{})
 	for _, element := range clusterTemplate.Spec.Properties {
-		if element.DefaultValue != nil {
+		if len(element.DefaultValue) != 0 {
 			value := new(interface{})
-			err = json.Unmarshal(*element.DefaultValue, &value)
+			err = json.Unmarshal(element.DefaultValue, &value)
 			if err != nil {
 				return err
 			}
