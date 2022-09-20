@@ -98,7 +98,7 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 	}
 
 	clusterTemplateQuota.Status = clustertemplatev1alpha1.ClusterTemplateQuotaStatus{
-		Cost:              currentConst,
+		BudgetSpent:       currentConst,
 		TemplateInstances: currentInstances,
 	}
 

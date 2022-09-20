@@ -24,7 +24,6 @@ import (
 func (h *HelmClient) GetChart(chartURL string) (*chart.Chart, error) {
 	cmd := action.NewInstall(h.actionConfig)
 
-	//"https://github.com/openshift-helm-charts/charts/releases/download/redhat-dotnet-0.0.1/redhat-dotnet-0.0.1.tgz"
 	chartLocation, err := cmd.ChartPathOptions.LocateChart(chartURL, settings)
 	if err != nil {
 		return nil, err
@@ -122,35 +121,37 @@ func (h *HelmClient) InstallChart(
 
 	templateValues := make(map[string]interface{})
 	for _, element := range clusterTemplate.Spec.Properties {
-		if len(element.DefaultValue) != 0 {
-			value := new(interface{})
-			err = json.Unmarshal(element.DefaultValue, &value)
-			if err != nil {
-				return err
-			}
-			templateValues[element.Name] = &value
-		} else if element.SecretRef != nil {
-			valueSecret := corev1.Secret{}
+		// filter out ClusterSetup properties
+		if !element.ClusterSetup {
+			if len(element.DefaultValue) != 0 {
+				value := new(interface{})
+				err = json.Unmarshal(element.DefaultValue, &value)
+				if err != nil {
+					return err
+				}
+				templateValues[element.Name] = &value
+			} else if element.SecretRef != nil {
+				valueSecret := corev1.Secret{}
 
-			err := k8sClient.Get(
-				ctx,
-				client.ObjectKey{
-					Name:      element.SecretRef.Name,
-					Namespace: element.SecretRef.Namespace,
-				},
-				&valueSecret,
-			)
-			if err != nil {
-				return err
-			}
-			templateValues[element.Name] = string(valueSecret.Data[element.Name])
+				err := k8sClient.Get(
+					ctx,
+					client.ObjectKey{
+						Name:      element.SecretRef.Name,
+						Namespace: element.SecretRef.Namespace,
+					},
+					&valueSecret,
+				)
+				if err != nil {
+					return err
+				}
+				templateValues[element.Name] = string(valueSecret.Data[element.Name])
 
-		} else {
-			if val, ok := values[element.Name]; ok {
-				templateValues[element.Name] = val
+			} else {
+				if val, ok := values[element.Name]; ok {
+					templateValues[element.Name] = val
+				}
 			}
 		}
-
 	}
 
 	_, err = cmd.Run(ch, templateValues)

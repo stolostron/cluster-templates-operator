@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// log is for logging in this package.
 var clustertemplateinstancelog = logf.Log.WithName("clustertemplateinstance-resource")
 var instanceControllerClient client.Client
 
@@ -41,14 +40,10 @@ func (r *ClusterTemplateInstance) SetupWebhookWithManager(mgr ctrl.Manager) erro
 		Complete()
 }
 
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-
-// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 //+kubebuilder:webhook:path=/validate-clustertemplate-openshift-io-v1alpha1-clustertemplateinstance,mutating=false,failurePolicy=fail,sideEffects=None,groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=create;update,versions=v1alpha1,name=vclustertemplateinstance.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &ClusterTemplateInstance{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *ClusterTemplateInstance) ValidateCreate() error {
 	clustertemplateinstancelog.Info("validate create", "name", r.Name)
 
@@ -149,8 +144,7 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 
 	templateAllowed := false
 	for _, quota := range quotas.Items {
-
-		if quota.Spec.Cost < quota.Status.Cost+templates.Items[templateIdx].Spec.Cost {
+		if quota.Spec.Budget > 0 && quota.Spec.Budget < quota.Status.BudgetSpent+templates.Items[templateIdx].Spec.Cost {
 			return errors.New("cost is too much")
 		}
 
@@ -162,10 +156,12 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 			}
 		}
 
-		for _, tempInstance := range quota.Status.TemplateInstances {
-			if tempInstance.Name == r.Spec.Template {
-				if tempInstance.Count >= maxAllowed {
-					return errors.New("not enough quota")
+		if maxAllowed > 0 {
+			for _, tempInstance := range quota.Status.TemplateInstances {
+				if tempInstance.Name == r.Spec.Template {
+					if tempInstance.Count >= maxAllowed {
+						return errors.New("not enough quota")
+					}
 				}
 			}
 		}

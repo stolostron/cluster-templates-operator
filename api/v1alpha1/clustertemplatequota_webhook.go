@@ -27,7 +27,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 )
 
-// log is for logging in this package.
 var clustertemplatequotalog = logf.Log.WithName("clustertemplatequota-resource")
 var quotaControllerClient client.Client
 
@@ -38,22 +37,31 @@ func (r *ClusterTemplateQuota) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-
-// TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 //+kubebuilder:webhook:path=/validate-clustertemplate-openshift-io-v1alpha1-clustertemplatequota,mutating=false,failurePolicy=fail,sideEffects=None,groups=clustertemplate.openshift.io,resources=clustertemplatequotas,verbs=create;update,versions=v1alpha1,name=vclustertemplatequota.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Validator = &ClusterTemplateQuota{}
 
-// ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *ClusterTemplateQuota) ValidateCreate() error {
 	clustertemplatequotalog.Info("validate create", "name", r.Name)
 
+	quotas := ClusterTemplateQuotaList{}
+
+	opts := []client.ListOption{client.InNamespace(r.Namespace)}
+
+	err := quotaControllerClient.List(context.TODO(), &quotas, opts...)
+	if err != nil {
+		return errors.New("could not list cluster quotas")
+	}
+
+	if len(quotas.Items) > 0 {
+		return errors.New("cluster quota for this namespace already exists")
+	}
+
 	templates := ClusterTemplateList{}
 
-	opts := []client.ListOption{}
+	opts = []client.ListOption{}
 
-	err := quotaControllerClient.List(context.TODO(), &templates, opts...)
+	err = quotaControllerClient.List(context.TODO(), &templates, opts...)
 	if err != nil {
 		return errors.New("could not find template")
 	}
@@ -69,8 +77,6 @@ func (r *ClusterTemplateQuota) ValidateCreate() error {
 			return errors.New("template not found")
 		}
 	}
-
-	// TODO(user): fill in your validation logic upon object creation.
 	return nil
 }
 

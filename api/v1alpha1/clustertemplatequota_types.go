@@ -21,26 +21,22 @@ import (
 )
 
 type AllowedTemplate struct {
-	Name  string `json:"name"`
-	Count int    `json:"count"`
+	Name string `json:"name"`
+	//+kubebuilder:validation:Minimum=1
+	// +optional
+	Count int `json:"count,omitempty"`
 }
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// ClusterTemplateQuotaSpec defines the desired state of ClusterTemplateQuota
 type ClusterTemplateQuotaSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of ClusterTemplateQuota. Edit clustertemplatequota_types.go to remove/update
-	Cost             int               `json:"cost"`
-	AllowedTemplates []AllowedTemplate `json:"allowedTemplates,omitempty"`
+	//+kubebuilder:validation:Minimum=1
+	// +optional
+	Budget           int               `json:"budget,omitempty"`
+	AllowedTemplates []AllowedTemplate `json:"allowedTemplates"`
 }
 
 // ClusterTemplateQuotaStatus defines the observed state of ClusterTemplateQuota
 type ClusterTemplateQuotaStatus struct {
-	Cost              int               `json:"cost"`
+	BudgetSpent       int               `json:"budgetSpent"`
 	TemplateInstances []AllowedTemplate `json:"templateInstances"`
 }
 

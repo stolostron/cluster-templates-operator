@@ -54,52 +54,42 @@ spec:
           metadata:
             type: object
           spec:
-            description: ClusterTemplateInstanceSpec defines the desired state of
-              ClusterTemplateInstance
             properties:
               template:
-                description: Foo is an example field of ClusterTemplateInstance. Edit
-                  clustertemplateinstance_types.go to remove/update
                 type: string
               values:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
             required:
             - template
-            - values
             type: object
           status:
             properties:
               apiServerURL:
                 type: string
               clusterSetup:
-                items:
-                  properties:
-                    description:
-                      type: string
-                    pipelineRef:
-                      type: string
-                    status:
-                      type: string
-                    tasks:
-                      items:
-                        properties:
-                          name:
-                            type: string
-                          status:
-                            type: string
-                        required:
-                        - name
-                        - status
-                        type: object
-                      type: array
-                  required:
-                  - description
-                  - pipelineRef
-                  - status
-                  - tasks
-                  type: object
-                type: array
+                properties:
+                  pipelineRef:
+                    type: string
+                  status:
+                    type: string
+                  tasks:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        status:
+                          type: string
+                      required:
+                      - name
+                      - status
+                      type: object
+                    type: array
+                required:
+                - pipelineRef
+                - status
+                - tasks
+                type: object
               completionTime:
                 format: date-time
                 type: string

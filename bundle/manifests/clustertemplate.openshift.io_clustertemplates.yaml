@@ -17,7 +17,12 @@ spec:
     singular: clustertemplate
   scope: Cluster
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - description: Cluster cost
+      jsonPath: .spec.cost
+      name: Cost
+      type: integer
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         description: ClusterTemplate is the Schema for the clustertemplates API
@@ -35,7 +40,6 @@ spec:
           metadata:
             type: object
           spec:
-            description: ClusterTemplateSpec defines the desired state of ClusterTemplate
             properties:
               clusterSetup:
                 items:
@@ -99,10 +103,9 @@ spec:
                   type: object
                 type: array
               cost:
+                minimum: 0
                 type: integer
               helmChartRef:
-                description: Foo is an example field of ClusterTemplate. Edit clustertemplate_types.go
-                  to remove/update
                 properties:
                   name:
                     type: string
@@ -119,6 +122,9 @@ spec:
                 items:
                   description: TODO add admission webhook
                   properties:
+                    clusterSetupName:
+                      description: prop Type can be string only
+                      type: string
                     defaultValue:
                       x-kubernetes-preserve-unknown-fields: true
                     description:
@@ -138,6 +144,11 @@ spec:
                       - namespace
                       type: object
                     type:
+                      enum:
+                      - string
+                      - bool
+                      - int
+                      - float
                       type: string
                   required:
                   - description
@@ -147,14 +158,14 @@ spec:
                   type: object
                 type: array
             required:
-            - clusterSetup
             - cost
             - helmChartRef
-            - properties
             type: object
           status:
             description: ClusterTemplateStatus defines the observed state of ClusterTemplate
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

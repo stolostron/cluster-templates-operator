@@ -44,21 +44,14 @@ const (
 	ClusterReadyReason         string = "ClusterReady"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// ClusterTemplateInstanceSpec defines the desired state of ClusterTemplateInstance
 type ClusterTemplateInstanceSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of ClusterTemplateInstance. Edit clustertemplateinstance_types.go to remove/update
 	Template string `json:"template"`
 
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
 	// +kubebuilder:validation:Type=object
-	Values json.RawMessage `json:"values"`
+	// +optional
+	Values json.RawMessage `json:"values,omitempty"`
 }
 
 type TaskStatus struct {
@@ -68,7 +61,6 @@ type TaskStatus struct {
 
 type PipelineStatus struct {
 	PipelineRef string       `json:"pipelineRef"`
-	Description string       `json:"description"`
 	Status      string       `json:"status"`
 	Tasks       []TaskStatus `json:"tasks"`
 }
@@ -79,7 +71,7 @@ type ClusterTemplateInstanceStatus struct {
 	APIserverURL      string             `json:"apiServerURL,omitempty"`
 	Conditions        []metav1.Condition `json:"conditions"`
 	CompletionTime    *metav1.Time       `json:"completionTime,omitempty"`
-	ClusterSetup      []PipelineStatus   `json:"clusterSetup,omitempty"`
+	ClusterSetup      PipelineStatus     `json:"clusterSetup,omitempty"`
 }
 
 //+kubebuilder:object:root=true

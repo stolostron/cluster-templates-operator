@@ -29,9 +29,11 @@ type ResourceRef struct {
 }
 
 type ClusterSetup struct {
-	Name        string               `json:"name"`
+	// +optional
 	PipelineRef pipeline.PipelineRef `json:"pipelineRef,omitempty"`
-	Pipeline    ResourceRef          `json:"pipeline,omitempty"`
+
+	// +optional
+	Pipeline ResourceRef `json:"pipeline,omitempty"`
 }
 
 type HelmChartRef struct {
@@ -40,31 +42,50 @@ type HelmChartRef struct {
 	Repository string `json:"repository"`
 }
 
+type PropertyType string
+
+const (
+	String PropertyType = "string"
+	Bool   PropertyType = "bool"
+	Int    PropertyType = "int"
+	Float  PropertyType = "float"
+)
+
 // TODO add admission webhook
 type Property struct {
-	Name         string `json:"name"`
-	Description  string `json:"description"`
-	Type         string `json:"type"` //string, bool, int, float
-	Overwritable bool   `json:"overwritable"`
+	Name string `json:"name"`
+
+	Description string `json:"description"`
+
+	// +kubebuilder:validation:Enum=string;bool;int;float
+	Type PropertyType `json:"type"`
+
+	Overwritable bool `json:"overwritable"`
+
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
+	// +optional
 	DefaultValue json.RawMessage `json:"defaultValue,omitempty"`
-	SecretRef    *ResourceRef    `json:"secretRef,omitempty"`
+
+	// +optional
+	SecretRef *ResourceRef `json:"secretRef,omitempty"`
+
+	// +optional
+	// prop Type can be string only
+	ClusterSetup bool `json:"clusterSetup,omitempty"`
 }
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// ClusterTemplateSpec defines the desired state of ClusterTemplate
 type ClusterTemplateSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	HelmChartRef HelmChartRef `json:"helmChartRef"`
 
-	// Foo is an example field of ClusterTemplate. Edit clustertemplate_types.go to remove/update
-	HelmChartRef HelmChartRef   `json:"helmChartRef"`
-	ClusterSetup []ClusterSetup `json:"clusterSetup"`
-	Cost         int            `json:"cost"`
-	Properties   []Property     `json:"properties"`
+	// +optional
+	ClusterSetup ClusterSetup `json:"clusterSetup,omitempty"`
+
+	//+kubebuilder:validation:Minimum=0
+	Cost int `json:"cost"`
+
+	// +optional
+	Properties []Property `json:"properties,omitempty"`
 }
 
 // ClusterTemplateStatus defines the observed state of ClusterTemplate
@@ -76,13 +97,14 @@ type ClusterTemplateStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=clustertemplates,shortName=ct;cts,scope=Cluster
+//+kubebuilder:printcolumn:name="Cost",type="integer",JSONPath=".spec.cost",description="Cluster cost"
 
 // ClusterTemplate is the Schema for the clustertemplates API
 type ClusterTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ClusterTemplateSpec   `json:"spec,omitempty"`
+	Spec   ClusterTemplateSpec   `json:"spec"`
 	Status ClusterTemplateStatus `json:"status,omitempty"`
 }
 

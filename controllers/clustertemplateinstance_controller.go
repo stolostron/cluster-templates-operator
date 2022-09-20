@@ -94,20 +94,31 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 			clusterTemplateInstance,
 			clusterTemplateInstanceFinalizer,
 		) {
-			_, err = r.HelmClient.UninstallRelease(clusterTemplateInstance.Name)
+			rel, err := r.HelmClient.GetRelease(clusterTemplateInstance.Name)
 			if err != nil {
 				return ctrl.Result{}, fmt.Errorf(
-					"failed to uninstall clustertemplateinstance %q: %w",
-					req.NamespacedName,
+					"failed to get helm release %q: %w",
+					clusterTemplateInstance.Name,
 					err,
 				)
+			}
+
+			if rel != nil {
+				_, err = r.HelmClient.UninstallRelease(clusterTemplateInstance.Name)
+				if err != nil {
+					return ctrl.Result{}, fmt.Errorf(
+						"failed to uninstall clustertemplateinstance %q: %w",
+						req.NamespacedName,
+						err,
+					)
+				}
 			}
 
 			controllerutil.RemoveFinalizer(
 				clusterTemplateInstance,
 				clusterTemplateInstanceFinalizer,
 			)
-			err := r.Update(ctx, clusterTemplateInstance)
+			err = r.Update(ctx, clusterTemplateInstance)
 			if err != nil {
 				return ctrl.Result{}, fmt.Errorf(
 					"failed to remove finalizer clustertemplateinstance %q: %w",
@@ -204,7 +215,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 		return fmt.Errorf("failed to reconcile cluster status %q", err)
 	}
 
-	if err := r.reconcileClusterSetup(ctx, log, clusterTemplateInstance, clusterTemplate, kubeconfigSecretName); err != nil {
+	if err := r.reconcileClusterSetup(ctx, log, clusterTemplateInstance, clusterTemplate, kubeconfigSecretName, kubepassName); err != nil {
 		return fmt.Errorf("failed to reconcile cluster setup %q", err)
 	}
 
@@ -405,6 +416,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 	clusterTemplateInstance *clustertemplatev1alpha1.ClusterTemplateInstance,
 	clusterTemplate clustertemplatev1alpha1.ClusterTemplate,
 	kubeconfigSecret string,
+	kubepassName string,
 ) error {
 	installCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
@@ -432,6 +444,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 				clusterTemplate,
 				clusterTemplateInstance,
 				kubeconfigSecret,
+				kubepassName,
 			)
 			if err != nil {
 				meta.SetStatusCondition(
@@ -481,106 +494,8 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 			return err
 		}
 
-		if len(pipelineRuns.Items) != len(clusterTemplate.Spec.ClusterSetup) {
-			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
-				Type:               clustertemplatev1alpha1.SetupSucceeded,
-				Status:             metav1.ConditionFalse,
-				Reason:             "MissingPipelineRun",
-				Message:            "Some pipeline runs were not found",
-				LastTransitionTime: metav1.Now(),
-			})
-			return nil
-		}
-
-		total := len(pipelineRuns.Items)
-		failed := 0
-		succeeded := 0
-		running := 0
-		clusterSetupStatuses := []clustertemplatev1alpha1.PipelineStatus{}
-
-		for _, pipelineRun := range pipelineRuns.Items {
-			clusterSetupStatus := clustertemplatev1alpha1.PipelineStatus{
-				Description: pipelineRun.Labels[clustersetup.ClusterSetupLabel],
-				PipelineRef: pipelineRun.Name,
-				Status:      "Running",
-			}
-			if len(pipelineRun.Status.Conditions) == 0 {
-				running++
-			} else {
-				for i := range pipelineRun.Status.Conditions {
-					if pipelineRun.Status.Conditions[i].Type == "Succeeded" {
-						switch pipelineRun.Status.Conditions[i].Status {
-						case corev1.ConditionTrue:
-							clusterSetupStatus.Status = "Succeeded"
-							succeeded++
-						case corev1.ConditionFalse:
-							clusterSetupStatus.Status = "Failed"
-							failed++
-						default:
-							clusterSetupStatus.Status = "Running"
-							running++
-						}
-					}
-				}
-			}
-
-			taskRunStatuses := []clustertemplatev1alpha1.TaskStatus{}
-
-			if pipelineRun.Status.PipelineSpec != nil {
-				for _, task := range pipelineRun.Status.PipelineSpec.Tasks {
-					taskRunStatus := clustertemplatev1alpha1.TaskStatus{
-						Name:   task.Name,
-						Status: "Pending",
-					}
-
-					for _, taskRun := range pipelineRun.Status.TaskRuns {
-						if taskRun.PipelineTaskName == task.Name {
-							for i := range taskRun.Status.Conditions {
-								if taskRun.Status.Conditions[i].Type == "Succeeded" {
-									switch taskRun.Status.Conditions[i].Status {
-									case corev1.ConditionTrue:
-										taskRunStatus.Status = "Succeeded"
-									case corev1.ConditionFalse:
-										taskRunStatus.Status = "Failed"
-									default:
-										taskRunStatus.Status = "Running"
-									}
-								}
-							}
-						}
-					}
-
-					taskRunStatuses = append(taskRunStatuses, taskRunStatus)
-				}
-			}
-
-			clusterSetupStatus.Tasks = taskRunStatuses
-			clusterSetupStatuses = append(clusterSetupStatuses, clusterSetupStatus)
-			clusterTemplateInstance.Status.CompletionTime = pipelineRun.Status.CompletionTime
-		}
-
-		if len(clusterSetupStatuses) > 0 {
-			clusterTemplateInstance.Status.ClusterSetup = clusterSetupStatuses
-
-			status := metav1.ConditionFalse
-			reason := "ClusterSetupRunning"
-			message := "Cluster setup is running"
-			if failed > 0 {
-				reason = "ClusterSetupFailed"
-				message = "Cluster setup failed"
-			} else if succeeded == total {
-				reason = "ClusterSetupSucceeded"
-				message = "Cluster setup succeeded"
-				status = metav1.ConditionTrue
-			}
-			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
-				Type:               clustertemplatev1alpha1.SetupSucceeded,
-				Status:             status,
-				Reason:             reason,
-				Message:            message,
-				LastTransitionTime: metav1.Now(),
-			})
-		} else {
+		pipelineRun := pipelineRuns.Items[0]
+		if pipelineRun.Name == "" {
 			meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
 				Type:               clustertemplatev1alpha1.SetupSucceeded,
 				Status:             metav1.ConditionTrue,
@@ -588,7 +503,78 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 				Message:            "Cluster setup succeeded",
 				LastTransitionTime: metav1.Now(),
 			})
+			return nil
 		}
+		clusterSetupStatus := clustertemplatev1alpha1.PipelineStatus{
+			PipelineRef: pipelineRun.Name,
+			Status:      "Running",
+		}
+		for i := range pipelineRun.Status.Conditions {
+			if pipelineRun.Status.Conditions[i].Type == "Succeeded" {
+				switch pipelineRun.Status.Conditions[i].Status {
+				case corev1.ConditionTrue:
+					clusterSetupStatus.Status = "Succeeded"
+					meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
+						Type:               clustertemplatev1alpha1.SetupSucceeded,
+						Status:             metav1.ConditionTrue,
+						Reason:             "ClusterSetupSucceeded",
+						Message:            "Cluster setup succeeded",
+						LastTransitionTime: metav1.Now(),
+					})
+				case corev1.ConditionFalse:
+					clusterSetupStatus.Status = "Failed"
+					meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
+						Type:               clustertemplatev1alpha1.SetupSucceeded,
+						Status:             metav1.ConditionFalse,
+						Reason:             "ClusterSetupFailed",
+						Message:            "Cluster setup failed",
+						LastTransitionTime: metav1.Now(),
+					})
+				default:
+					clusterSetupStatus.Status = "Running"
+					meta.SetStatusCondition(&clusterTemplateInstance.Status.Conditions, metav1.Condition{
+						Type:               clustertemplatev1alpha1.SetupSucceeded,
+						Status:             metav1.ConditionFalse,
+						Reason:             "ClusterSetupRunning",
+						Message:            "Cluster setup is running",
+						LastTransitionTime: metav1.Now(),
+					})
+				}
+			}
+		}
+
+		taskRunStatuses := []clustertemplatev1alpha1.TaskStatus{}
+
+		if pipelineRun.Status.PipelineSpec != nil {
+			for _, task := range pipelineRun.Status.PipelineSpec.Tasks {
+				taskRunStatus := clustertemplatev1alpha1.TaskStatus{
+					Name:   task.Name,
+					Status: "Pending",
+				}
+
+				for _, taskRun := range pipelineRun.Status.TaskRuns {
+					if taskRun.PipelineTaskName == task.Name {
+						for i := range taskRun.Status.Conditions {
+							if taskRun.Status.Conditions[i].Type == "Succeeded" {
+								switch taskRun.Status.Conditions[i].Status {
+								case corev1.ConditionTrue:
+									taskRunStatus.Status = "Succeeded"
+								case corev1.ConditionFalse:
+									taskRunStatus.Status = "Failed"
+								default:
+									taskRunStatus.Status = "Running"
+								}
+							}
+						}
+					}
+				}
+
+				taskRunStatuses = append(taskRunStatuses, taskRunStatus)
+			}
+		}
+
+		clusterSetupStatus.Tasks = taskRunStatuses
+		clusterTemplateInstance.Status.CompletionTime = pipelineRun.Status.CompletionTime
 		return nil
 	}
 	return nil
