@@ -38,8 +38,8 @@ func (cd ClusterDeploymentProvider) GetClusterStatus(
 	}
 
 	for _, condition := range clusterDeployment.Status.Conditions {
-		if condition.Type == "ClusterInstallCompleted" {
-			if condition.Status == "True" {
+		if condition.Type == hivev1.ClusterInstallCompletedClusterDeploymentCondition {
+			if condition.Status == corev1.ConditionTrue {
 				return createCDSecrets(ctx, k8sClient, clusterDeployment, templateInstance)
 			} else {
 				return false, "Not available - " + condition.Reason, nil
@@ -76,7 +76,7 @@ func (cc ClusterClaimProvider) GetClusterStatus(
 
 	if clusterClaim.Spec.Namespace == "" {
 		for _, condition := range clusterClaim.Status.Conditions {
-			if condition.Type == "Pending" {
+			if condition.Type == hivev1.ClusterClaimPendingCondition {
 				return false, "Not available - " + condition.Reason, nil
 			}
 		}

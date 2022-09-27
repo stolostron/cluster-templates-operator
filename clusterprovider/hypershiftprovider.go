@@ -8,6 +8,7 @@ import (
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	v1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8sYaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -39,8 +40,8 @@ func (hc HostedClusterProvider) GetClusterStatus(
 	}
 
 	for _, condition := range hostedCluster.Status.Conditions {
-		if condition.Type == "Available" {
-			if condition.Status == "True" {
+		if condition.Type == string(hypershiftv1alpha1.HostedClusterAvailable) {
+			if condition.Status == metav1.ConditionTrue {
 				hypershiftPass := getKubeAdminRef(*hostedCluster)
 				hypershiftKubeConfig := getKubeConfigRef(*hostedCluster)
 
