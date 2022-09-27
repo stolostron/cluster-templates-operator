@@ -42,66 +42,60 @@ spec:
           spec:
             properties:
               clusterSetup:
-                items:
-                  properties:
-                    name:
-                      type: string
-                    pipeline:
-                      properties:
-                        name:
-                          type: string
-                        namespace:
-                          type: string
-                      required:
-                      - name
-                      - namespace
-                      type: object
-                    pipelineRef:
-                      description: PipelineRef can be used to refer to a specific
-                        instance of a Pipeline.
-                      properties:
-                        apiVersion:
-                          description: API version of the referent
-                          type: string
-                        bundle:
-                          description: Bundle url reference to a Tekton Bundle.
-                          type: string
-                        name:
-                          description: 'Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names'
-                          type: string
-                        resolver:
-                          description: Resolver is the name of the resolver that should
-                            perform resolution of the referenced Tekton resource,
-                            such as "git".
-                          type: string
-                        resource:
-                          description: Resource contains the parameters used to identify
-                            the referenced Tekton resource. Example entries might
-                            include "repo" or "path" but the set of params ultimately
-                            depends on the chosen resolver.
-                          items:
-                            description: ResolverParam is a single parameter passed
-                              to a resolver.
-                            properties:
-                              name:
-                                description: Name is the name of the parameter that
-                                  will be passed to the resolver.
-                                type: string
-                              value:
-                                description: Value is the string value of the parameter
-                                  that will be passed to the resolver.
-                                type: string
-                            required:
-                            - name
-                            - value
-                            type: object
-                          type: array
-                          x-kubernetes-list-type: atomic
-                      type: object
-                  required:
-                  - name
-                  type: object
-                type: array
+                properties:
+                  pipeline:
+                    properties:
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                    required:
+                    - name
+                    - namespace
+                    type: object
+                  pipelineRef:
+                    description: PipelineRef can be used to refer to a specific instance
+                      of a Pipeline.
+                    properties:
+                      apiVersion:
+                        description: API version of the referent
+                        type: string
+                      bundle:
+                        description: Bundle url reference to a Tekton Bundle.
+                        type: string
+                      name:
+                        description: 'Name of the referent; More info: http://kubernetes.io/docs/user-guide/identifiers#names'
+                        type: string
+                      resolver:
+                        description: Resolver is the name of the resolver that should
+                          perform resolution of the referenced Tekton resource, such
+                          as "git".
+                        type: string
+                      resource:
+                        description: Resource contains the parameters used to identify
+                          the referenced Tekton resource. Example entries might include
+                          "repo" or "path" but the set of params ultimately depends
+                          on the chosen resolver.
+                        items:
+                          description: ResolverParam is a single parameter passed
+                            to a resolver.
+                          properties:
+                            name:
+                              description: Name is the name of the parameter that
+                                will be passed to the resolver.
+                              type: string
+                            value:
+                              description: Value is the string value of the parameter
+                                that will be passed to the resolver.
+                              type: string
+                          required:
+                          - name
+                          - value
+                          type: object
+                        type: array
+                        x-kubernetes-list-type: atomic
+                    type: object
+                type: object
               cost:
                 minimum: 0
                 type: integer
@@ -122,9 +116,9 @@ spec:
                 items:
                   description: TODO add admission webhook
                   properties:
-                    clusterSetupName:
+                    clusterSetup:
                       description: prop Type can be string only
-                      type: string
+                      type: boolean
                     defaultValue:
                       x-kubernetes-preserve-unknown-fields: true
                     description:

@@ -32,8 +32,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	openshiftAPI "github.com/openshift/api/helm/v1beta1"
+	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
-	clustertemplatev1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
+	v1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 	"github.com/rawagner/cluster-templates-operator/controllers"
 	"github.com/rawagner/cluster-templates-operator/helm"
 	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
@@ -47,10 +48,11 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-	utilruntime.Must(clustertemplatev1alpha1.AddToScheme(scheme))
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	utilruntime.Must(hypershiftv1alpha1.AddToScheme(scheme))
 	utilruntime.Must(pipeline.AddToScheme(scheme))
 	utilruntime.Must(openshiftAPI.AddToScheme(scheme))
+	utilruntime.Must(hivev1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -125,16 +127,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	/*
-		if err = (&clustertemplatev1alpha1.ClusterTemplateQuota{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateQuota")
-			os.Exit(1)
-		}
-		if err = (&clustertemplatev1alpha1.ClusterTemplateInstance{}).SetupWebhookWithManager(mgr); err != nil {
-			setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateInstance")
-			os.Exit(1)
-		}
-	*/
+	if err = (&v1alpha1.ClusterTemplateQuota{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateQuota")
+		os.Exit(1)
+	}
+	if err = (&v1alpha1.ClusterTemplateInstance{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateInstance")
+		os.Exit(1)
+	}
 
 	//+kubebuilder:scaffold:builder
 

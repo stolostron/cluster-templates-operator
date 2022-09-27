@@ -7,7 +7,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/go-logr/logr"
-	clustertemplatev1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
+	v1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,10 +21,8 @@ func CreateSetupPipelines(
 	ctx context.Context,
 	log logr.Logger,
 	k8sClient client.Client,
-	clusterTemplate clustertemplatev1alpha1.ClusterTemplate,
-	clusterTemplateInstance *clustertemplatev1alpha1.ClusterTemplateInstance,
-	kubeconfigSecret string,
-	kubeadminPassSecret string,
+	clusterTemplate v1alpha1.ClusterTemplate,
+	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 ) error {
 	pipelines := pipelinev1beta1.PipelineList{}
 
@@ -48,7 +46,7 @@ func CreateSetupPipelines(
 			OwnerReferences: []metav1.OwnerReference{
 				{
 					Kind:       "ClusterTemplateInstance",
-					APIVersion: clustertemplatev1alpha1.APIVersion,
+					APIVersion: v1alpha1.APIVersion,
 					Name:       clusterTemplateInstance.Name,
 					UID:        clusterTemplateInstance.UID,
 				},
@@ -62,13 +60,13 @@ func CreateSetupPipelines(
 				{
 					Name: "kubeconfigSecret",
 					Secret: &corev1.SecretVolumeSource{
-						SecretName: kubeconfigSecret,
+						SecretName: clusterTemplateInstance.GetKubeconfigRef(),
 					},
 				},
 				{
 					Name: "kubeadminPassSecret",
 					Secret: &corev1.SecretVolumeSource{
-						SecretName: kubeadminPassSecret,
+						SecretName: clusterTemplateInstance.GetKubeadminPassRef(),
 					},
 				},
 			},

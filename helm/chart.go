@@ -3,7 +3,6 @@ package helm
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,7 +13,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/release"
 
-	clustertemplatev1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
+	"github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -36,8 +35,8 @@ func (h *HelmClient) InstallChart(
 	ctx context.Context,
 	k8sClient client.Client,
 	helmRepository openshiftAPI.HelmChartRepository,
-	clusterTemplate clustertemplatev1alpha1.ClusterTemplate,
-	clusterTemplateInstance clustertemplatev1alpha1.ClusterTemplateInstance,
+	clusterTemplate v1alpha1.ClusterTemplate,
+	clusterTemplateInstance v1alpha1.ClusterTemplateInstance,
 ) error {
 
 	tlsConfig, err := GetTLSClientConfig(ctx, k8sClient, helmRepository.Spec.ConnectionConfig)
@@ -68,13 +67,11 @@ func (h *HelmClient) InstallChart(
 		return err
 	}
 	if resp.StatusCode != 200 {
-		return errors.New(
-			fmt.Sprintf(
-				"Response for %v returned %v with status code %v",
-				chartURL,
-				resp,
-				resp.StatusCode,
-			),
+		return fmt.Errorf(
+			"response for %v returned %v with status code %v",
+			chartURL,
+			resp,
+			resp.StatusCode,
 		)
 	}
 	defer resp.Body.Close()
@@ -113,10 +110,10 @@ func (h *HelmClient) InstallChart(
 	cmd.Namespace = clusterTemplateInstance.Namespace
 
 	values := make(map[string]interface{})
-	err = json.Unmarshal(clusterTemplateInstance.Spec.Values, &values)
-
-	if err != nil {
-		return err
+	if len(clusterTemplateInstance.Spec.Values) > 0 {
+		if err := json.Unmarshal(clusterTemplateInstance.Spec.Values, &values); err != nil {
+			return err
+		}
 	}
 
 	templateValues := make(map[string]interface{})

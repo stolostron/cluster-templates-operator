@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"encoding/json"
 
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -44,8 +45,17 @@ const (
 	ClusterReadyReason         string = "ClusterReady"
 )
 
+type TaskStatus string
+
+const (
+	TaskPending   TaskStatus = "Pending"
+	TaskSucceeded TaskStatus = "Succeeded"
+	TaskFailed    TaskStatus = "Failed"
+	TaskRunning   TaskStatus = "Running"
+)
+
 type ClusterTemplateInstanceSpec struct {
-	Template string `json:"template"`
+	ClusterTemplateRef string `json:"clusterTemplateRef"`
 
 	// +kubebuilder:validation:Schemaless
 	// +kubebuilder:pruning:PreserveUnknownFields
@@ -54,32 +64,32 @@ type ClusterTemplateInstanceSpec struct {
 	Values json.RawMessage `json:"values,omitempty"`
 }
 
-type TaskStatus struct {
-	Name   string `json:"name"`
-	Status string `json:"status"`
+type Task struct {
+	Name   string     `json:"name"`
+	Status TaskStatus `json:"status"`
 }
 
 type PipelineStatus struct {
-	PipelineRef string       `json:"pipelineRef"`
-	Status      string       `json:"status"`
-	Tasks       []TaskStatus `json:"tasks"`
+	PipelineRef string `json:"pipelineRef"`
+	Status      string `json:"status"`
+	Tasks       []Task `json:"tasks,omitempty"`
 }
 
 type ClusterTemplateInstanceStatus struct {
-	KubeadminPassword string             `json:"kubeadminPassword,omitempty"`
-	Kubeconfig        string             `json:"kubeconfig,omitempty"`
-	APIserverURL      string             `json:"apiServerURL,omitempty"`
-	Conditions        []metav1.Condition `json:"conditions"`
-	CompletionTime    *metav1.Time       `json:"completionTime,omitempty"`
-	ClusterSetup      PipelineStatus     `json:"clusterSetup,omitempty"`
+	AdminPassword  *corev1.LocalObjectReference `json:"adminPassword,omitempty"`
+	Kubeconfig     *corev1.LocalObjectReference `json:"kubeconfig,omitempty"`
+	APIserverURL   string                       `json:"apiServerURL,omitempty"`
+	Conditions     []metav1.Condition           `json:"conditions"`
+	CompletionTime *metav1.Time                 `json:"completionTime,omitempty"`
+	ClusterSetup   *PipelineStatus              `json:"clusterSetup,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:resource:path=clustertemplateinstances,shortName=cti;ctis,scope=Namespaced
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description="Cluster is ready"
-//+kubebuilder:printcolumn:name="Kubeadmin",type="string",JSONPath=".status.kubeadminPassword",description="Kubeadmin Secret"
-//+kubebuilder:printcolumn:name="Kubeconfig",type="string",JSONPath=".status.kubeconfig",description="Kubeconfig Secret"
+//+kubebuilder:printcolumn:name="Adminpassword",type="string",JSONPath=".status.adminPassword.name",description="Admin Secret"
+//+kubebuilder:printcolumn:name="Kubeconfig",type="string",JSONPath=".status.kubeconfig.name",description="Kubeconfig Secret"
 //+kubebuilder:printcolumn:name="API URL",type="string",JSONPath=".status.apiServerURL",description="API URL"
 
 // ClusterTemplateInstance is the Schema for the clustertemplateinstances API
@@ -102,4 +112,12 @@ type ClusterTemplateInstanceList struct {
 
 func init() {
 	SchemeBuilder.Register(&ClusterTemplateInstance{}, &ClusterTemplateInstanceList{})
+}
+
+func (i *ClusterTemplateInstance) GetKubeadminPassRef() string {
+	return i.Name + "-admin-password"
+}
+
+func (i *ClusterTemplateInstance) GetKubeconfigRef() string {
+	return i.Name + "-admin-kubeconfig"
 }

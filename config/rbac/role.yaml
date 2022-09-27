@@ -6,8 +6,72 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
   - '*'
+- apiGroups:
+  - clustertemplate.openshift.io
+  resources:
+  - clustertemplateinstances
+  verbs:
+  - '*'
+- apiGroups:
+  - clustertemplate.openshift.io
+  resources:
+  - clustertemplateinstances/status
+  verbs:
+  - '*'
+- apiGroups:
+  - clustertemplate.openshift.io
+  resources:
+  - clustertemplatequotas
+  verbs:
+  - '*'
+- apiGroups:
+  - clustertemplate.openshift.io
+  resources:
+  - clustertemplatequotas/status
+  verbs:
+  - '*'
+- apiGroups:
+  - clustertemplate.openshift.io
+  resources:
+  - clustertemplates
+  verbs:
+  - '*'
+- apiGroups:
+  - helm.openshift.io
+  resources:
+  - helmchartrepositories
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - hive.openshift.io
   resources:
   - '*'
   verbs:
   - '*'
+- apiGroups:
+  - hypershift.openshift.io
+  resources:
+  - '*'
+  verbs:
+  - '*'
+- apiGroups:
+  - tekton.dev
+  resources:
+  - pipelineruns
+  verbs:
+  - '*'
+- apiGroups:
+  - tekton.dev
+  resources:
+  - pipelines
+  verbs:
+  - get
+  - list
+  - watch

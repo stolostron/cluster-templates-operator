@@ -14,7 +14,7 @@ COPY main.go main.go
 COPY api/ api/
 COPY controllers/ controllers/
 COPY helm/ helm/
-COPY hypershift/ hypershift/
+COPY clusterprovider/ clusterprovider/
 COPY clustersetup/ clustersetup/
 
 # Build

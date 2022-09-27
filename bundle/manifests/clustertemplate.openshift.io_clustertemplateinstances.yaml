@@ -32,12 +32,12 @@ spec:
       jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: Ready
       type: string
-    - description: Kubeadmin Secret
-      jsonPath: .status.kubeadminPassword
-      name: Kubeadmin
+    - description: Admin Secret
+      jsonPath: .status.adminPassword.name
+      name: Adminpassword
       type: string
     - description: Kubeconfig Secret
-      jsonPath: .status.kubeconfig
+      jsonPath: .status.kubeconfig.name
       name: Kubeconfig
       type: string
     - description: API URL
@@ -64,46 +64,49 @@ spec:
             type: object
           spec:
             properties:
-              template:
+              clusterTemplateRef:
                 type: string
               values:
                 type: object
                 x-kubernetes-preserve-unknown-fields: true
             required:
-            - template
+            - clusterTemplateRef
             type: object
           status:
             properties:
+              adminPassword:
+                description: LocalObjectReference contains enough information to let
+                  you locate the referenced object inside the same namespace.
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
               apiServerURL:
                 type: string
               clusterSetup:
-                items:
-                  properties:
-                    description:
-                      type: string
-                    pipelineRef:
-                      type: string
-                    status:
-                      type: string
-                    tasks:
-                      items:
-                        properties:
-                          name:
-                            type: string
-                          status:
-                            type: string
-                        required:
-                        - name
-                        - status
-                        type: object
-                      type: array
-                  required:
-                  - description
-                  - pipelineRef
-                  - status
-                  - tasks
-                  type: object
-                type: array
+                properties:
+                  pipelineRef:
+                    type: string
+                  status:
+                    type: string
+                  tasks:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        status:
+                          type: string
+                      required:
+                      - name
+                      - status
+                      type: object
+                    type: array
+                required:
+                - pipelineRef
+                - status
+                type: object
               completionTime:
                 format: date-time
                 type: string
@@ -175,10 +178,15 @@ spec:
                   - type
                   type: object
                 type: array
-              kubeadminPassword:
-                type: string
               kubeconfig:
-                type: string
+                description: LocalObjectReference contains enough information to let
+                  you locate the referenced object inside the same namespace.
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
             required:
             - conditions
             type: object

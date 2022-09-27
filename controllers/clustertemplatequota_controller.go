@@ -27,7 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	clustertemplatev1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
+	v1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 )
 
 // ClusterTemplateQuotaReconciler reconciles a ClusterTemplateQuota object
@@ -36,28 +36,22 @@ type ClusterTemplateQuotaReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=*,resources=*,verbs=*
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplatequotas,verbs=*
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplatequotas/status,verbs=*
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=*
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates,verbs=*
 
-// Reconcile is part of the main kubernetes reconciliation loop which aims to
-// move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the ClusterTemplateQuota object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *ClusterTemplateQuotaReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
-	clusterTemplateQuota := &clustertemplatev1alpha1.ClusterTemplateQuota{}
+	clusterTemplateQuota := &v1alpha1.ClusterTemplateQuota{}
 	err := r.Get(ctx, req.NamespacedName, clusterTemplateQuota)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	clusterTemplateInstanceList := &clustertemplatev1alpha1.ClusterTemplateInstanceList{}
+	clusterTemplateInstanceList := &v1alpha1.ClusterTemplateInstanceList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(req.NamespacedName.Namespace),
 	}
@@ -66,13 +60,13 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 		return ctrl.Result{}, err
 	}
 
-	clusterTemplateList := &clustertemplatev1alpha1.ClusterTemplateList{}
+	clusterTemplateList := &v1alpha1.ClusterTemplateList{}
 	err = r.List(ctx, clusterTemplateList, []client.ListOption{}...)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
 
-	currentInstances := []clustertemplatev1alpha1.AllowedTemplate{}
+	currentInstances := []v1alpha1.AllowedTemplate{}
 	currentConst := 0
 	for _, template := range clusterTemplateQuota.Spec.AllowedTemplates {
 		count := 0
@@ -85,19 +79,19 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 		}
 
 		for _, instance := range clusterTemplateInstanceList.Items {
-			if instance.Spec.Template == template.Name {
+			if instance.Spec.ClusterTemplateRef == template.Name {
 				count++
 				currentConst += templateCost
 			}
 		}
 
-		currentInstances = append(currentInstances, clustertemplatev1alpha1.AllowedTemplate{
+		currentInstances = append(currentInstances, v1alpha1.AllowedTemplate{
 			Name:  template.Name,
 			Count: count,
 		})
 	}
 
-	clusterTemplateQuota.Status = clustertemplatev1alpha1.ClusterTemplateQuotaStatus{
+	clusterTemplateQuota.Status = v1alpha1.ClusterTemplateQuotaStatus{
 		BudgetSpent:       currentConst,
 		TemplateInstances: currentInstances,
 	}
@@ -115,7 +109,7 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 func (r *ClusterTemplateQuotaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	mapInstanceToQuota := func(instance client.Object) []reconcile.Request {
-		quotas := &clustertemplatev1alpha1.ClusterTemplateQuotaList{}
+		quotas := &v1alpha1.ClusterTemplateQuotaList{}
 
 		listOpts := []client.ListOption{
 			client.InNamespace(instance.GetNamespace()),
@@ -138,9 +132,9 @@ func (r *ClusterTemplateQuotaReconciler) SetupWithManager(mgr ctrl.Manager) erro
 	}
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&clustertemplatev1alpha1.ClusterTemplateQuota{}).
+		For(&v1alpha1.ClusterTemplateQuota{}).
 		Watches(
-			&source.Kind{Type: &clustertemplatev1alpha1.ClusterTemplateInstance{}},
+			&source.Kind{Type: &v1alpha1.ClusterTemplateInstance{}},
 			handler.EnqueueRequestsFromMapFunc(mapInstanceToQuota)).
 		Complete(r)
 }

@@ -79,7 +79,7 @@ type ClusterTemplateSpec struct {
 	HelmChartRef HelmChartRef `json:"helmChartRef"`
 
 	// +optional
-	ClusterSetup ClusterSetup `json:"clusterSetup,omitempty"`
+	ClusterSetup *ClusterSetup `json:"clusterSetup,omitempty"`
 
 	//+kubebuilder:validation:Minimum=0
 	Cost int `json:"cost"`
