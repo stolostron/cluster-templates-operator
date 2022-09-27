@@ -17,7 +17,7 @@ const (
 	ClusterSetupInstance = "clustertemplate.openshift.io/cluster-instance"
 )
 
-func CreateSetupPipelines(
+func CreateSetupPipeline(
 	ctx context.Context,
 	log logr.Logger,
 	k8sClient client.Client,
@@ -74,9 +74,7 @@ func CreateSetupPipelines(
 	}
 
 	values := make(map[string]interface{})
-	err := json.Unmarshal(clusterTemplateInstance.Spec.Values, &values)
-
-	if err != nil {
+	if err := json.Unmarshal(clusterTemplateInstance.Spec.Values, &values); err != nil {
 		return err
 	}
 
@@ -87,9 +85,7 @@ func CreateSetupPipelines(
 			value := ""
 
 			if len(prop.DefaultValue) > 0 {
-				err = json.Unmarshal(prop.DefaultValue, &value)
-
-				if err != nil {
+				if err := json.Unmarshal(prop.DefaultValue, &value); err != nil {
 					return err
 				}
 			}
@@ -127,9 +123,5 @@ func CreateSetupPipelines(
 		pipelineRun.Spec.PipelineRef = &clusterSetup.PipelineRef
 	}
 	log.Info("Submit PipelineRun")
-	err = k8sClient.Create(ctx, pipelineRun)
-	if err != nil {
-		return err
-	}
-	return nil
+	return k8sClient.Create(ctx, pipelineRun)
 }

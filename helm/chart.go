@@ -117,35 +117,35 @@ func (h *HelmClient) InstallChart(
 	}
 
 	templateValues := make(map[string]interface{})
-	for _, element := range clusterTemplate.Spec.Properties {
+	for _, prop := range clusterTemplate.Spec.Properties {
 		// filter out ClusterSetup properties
-		if !element.ClusterSetup {
-			if len(element.DefaultValue) != 0 {
+		if !prop.ClusterSetup {
+			if len(prop.DefaultValue) != 0 {
 				value := new(interface{})
-				err = json.Unmarshal(element.DefaultValue, &value)
+				err = json.Unmarshal(prop.DefaultValue, &value)
 				if err != nil {
 					return err
 				}
-				templateValues[element.Name] = &value
-			} else if element.SecretRef != nil {
+				templateValues[prop.Name] = &value
+			} else if prop.SecretRef != nil {
 				valueSecret := corev1.Secret{}
 
 				err := k8sClient.Get(
 					ctx,
 					client.ObjectKey{
-						Name:      element.SecretRef.Name,
-						Namespace: element.SecretRef.Namespace,
+						Name:      prop.SecretRef.Name,
+						Namespace: prop.SecretRef.Namespace,
 					},
 					&valueSecret,
 				)
 				if err != nil {
 					return err
 				}
-				templateValues[element.Name] = string(valueSecret.Data[element.Name])
+				templateValues[prop.Name] = string(valueSecret.Data[prop.Name])
 
 			} else {
-				if val, ok := values[element.Name]; ok {
-					templateValues[element.Name] = val
+				if val, ok := values[prop.Name]; ok {
+					templateValues[prop.Name] = val
 				}
 			}
 		}

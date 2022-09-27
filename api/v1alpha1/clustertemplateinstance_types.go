@@ -23,26 +23,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	InstallSucceeded string = "InstallSucceeded"
-	SetupSucceeded   string = "SetupSucceeded"
-	Ready            string = "Ready"
-)
+type PipelineStatus string
 
 const (
-	HelmReleasePreparingReason  string = "HelmReleasePreparing"
-	ClusterNotReadyReason       string = "ClusterNotReady"
-	ClusterSetupStartedReason   string = "ClusterSetupStarted"
-	ClusterSetupFailedReason    string = "ClusterSetupFailed"
-	InstalledReason             string = "Installed"
-	HelmReleaseInstallingReason string = "HelmReleaseInstalling"
-	HelmChartInstallErrReason   string = "HelmChartInstallErr"
-	HelmChartRepoErrReason      string = "HelmChartRepoErr"
-	HelmReleaseValuesErrReason  string = "HelmReleaseValuesErr"
-
-	CreationInProgressReason   string = "CreationInProgress"
-	ClusterInstallFailedReason string = "ClusterInstallFailed"
-	ClusterReadyReason         string = "ClusterReady"
+	PipelineSucceeded PipelineStatus = "Succeeded"
+	PipelineFailed    PipelineStatus = "Failed"
+	PipelineRunning   PipelineStatus = "Running"
 )
 
 type TaskStatus string
@@ -69,19 +55,35 @@ type Task struct {
 	Status TaskStatus `json:"status"`
 }
 
-type PipelineStatus struct {
-	PipelineRef string `json:"pipelineRef"`
-	Status      string `json:"status"`
-	Tasks       []Task `json:"tasks,omitempty"`
+type Pipeline struct {
+	PipelineRef string         `json:"pipelineRef"`
+	Status      PipelineStatus `json:"status"`
+	Tasks       []Task         `json:"tasks,omitempty"`
 }
 
+type Phase string
+
+const (
+	PendingPhase                   Phase = "Pending"
+	HelmChartInstallFailedPhase    Phase = "HelmChartInstallFailed"
+	ClusterInstallingPhase         Phase = "ClusterInstalling"
+	ClusterInstallFailedPhase      Phase = "ClusterInstallFailed"
+	SetupPipelineCreatingPhase     Phase = "SetupPipelineCreating"
+	SetupPipelineCreateFailedPhase Phase = "SetupPipelineCreateFailed"
+	SetupPipelineRunningPhase      Phase = "SetupPipelineRunning"
+	SetupPipelineFailedPhase       Phase = "SetupPipelineFailed"
+	ReadyPhase                     Phase = "Ready"
+	CredentialsFailedPhase         Phase = "CredentialsFailed"
+	FailedPhase                    Phase = "Failed"
+)
+
 type ClusterTemplateInstanceStatus struct {
-	AdminPassword  *corev1.LocalObjectReference `json:"adminPassword,omitempty"`
-	Kubeconfig     *corev1.LocalObjectReference `json:"kubeconfig,omitempty"`
-	APIserverURL   string                       `json:"apiServerURL,omitempty"`
-	Conditions     []metav1.Condition           `json:"conditions"`
-	CompletionTime *metav1.Time                 `json:"completionTime,omitempty"`
-	ClusterSetup   *PipelineStatus              `json:"clusterSetup,omitempty"`
+	AdminPassword *corev1.LocalObjectReference `json:"adminPassword,omitempty"`
+	Kubeconfig    *corev1.LocalObjectReference `json:"kubeconfig,omitempty"`
+	APIserverURL  string                       `json:"apiServerURL,omitempty"`
+	Conditions    []metav1.Condition           `json:"conditions"`
+	ClusterSetup  *Pipeline                    `json:"clusterSetup,omitempty"`
+	Phase         Phase                        `json:"phase"`
 }
 
 //+kubebuilder:object:root=true
