@@ -268,7 +268,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileHelmChart(
 
 	if err := r.HelmClient.InstallChart(
 		ctx,
-		r.Client,
 		*helmRepository,
 		clusterTemplate,
 		*clusterTemplateInstance,

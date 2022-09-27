@@ -19,14 +19,13 @@ const (
 	caBundleKey      = "ca-bundle.crt"
 )
 
-func getTlsCert(
+func (h *HelmClient) getTlsCert(
 	ctx context.Context,
 	secretName string,
-	k8sClient client.Client,
 ) ([]byte, []byte, error) {
 	//set up tls cert and key
 	secret := corev1.Secret{}
-	err := k8sClient.Get(ctx,
+	err := h.k8sClient.Get(ctx,
 		client.ObjectKey{
 			Name:      secretName,
 			Namespace: configNamespace,
@@ -35,7 +34,7 @@ func getTlsCert(
 
 	if err != nil {
 		return nil, nil, fmt.Errorf(
-			"Failed to GET secret %q from %v reason %v",
+			"failed to GET secret %q from %v reason %v",
 			secretName,
 			configNamespace,
 			err,
@@ -44,7 +43,7 @@ func getTlsCert(
 	tlsCertBytes, found := secret.Data[tlsSecretCertKey]
 	if !found {
 		return nil, nil, fmt.Errorf(
-			"Failed to find %q key in secret %q",
+			"failed to find %q key in secret %q",
 			tlsSecretCertKey,
 			secretName,
 		)
@@ -52,7 +51,7 @@ func getTlsCert(
 
 	tlsKeyBytes, found := secret.Data[tlsSecretKey]
 	if !found {
-		return nil, nil, fmt.Errorf("Failed to find %q key in secret %q", tlsSecretKey, secretName)
+		return nil, nil, fmt.Errorf("failed to find %q key in secret %q", tlsSecretKey, secretName)
 	}
 
 	if err != nil {
@@ -62,37 +61,35 @@ func getTlsCert(
 	return tlsCertBytes, tlsKeyBytes, err
 }
 
-func getCaCert(ctx context.Context, cacert string, k8sClient client.Client) ([]byte, error) {
+func (h *HelmClient) getCaCert(ctx context.Context, cacert string) ([]byte, error) {
 	configMap := corev1.ConfigMap{}
-	err := k8sClient.Get(ctx,
+	err := h.k8sClient.Get(ctx,
 		client.ObjectKey{
 			Name:      cacert,
 			Namespace: configNamespace,
 		},
 		&configMap)
 	if err != nil {
-		return nil, fmt.Errorf("Failed to GET configmap %q, reason %v", cacert, err)
+		return nil, fmt.Errorf("failed to GET configmap %q, reason %v", cacert, err)
 	}
 	caCertBytes, found := configMap.Data[caBundleKey]
 	if !found {
-		return nil, fmt.Errorf("Failed to find %q key in configmap %q", caBundleKey, cacert)
+		return nil, fmt.Errorf("failed to find %q key in configmap %q", caBundleKey, cacert)
 	}
 	return []byte(caCertBytes), nil
 }
 
-func GetTLSClientConfig(
+func (h *HelmClient) GetTLSClientConfig(
 	ctx context.Context,
-	k8sClient client.Client,
 	connectionCofig openshiftAPI.ConnectionConfig,
 ) (*tls.Config, error) {
 	if connectionCofig.TLSClientConfig.Name == "" {
 		return nil, nil
 	}
 
-	tlsCertBytes, tlsKeyBytes, err := getTlsCert(
+	tlsCertBytes, tlsKeyBytes, err := h.getTlsCert(
 		ctx,
 		connectionCofig.TLSClientConfig.Name,
-		k8sClient,
 	)
 
 	if err != nil {
@@ -101,12 +98,16 @@ func GetTLSClientConfig(
 
 	cert, err := tls.X509KeyPair(tlsCertBytes, tlsKeyBytes)
 
+	if err != nil {
+		return nil, err
+	}
+
 	tlsConfig := tls.Config{
 		Certificates: []tls.Certificate{cert},
 	}
 
 	if connectionCofig.CA.Name != "" {
-		caCert, err := getCaCert(ctx, connectionCofig.CA.Name, k8sClient)
+		caCert, err := h.getCaCert(ctx, connectionCofig.CA.Name)
 
 		if err != nil {
 			return nil, err

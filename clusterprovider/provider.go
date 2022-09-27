@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 	"helm.sh/helm/v3/pkg/release"
 
 	"github.com/go-logr/logr"

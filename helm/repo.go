@@ -12,7 +12,7 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-func GetIndexFile(tlsConfig *tls.Config, indexURL string) (*repo.IndexFile, error) {
+func getIndexFile(tlsConfig *tls.Config, indexURL string) (*repo.IndexFile, error) {
 	indexFile := &repo.IndexFile{}
 	tr := &http.Transport{
 		Proxy:           http.ProxyFromEnvironment,
@@ -28,13 +28,11 @@ func GetIndexFile(tlsConfig *tls.Config, indexURL string) (*repo.IndexFile, erro
 		return nil, err
 	}
 	if resp.StatusCode != 200 {
-		return nil, errors.New(
-			fmt.Sprintf(
-				"Response for %v returned %v with status code %v",
-				indexURL,
-				resp,
-				resp.StatusCode,
-			),
+		return nil, fmt.Errorf(
+			"response for %v returned %v with status code %v",
+			indexURL,
+			resp,
+			resp.StatusCode,
 		)
 	}
 	defer resp.Body.Close()
@@ -52,7 +50,7 @@ func GetChartURL(
 	chartName string,
 	chartVersion string,
 ) (string, error) {
-	indexFile, err := GetIndexFile(tlsConfig, indexURL)
+	indexFile, err := getIndexFile(tlsConfig, indexURL)
 	if err != nil {
 		return "", err
 	}

@@ -20,26 +20,14 @@ import (
 	openshiftAPI "github.com/openshift/api/helm/v1beta1"
 )
 
-func (h *HelmClient) GetChart(chartURL string) (*chart.Chart, error) {
-	cmd := action.NewInstall(h.actionConfig)
-
-	chartLocation, err := cmd.ChartPathOptions.LocateChart(chartURL, settings)
-	if err != nil {
-		return nil, err
-	}
-
-	return loader.Load(chartLocation)
-}
-
 func (h *HelmClient) InstallChart(
 	ctx context.Context,
-	k8sClient client.Client,
 	helmRepository openshiftAPI.HelmChartRepository,
 	clusterTemplate v1alpha1.ClusterTemplate,
 	clusterTemplateInstance v1alpha1.ClusterTemplateInstance,
 ) error {
 
-	tlsConfig, err := GetTLSClientConfig(ctx, k8sClient, helmRepository.Spec.ConnectionConfig)
+	tlsConfig, err := h.GetTLSClientConfig(ctx, helmRepository.Spec.ConnectionConfig)
 
 	if err != nil {
 		return err
@@ -56,11 +44,10 @@ func (h *HelmClient) InstallChart(
 		return err
 	}
 
-	tr := &http.Transport{
+	httpClient := &http.Client{Transport: &http.Transport{
 		Proxy:           http.ProxyFromEnvironment,
 		TLSClientConfig: tlsConfig,
-	}
-	httpClient := &http.Client{Transport: tr}
+	}}
 
 	resp, err := httpClient.Get(chartURL)
 	if err != nil {
@@ -76,9 +63,9 @@ func (h *HelmClient) InstallChart(
 	}
 	defer resp.Body.Close()
 
-	f, createErr := os.CreateTemp("", "chart-*")
-	if createErr != nil {
-		return createErr
+	f, err := os.CreateTemp("", "chart-*")
+	if err != nil {
+		return err
 	}
 
 	defer f.Close()
@@ -122,23 +109,21 @@ func (h *HelmClient) InstallChart(
 		if !prop.ClusterSetup {
 			if len(prop.DefaultValue) != 0 {
 				value := new(interface{})
-				err = json.Unmarshal(prop.DefaultValue, &value)
-				if err != nil {
+				if err = json.Unmarshal(prop.DefaultValue, &value); err != nil {
 					return err
 				}
 				templateValues[prop.Name] = &value
 			} else if prop.SecretRef != nil {
 				valueSecret := corev1.Secret{}
 
-				err := k8sClient.Get(
+				if err := h.k8sClient.Get(
 					ctx,
 					client.ObjectKey{
 						Name:      prop.SecretRef.Name,
 						Namespace: prop.SecretRef.Namespace,
 					},
 					&valueSecret,
-				)
-				if err != nil {
+				); err != nil {
 					return err
 				}
 				templateValues[prop.Name] = string(valueSecret.Data[prop.Name])
@@ -152,10 +137,7 @@ func (h *HelmClient) InstallChart(
 	}
 
 	_, err = cmd.Run(ch, templateValues)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (h *HelmClient) GetRelease(releaseName string) (*release.Release, error) {
