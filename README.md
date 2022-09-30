@@ -1,80 +1,101 @@
-# cluster-templates-operator
-// TODO(user): Add simple overview of use/purpose
+# Cluster templates operator
+**Self-service clusters with guardrails!** Cluster templates operator provides an easy way to define clusters as templates and allows creating instances of those templates even for non-privileged developer/devops engineers. Cluster templates operator also allows specifing quotas for the developer/devops engineers.
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+Cluster templates operator adds 3 new CRDs.
+
+**ClusterTemplate** - cluster-scoped resource which defines how the cluster should look like (using [Helm Chart](https://github.com/helm/helm)) and optionally a post-install configuration of the cluster (using [Tekton Pipeline](https://github.com/tektoncd/pipeline))
+
+**ClusterTemplateQuota** - namespace-scoped resource which defines which ClusterTemplates can be instantiated in a given namespace<br>
+
+**ClusterTemplateInstance** - namespace-scoped resource which represents a request for instance of ClusterTemplate
+
+[Hypershift](https://github.com/openshift/hypershift) and [Hive](https://github.com/openshift/hive) clusters are supported.
+
+The intended flows for admin and developer/devops enginer
+
+![ClusterTemplates](https://user-images.githubusercontent.com/2078045/193281667-1e1de2ce-9eab-4079-9ab9-f2c0d91a3e50.jpg)
+
 
 ## Getting Started
-You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
+You’ll need a Kubernetes cluster to run against.
 
 ### Running on the cluster
-1. Install Instances of Custom Resources:
-
-```sh
-kubectl apply -f config/samples/
-```
-
-2. Build and push your image to the location specified by `IMG`:
+1. Build and push your image to the location specified by `IMG`:
 	
 ```sh
 make docker-build docker-push IMG=<some-registry>/cluster-templates-operator:tag
 ```
 	
-3. Deploy the controller to the cluster with the image specified by `IMG`:
+2. Deploy the operator to the cluster with the image specified by `IMG`:
 
 ```sh
-make deploy IMG=<some-registry>/cluster-templates-operator:tag
+operator-sdk run bundle <some-registry>/cluster-templates-operator-bundle:latest
 ```
 
-### Uninstall CRDs
-To delete the CRDs from the cluster:
+### Uninstall the operator
+To delete the operator from the cluster:
 
 ```sh
-make uninstall
+operator-sdk cleanup cluster-templates-operator
 ```
 
-### Undeploy controller
-UnDeploy the controller to the cluster:
+### Try It Out
+As mentioned before, every ClusterTemplate is backed by some Helm chart - you can use this repository as a quickstart [this one](https://rawagner.github.io/helm-demo/index.yaml) where the `hypershift-template` is hosted. The `hypershift-template` is easiest to use (requires Hypershift operator).
 
-```sh
-make undeploy
+1. Create HelmChartRepository CR
+```
+apiVersion: helm.openshift.io/v1beta1
+kind: HelmChartRepository
+metadata:
+  name: cluster-charts
+  resourceVersion: '43589313'
+spec:
+  connectionConfig:
+    url: 'https://rawagner.github.io/helm-demo/index.yaml'
 ```
 
-## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
-
-### How it works
-This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/)
-
-It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/) 
-which provides a reconcile function responsible for synchronizing resources untile the desired state is reached on the cluster 
-
-### Test It Out
-1. Install the CRDs into the cluster:
-
-```sh
-make install
+2. Create ClusterTemplate CR which will use the `cluster-charts` HelmChartRepository and `hypershift-template` Helm Chart
+```
+apiVersion: clustertemplate.openshift.io/v1alpha1
+kind: ClusterTemplate
+metadata:
+  name: my-cluster-template
+spec:
+  cost: 10
+  helmChartRef:
+    name: hypershift-template
+    repository: cluster-charts
+    version: 0.1.0
 ```
 
-2. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
-
-```sh
-make run
+3. Create ClusterTemplateQuota CR which will allow 1 instance of `my-cluster-template` template in quota's namespace
+```
+apiVersion: clustertemplate.openshift.io/v1alpha1
+kind: ClusterTemplateQuota
+metadata:
+  name: example
+  namespace: default
+spec:
+  allowedTemplates:
+    - name: my-cluster-template
+      count: 1
 ```
 
-**NOTE:** You can also run this in one step by running: `make install run`
+4. Finally, create ClusterTemplateInstance
 
-### Modifying the API definitions
-If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
-
-```sh
-make manifests
+```
+apiVersion: clustertemplate.openshift.io/v1alpha1
+kind: ClusterTemplateInstance
+metadata:
+  name: mycluster
+  namespace: default
+spec:
+  clusterTemplateRef: my-cluster-template
 ```
 
-**NOTE:** Run `make --help` for more information on all potential `make` targets
+Now you will just need for cluster to be created. Observer the ClusterTemplateInstance's status to get the latest info aby the progress.
 
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
 
 ## License
 
