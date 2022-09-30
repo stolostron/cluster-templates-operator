@@ -25,7 +25,7 @@ type HelmClient struct {
 	k8sClient    client.Client
 }
 
-func NewHelmClient(config *rest.Config, k8sClient client.Client, certDataFileName *string, keyDataFileName *string) *HelmClient {
+func NewHelmClient(config *rest.Config, k8sClient client.Client, certDataFileName *string, keyDataFileName *string, caDataFileName *string) *HelmClient {
 	initSettings()
 	ns := "default"
 
@@ -34,7 +34,7 @@ func NewHelmClient(config *rest.Config, k8sClient client.Client, certDataFileNam
 			APIServer:   &config.Host,
 			BearerToken: &config.BearerToken,
 			Namespace:   &ns,
-			CAFile:      &config.CAFile,
+			CAFile:      caDataFileName,
 			CertFile:    certDataFileName,
 			Insecure:    &config.Insecure,
 			KeyFile:     keyDataFileName,

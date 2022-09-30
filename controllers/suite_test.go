@@ -128,11 +128,13 @@ var _ = BeforeSuite(func() {
 
 var certDataFileName string
 var keyDataFileName string
+var caDataFileName string
 
 var _ = AfterSuite(func() {
 	cancel()
 	defer os.Remove(certDataFileName)
 	defer os.Remove(keyDataFileName)
+	defer os.Remove(caDataFileName)
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
@@ -169,5 +171,20 @@ func CreateHelmClient(k8sManager manager.Manager, config *rest.Config) *helm.Hel
 	}
 	keyDataFileName = keyDataFile.Name()
 
-	return helm.NewHelmClient(cfg, k8sManager.GetClient(), &certDataFileName, &keyDataFileName)
+	caDataFile, err := os.CreateTemp("", "cadata-*")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer caDataFile.Close()
+
+	err = ioutil.WriteFile(caDataFile.Name(), config.CAData, 0644)
+
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	caDataFileName = caDataFile.Name()
+
+	return helm.NewHelmClient(cfg, k8sManager.GetClient(), &certDataFileName, &keyDataFileName, &caDataFileName)
 }

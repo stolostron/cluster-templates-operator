@@ -110,7 +110,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	helmClient := helm.NewHelmClient(config, mgr.GetClient(), nil, nil)
+	helmClient := helm.NewHelmClient(config, mgr.GetClient(), nil, nil, nil)
 
 	if err = (&controllers.ClusterTemplateQuotaReconciler{
 		Client: mgr.GetClient(),
