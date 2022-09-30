@@ -10,7 +10,7 @@ Cluster templates operator adds 3 new CRDs.
 
 **ClusterTemplateInstance** - namespace-scoped resource which represents a request for instance of ClusterTemplate
 
-[Hypershift](https://github.com/openshift/hypershift) and [Hive](https://github.com/openshift/hive) clusters are supported.
+[Hypershift](https://github.com/openshift/hypershift) and [Hive](https://github.com/openshift/hive) (both ClusterDeployment and ClusterClaim) clusters are supported.
 
 The intended flows for admin and developer/devops enginer
 
