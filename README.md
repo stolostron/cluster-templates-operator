@@ -41,7 +41,7 @@ operator-sdk cleanup cluster-templates-operator
 ```
 
 ### Try It Out
-As mentioned before, every ClusterTemplate is backed by some Helm chart - you can use this repository as a quickstart [this one](https://rawagner.github.io/helm-demo/index.yaml) where the `hypershift-template` is hosted. The `hypershift-template` is easiest to use (requires Hypershift operator).
+As mentioned before, every ClusterTemplate is backed by some Helm chart - you can use [this](https://rawagner.github.io/helm-demo/index.yaml) repository as a quickstart where the `hypershift-template` is hosted. The `hypershift-template` is easiest to use (requires Hypershift operator).
 
 1. Create HelmChartRepository CR
 ```
