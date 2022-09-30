@@ -47,8 +47,9 @@ import (
 
 type ClusterTemplateInstanceReconciler struct {
 	client.Client
-	Scheme     *runtime.Scheme
-	HelmClient *helm.HelmClient
+	Scheme         *runtime.Scheme
+	HelmClient     *helm.HelmClient
+	RequeueTimeout time.Duration
 }
 
 const clusterTemplateInstanceFinalizer = "clustertemplateinstance.openshift.io/finalizer"
@@ -92,11 +93,20 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 		) {
 			rel, err := r.HelmClient.GetRelease(clusterTemplateInstance.Name)
 			if err != nil {
-				return ctrl.Result{}, fmt.Errorf(
-					"failed to get helm release %q: %w",
-					req.NamespacedName,
-					err,
-				)
+				_, ok := err.(*helm.ReleaseNotFoundErr)
+				if !ok {
+					return ctrl.Result{}, fmt.Errorf(
+						"failed to get helm release %q: %w",
+						req.NamespacedName,
+						err,
+					)
+				} else {
+					log.Info(
+						"Helm release does not exist",
+						"name",
+						req.NamespacedName,
+					)
+				}
 			}
 
 			if rel != nil {
@@ -141,23 +151,25 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 		clusterTemplateInstance.Status.Phase = v1alpha1.PendingPhase
 	}
 
-	if err := r.reconcile(ctx, clusterTemplateInstance); err != nil {
-		return ctrl.Result{}, err
-	}
+	err := r.reconcile(ctx, clusterTemplateInstance)
 
 	setupSucceededCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
 		string(v1alpha1.SetupPipelineSucceeded),
 	)
 
-	if err := r.Status().Update(ctx, clusterTemplateInstance); err != nil {
+	if updErr := r.Status().Update(ctx, clusterTemplateInstance); updErr != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update status of clustertemplateinstance %q: %w",
 			req.NamespacedName,
-			err,
+			updErr,
 		)
 	}
 
-	return ctrl.Result{Requeue: setupSucceededCondition.Status == metav1.ConditionFalse, RequeueAfter: 60 * time.Second}, nil
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	return ctrl.Result{Requeue: setupSucceededCondition.Status == metav1.ConditionFalse, RequeueAfter: r.RequeueTimeout}, nil
 }
 
 func (r *ClusterTemplateInstanceReconciler) reconcile(

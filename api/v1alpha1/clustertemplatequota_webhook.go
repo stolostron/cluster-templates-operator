@@ -18,7 +18,7 @@ package v1alpha1
 
 import (
 	"context"
-	"errors"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -48,22 +48,18 @@ func (r *ClusterTemplateQuota) ValidateCreate() error {
 
 	opts := []client.ListOption{client.InNamespace(r.Namespace)}
 
-	err := quotaControllerClient.List(context.TODO(), &quotas, opts...)
-	if err != nil {
-		return errors.New("could not list cluster quotas")
+	if err := quotaControllerClient.List(context.TODO(), &quotas, opts...); err != nil {
+		return fmt.Errorf("failed to list cluster quotas - %q", err)
 	}
 
 	if len(quotas.Items) > 0 {
-		return errors.New("cluster quota for this namespace already exists")
+		return fmt.Errorf("cluster quota for this namespace already exists")
 	}
 
 	templates := ClusterTemplateList{}
 
-	opts = []client.ListOption{}
-
-	err = quotaControllerClient.List(context.TODO(), &templates, opts...)
-	if err != nil {
-		return errors.New("could not find template")
+	if err := quotaControllerClient.List(context.TODO(), &templates); err != nil {
+		return fmt.Errorf("failed to list cluster templates - %q", err)
 	}
 
 	for _, allowedTemplate := range r.Spec.AllowedTemplates {
@@ -74,7 +70,7 @@ func (r *ClusterTemplateQuota) ValidateCreate() error {
 			}
 		}
 		if !templateFound {
-			return errors.New("template not found")
+			return fmt.Errorf("template '%s' does not exist", allowedTemplate.Name)
 		}
 	}
 	return nil

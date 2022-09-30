@@ -80,7 +80,7 @@ func (hc HostedClusterProvider) GetClusterStatus(
 					return false, "", err
 				}
 
-				kubeadminPass, ok := hypershiftKubeconfigSecret.Data["password"]
+				kubeadminPass, ok := hypershiftKubeadminSecret.Data["password"]
 
 				if !ok {
 					return false, "", errors.New("unexpected kubeadmin password format")

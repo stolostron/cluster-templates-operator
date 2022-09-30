@@ -25,19 +25,19 @@ type HelmClient struct {
 	k8sClient    client.Client
 }
 
-func (h HelmClient) ToRESTConfig() (*rest.Config, error) {
-	return h.config, nil
-}
-
-func NewHelmClient(config *rest.Config, k8sClient client.Client) *HelmClient {
+func NewHelmClient(config *rest.Config, k8sClient client.Client, certDataFileName *string, keyDataFileName *string) *HelmClient {
 	initSettings()
 	ns := "default"
+
 	helmClient := HelmClient{
 		ConfigFlags: &genericclioptions.ConfigFlags{
 			APIServer:   &config.Host,
 			BearerToken: &config.BearerToken,
 			Namespace:   &ns,
 			CAFile:      &config.CAFile,
+			CertFile:    certDataFileName,
+			Insecure:    &config.Insecure,
+			KeyFile:     keyDataFileName,
 		},
 		config: config,
 	}

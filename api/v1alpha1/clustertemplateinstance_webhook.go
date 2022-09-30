@@ -19,10 +19,10 @@ package v1alpha1
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -59,18 +59,20 @@ func (r *ClusterTemplateInstance) ValidateCreate() error {
 
 func (r *ClusterTemplateInstance) checkProps() error {
 	template := ClusterTemplate{}
-	err := instanceControllerClient.Get(
+	if err := instanceControllerClient.Get(
 		context.TODO(),
 		client.ObjectKey{Name: r.Spec.ClusterTemplateRef},
 		&template,
-	)
-	if err != nil {
-		return errors.New("could not find template")
+	); err != nil {
+		if apierrors.IsNotFound(err) {
+			return fmt.Errorf("cluster template '%v' not found", r.Spec.ClusterTemplateRef)
+		}
+		return fmt.Errorf("failed to get cluster template - %q", err)
 	}
 
 	values := make(map[string]interface{})
 	if err := json.Unmarshal(r.Spec.Values, &values); err != nil {
-		return errors.New("could not unmarshal values")
+		return fmt.Errorf("could not unmarshal values - %q", err)
 	}
 
 	for key, element := range values {
@@ -83,59 +85,48 @@ func (r *ClusterTemplateInstance) checkProps() error {
 		}
 
 		if index == -1 {
-			return fmt.Errorf("property %v not found", key)
+			return fmt.Errorf("property '%v' not found", key)
 		}
 
 		if !template.Spec.Properties[index].Overwritable {
-			return fmt.Errorf("property %v is not overwriable", key)
+			return fmt.Errorf("property '%v' is not overwriable", key)
 		}
 
 		kind := reflect.TypeOf(element).Kind()
 
 		switch template.Spec.Properties[index].Type {
-		case "int":
-			if kind != reflect.Int {
-				return fmt.Errorf(
-					"incorrect property type '%s' for %v but should be %v",
-					kind,
-					key,
-					template.Spec.Properties[index].Type,
-				)
+		case PropertyTypeInt:
+			if err := ensurePropType(key, kind, reflect.Int); err != nil {
+				return err
 			}
-		case "float":
-			if kind != reflect.Float64 {
-				return fmt.Errorf(
-					"incorrect property type '%s' for %v but should be %v",
-					kind,
-					key,
-					template.Spec.Properties[index].Type,
-				)
+		case PropertyTypeFloat:
+			if err := ensurePropType(key, kind, reflect.Float64); err != nil {
+				return err
 			}
-		case "bool":
-			if kind != reflect.Bool {
-				return fmt.Errorf(
-					"incorrect property type '%s' for %v but should be %v",
-					kind,
-					key,
-					template.Spec.Properties[index].Type,
-				)
+		case PropertyTypeBool:
+			if err := ensurePropType(key, kind, reflect.Bool); err != nil {
+				return err
 			}
-		case "string":
-			if kind != reflect.String {
-				return fmt.Errorf(
-					"incorrect property type '%s' for %v but should be %v",
-					kind,
-					key,
-					template.Spec.Properties[index].Type,
-				)
+		case PropertyTypeString:
+			if err := ensurePropType(key, kind, reflect.String); err != nil {
+				return err
 			}
-		default:
-			return fmt.Errorf("unknown property type '%s' for %v", kind, key)
 		}
-
 	}
 	return nil
 
+}
+
+func ensurePropType(prop string, detectedKind reflect.Kind, expectedKind reflect.Kind) error {
+	if detectedKind != expectedKind {
+		return fmt.Errorf(
+			"incorrect property type '%s' for %v but should be %v",
+			detectedKind,
+			prop,
+			expectedKind,
+		)
+	}
+	return nil
 }
 
 func (r *ClusterTemplateInstance) checkQuota() error {
@@ -145,13 +136,13 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 	}
 	err := instanceControllerClient.List(context.TODO(), &quotas, opts...)
 	if err != nil || len(quotas.Items) == 0 {
-		return errors.New("could not find quota for namespace")
+		return fmt.Errorf("could not find quota for namespace")
 	}
 
 	templates := ClusterTemplateList{}
-	err = instanceControllerClient.List(context.TODO(), &templates, []client.ListOption{}...)
+	err = instanceControllerClient.List(context.TODO(), &templates)
 	if err != nil {
-		return errors.New("could not list cluster templates")
+		return fmt.Errorf("could not list cluster templates - %q", err)
 	}
 
 	templateIdx := -1
@@ -163,14 +154,14 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 	}
 
 	if templateIdx == -1 {
-		return errors.New("could not find cluster template")
+		return fmt.Errorf("could not find cluster template")
 	}
 
 	templateAllowed := false
 	for _, quota := range quotas.Items {
 		if quota.Spec.Budget > 0 &&
 			quota.Spec.Budget < quota.Status.BudgetSpent+templates.Items[templateIdx].Spec.Cost {
-			return errors.New("cost is too much")
+			return fmt.Errorf("cost is too much")
 		}
 
 		maxAllowed := 0
@@ -185,7 +176,7 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 			for _, tempInstance := range quota.Status.TemplateInstances {
 				if tempInstance.Name == r.Spec.ClusterTemplateRef {
 					if tempInstance.Count >= maxAllowed {
-						return errors.New("not enough quota")
+						return fmt.Errorf("not enough quota")
 					}
 				}
 			}
@@ -193,7 +184,7 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 	}
 
 	if !templateAllowed {
-		return errors.New("template not allowed")
+		return fmt.Errorf("template not allowed")
 	}
 	return nil
 }

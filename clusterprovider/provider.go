@@ -67,12 +67,7 @@ func CreateClusterSecrets(
 				"kubeconfig": kubeconfig,
 			}
 			kubeconfigSecret.OwnerReferences = []metav1.OwnerReference{
-				{
-					Kind:       "ClusterTemplateInstance",
-					APIVersion: v1alpha1.APIVersion,
-					Name:       templateInstance.Name,
-					UID:        templateInstance.UID,
-				},
+				templateInstance.GetOwnerReference(),
 			}
 
 			err := k8sClient.Create(ctx, &kubeconfigSecret)
@@ -98,12 +93,7 @@ func CreateClusterSecrets(
 				"password": kubeadminpass,
 			}
 			kubeadminSecret.OwnerReferences = []metav1.OwnerReference{
-				{
-					Kind:       "ClusterTemplateInstance",
-					APIVersion: v1alpha1.APIVersion,
-					Name:       templateInstance.Name,
-					UID:        templateInstance.UID,
-				},
+				templateInstance.GetOwnerReference(),
 			}
 
 			err = k8sClient.Create(ctx, &kubeadminSecret)

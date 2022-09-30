@@ -29,9 +29,7 @@ func CreateSetupPipeline(
 	usesNsReference := clusterTemplate.Spec.ClusterSetup.Pipeline.Name != ""
 
 	if usesNsReference {
-		err := k8sClient.List(ctx, &pipelines, &client.ListOptions{})
-
-		if err != nil {
+		if err := k8sClient.List(ctx, &pipelines, &client.ListOptions{}); err != nil {
 			return err
 		}
 	}
@@ -44,12 +42,7 @@ func CreateSetupPipeline(
 			GenerateName: clusterTemplateInstance.Name + "-",
 			Namespace:    clusterTemplateInstance.Namespace,
 			OwnerReferences: []metav1.OwnerReference{
-				{
-					Kind:       "ClusterTemplateInstance",
-					APIVersion: v1alpha1.APIVersion,
-					Name:       clusterTemplateInstance.Name,
-					UID:        clusterTemplateInstance.UID,
-				},
+				clusterTemplateInstance.GetOwnerReference(),
 			},
 			Labels: map[string]string{
 				ClusterSetupInstance: clusterTemplateInstance.Name,
@@ -74,8 +67,10 @@ func CreateSetupPipeline(
 	}
 
 	values := make(map[string]interface{})
-	if err := json.Unmarshal(clusterTemplateInstance.Spec.Values, &values); err != nil {
-		return err
+	if len(clusterTemplateInstance.Spec.Values) > 0 {
+		if err := json.Unmarshal(clusterTemplateInstance.Spec.Values, &values); err != nil {
+			return err
+		}
 	}
 
 	clusterSetupParams := []pipelinev1beta1.Param{}

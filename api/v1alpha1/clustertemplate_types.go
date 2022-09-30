@@ -45,10 +45,10 @@ type HelmChartRef struct {
 type PropertyType string
 
 const (
-	String PropertyType = "string"
-	Bool   PropertyType = "bool"
-	Int    PropertyType = "int"
-	Float  PropertyType = "float"
+	PropertyTypeString PropertyType = "string"
+	PropertyTypeBool   PropertyType = "bool"
+	PropertyTypeInt    PropertyType = "int"
+	PropertyTypeFloat  PropertyType = "float"
 )
 
 // TODO add admission webhook

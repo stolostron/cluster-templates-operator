@@ -2,7 +2,6 @@ package helm
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -44,7 +43,7 @@ func getIndexFile(tlsConfig *tls.Config, indexURL string) (*repo.IndexFile, erro
 	return indexFile, err
 }
 
-func GetChartURL(
+func getChartURL(
 	tlsConfig *tls.Config,
 	indexURL string,
 	chartName string,
@@ -55,7 +54,7 @@ func GetChartURL(
 		return "", err
 	}
 
-	var helmChartURL string
+	helmChartURL := ""
 	entry := indexFile.Entries[chartName]
 	for _, e := range entry {
 		if e.Version == chartVersion {
@@ -65,7 +64,7 @@ func GetChartURL(
 	}
 
 	if helmChartURL == "" {
-		return "", errors.New("could not find helm chart")
+		return "", fmt.Errorf("could not find helm chart")
 	}
 
 	if strings.HasSuffix(indexURL, "/index.yaml") {
@@ -74,7 +73,7 @@ func GetChartURL(
 
 	helmChartURL, err = repo.ResolveReferenceURL(indexURL, helmChartURL)
 	if err != nil {
-		return "", errors.New("error resolving chart url")
+		return "", fmt.Errorf("error resolving chart url - %q", err)
 	}
 	return helmChartURL, nil
 }

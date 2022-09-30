@@ -1,0 +1,42 @@
+apiVersion: v1
+entries:
+  clusterclaim-template:
+  - annotations:
+      cluster-template: "true"
+    apiVersion: v2
+    appVersion: 1.16.0
+    created: "2022-09-26T13:35:43.136031995+02:00"
+    description: A Helm chart for Kubernetes
+    digest: ecdc381462703f56425a9e8dced9ebf46fc026e458982efc72ae9393266a8004
+    name: clusterclaim-template
+    type: application
+    urls:
+    - clusterclaim-template-0.1.0.tgz
+    version: 0.1.0
+  hive-template:
+  - annotations:
+      cluster-template: "true"
+    apiVersion: v2
+    appVersion: 1.16.0
+    created: "2022-09-26T13:35:43.136280928+02:00"
+    description: A Helm chart for Kubernetes
+    digest: 19fcd1ce7e4e55433bb1a921643d72d82b73305f020f73c11391514660f28132
+    name: hive-template
+    type: application
+    urls:
+    - hive-template-0.1.0.tgz
+    version: 0.1.0
+  hypershift-template:
+  - annotations:
+      cluster-template: "true"
+    apiVersion: v2
+    appVersion: 1.16.0
+    created: "2022-09-26T13:35:43.136531143+02:00"
+    description: A Helm chart for Kubernetes
+    digest: a47cf46a2551bbec37fd7973fc8fe4b66e9fe320c564f9de218a942f1969074b
+    name: hypershift-template
+    type: application
+    urls:
+    - hypershift-template-0.1.0.tgz
+    version: 0.1.0
+generated: "2022-09-26T13:35:43.135669868+02:00"

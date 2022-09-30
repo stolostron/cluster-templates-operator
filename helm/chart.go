@@ -33,7 +33,7 @@ func (h *HelmClient) InstallChart(
 		return err
 	}
 
-	chartURL, err := GetChartURL(
+	chartURL, err := getChartURL(
 		tlsConfig,
 		helmRepository.Spec.ConnectionConfig.URL,
 		clusterTemplate.Spec.HelmChartRef.Name,
@@ -140,9 +140,24 @@ func (h *HelmClient) InstallChart(
 	return err
 }
 
+type ReleaseNotFoundErr struct{}
+
+func (m *ReleaseNotFoundErr) Error() string {
+	return "Release not found"
+}
+
 func (h *HelmClient) GetRelease(releaseName string) (*release.Release, error) {
-	cmd := action.NewGet(h.actionConfig)
-	return cmd.Run(releaseName)
+	cmd := action.NewList(h.actionConfig)
+	releases, err := cmd.Run()
+	if err != nil {
+		return nil, err
+	}
+	for _, release := range releases {
+		if release.Name == releaseName {
+			return release, nil
+		}
+	}
+	return nil, &ReleaseNotFoundErr{}
 }
 
 func (h *HelmClient) UninstallRelease(

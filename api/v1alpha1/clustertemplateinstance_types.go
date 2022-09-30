@@ -123,3 +123,12 @@ func (i *ClusterTemplateInstance) GetKubeadminPassRef() string {
 func (i *ClusterTemplateInstance) GetKubeconfigRef() string {
 	return i.Name + "-admin-kubeconfig"
 }
+
+func (i *ClusterTemplateInstance) GetOwnerReference() metav1.OwnerReference {
+	return metav1.OwnerReference{
+		Kind:       "ClusterTemplateInstance",
+		APIVersion: APIVersion,
+		Name:       i.Name,
+		UID:        i.UID,
+	}
+}

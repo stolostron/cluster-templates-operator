@@ -14,16 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controllers
+package clusterprovider
 
 import (
 	"context"
-	"fmt"
-	"io/ioutil"
-	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
@@ -40,9 +36,7 @@ import (
 	openshiftAPI "github.com/openshift/api/helm/v1beta1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	"github.com/rawagner/cluster-templates-operator/api/v1alpha1"
-	"github.com/rawagner/cluster-templates-operator/helm"
 	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -59,7 +53,7 @@ func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	RunSpecsWithDefaultAndCustomReporters(t,
-		"Controller Suite",
+		"Cluster providers Suite",
 		[]Reporter{printer.NewlineReporter{}})
 }
 
@@ -102,20 +96,6 @@ var _ = BeforeSuite(func() {
 		Scheme: scheme.Scheme,
 	})
 	Expect(err).ToNot(HaveOccurred())
-
-	helmClient := CreateHelmClient(k8sManager, cfg)
-	err = (&ClusterTemplateInstanceReconciler{
-		Client:         k8sManager.GetClient(),
-		Scheme:         k8sManager.GetScheme(),
-		HelmClient:     helmClient,
-		RequeueTimeout: 1 * time.Second,
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&ClusterTemplateQuotaReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
 	go func() {
@@ -126,48 +106,9 @@ var _ = BeforeSuite(func() {
 
 }, 60)
 
-var certDataFileName string
-var keyDataFileName string
-
 var _ = AfterSuite(func() {
 	cancel()
-	defer os.Remove(certDataFileName)
-	defer os.Remove(keyDataFileName)
 	By("tearing down the test environment")
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
-
-func CreateHelmClient(k8sManager manager.Manager, config *rest.Config) *helm.HelmClient {
-	certDataFile, err := os.CreateTemp("", "certdata-*")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer certDataFile.Close()
-
-	err = ioutil.WriteFile(certDataFile.Name(), config.CertData, 0644)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	certDataFileName = certDataFile.Name()
-
-	keyDataFile, err := os.CreateTemp("", "keydata-*")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer keyDataFile.Close()
-
-	err = ioutil.WriteFile(keyDataFile.Name(), config.KeyData, 0644)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	keyDataFileName = keyDataFile.Name()
-
-	return helm.NewHelmClient(cfg, k8sManager.GetClient(), &certDataFileName, &keyDataFileName)
-}
