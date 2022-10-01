@@ -21,6 +21,7 @@ const (
 	HelmReleasePreparing  HelmChartInstallReason = "HelmReleasePreparing"
 	HelmChartInstallError HelmChartInstallReason = "HelmChartInstallError"
 	HelmChartInstalled    HelmChartInstallReason = "HelmChartInstalled"
+	HelmChartNotSpecified HelmChartInstallReason = "HelmChartNotSpecified"
 	HelmRepoListError     HelmChartInstallReason = "HelmRepoListError"
 )
 

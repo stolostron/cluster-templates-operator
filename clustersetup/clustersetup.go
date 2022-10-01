@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	ClusterSetupInstance = "clustertemplate.openshift.io/cluster-instance"
+	ClusterSetupInstanceLabel = "clustertemplate.openshift.io/cluster-instance"
 )
 
 func CreateSetupPipeline(
@@ -45,7 +45,7 @@ func CreateSetupPipeline(
 				clusterTemplateInstance.GetOwnerReference(),
 			},
 			Labels: map[string]string{
-				ClusterSetupInstance: clusterTemplateInstance.Name,
+				ClusterSetupInstanceLabel: clusterTemplateInstance.Name,
 			},
 		},
 		Spec: pipelinev1beta1.PipelineRunSpec{

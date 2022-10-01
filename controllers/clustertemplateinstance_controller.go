@@ -189,6 +189,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 	if err := r.reconcileClusterStatus(
 		ctx,
 		clusterTemplateInstance,
+		clusterTemplate,
 	); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
 		return fmt.Errorf("failed to reconcile cluster status %q", err)
@@ -262,6 +263,23 @@ func (r *ClusterTemplateInstanceReconciler) reconcileHelmChart(
 		return nil
 	}
 
+	if clusterTemplate.Spec.HelmChartRef == nil {
+		if _, ok := clusterTemplate.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
+			clusterTemplateInstance.SetHelmChartInstallCondition(
+				metav1.ConditionTrue,
+				v1alpha1.HelmChartNotSpecified,
+				"No helm chart defined for the cluster template",
+			)
+			return nil
+		}
+		clusterTemplateInstance.SetHelmChartInstallCondition(
+			metav1.ConditionFalse,
+			v1alpha1.HelmChartNotSpecified,
+			"No helm chart defined for the cluster template",
+		)
+		return nil
+	}
+
 	log.Info(
 		"Get helm chart of clustertemplateinstance",
 		"name",
@@ -303,6 +321,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileHelmChart(
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
 	log := ctrl.LoggerFrom(ctx)
 	helmChartInstallCondition := meta.FindStatusCondition(
@@ -310,6 +329,11 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 		string(v1alpha1.HelmChartInstallSucceeded),
 	)
 	if helmChartInstallCondition.Status == metav1.ConditionFalse {
+		return nil
+	}
+
+	if _, ok := clusterTemplate.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
+		log.Info("Experimental provider specified", "name", clusterTemplateInstance.Name)
 		return nil
 	}
 
@@ -516,7 +540,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 	pipelineRuns := &pipeline.PipelineRunList{}
 
 	pipelineLabelReq, _ := labels.NewRequirement(
-		clustersetup.ClusterSetupInstance,
+		clustersetup.ClusterSetupInstanceLabel,
 		selection.Equals,
 		[]string{clusterTemplateInstance.Name},
 	)

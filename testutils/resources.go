@@ -52,7 +52,7 @@ func GetCT(withProps bool, withSetup bool) (*v1alpha1.ClusterTemplate, error) {
 			Name: ctName,
 		},
 		Spec: v1alpha1.ClusterTemplateSpec{
-			HelmChartRef: v1alpha1.HelmChartRef{
+			HelmChartRef: &v1alpha1.HelmChartRef{
 				Repository: helmRepoName,
 				Name:       "hypershift-template",
 				Version:    "0.1.0",

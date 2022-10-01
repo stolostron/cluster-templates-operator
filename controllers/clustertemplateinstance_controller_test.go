@@ -313,7 +313,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					return false
 				}
 				for _, pRun := range pipelineRuns.Items {
-					if pRun.Labels[clustersetup.ClusterSetupInstance] == cti.Name {
+					if pRun.Labels[clustersetup.ClusterSetupInstanceLabel] == cti.Name {
 						pipelineRun = &pRun
 						return true
 					}

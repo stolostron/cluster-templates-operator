@@ -76,7 +76,7 @@ type Property struct {
 }
 
 type ClusterTemplateSpec struct {
-	HelmChartRef HelmChartRef `json:"helmChartRef"`
+	HelmChartRef *HelmChartRef `json:"helmChartRef,omitempty"`
 
 	// +optional
 	ClusterSetup *ClusterSetup `json:"clusterSetup,omitempty"`

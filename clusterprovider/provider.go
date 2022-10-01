@@ -15,6 +15,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	ClusterProviderExperimentalAnnotation = "clustertemplate.openshift.io/experimental-provider"
+)
+
 type ClusterProvider interface {
 	GetClusterStatus(
 		ctx context.Context,
