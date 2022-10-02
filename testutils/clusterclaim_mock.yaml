@@ -1,0 +1,7 @@
+apiVersion: hive.openshift.io/v1
+kind: ClusterClaim
+metadata:
+  name: foo
+  namespace: bar
+spec:
+  clusterPoolName: fooClusterPool

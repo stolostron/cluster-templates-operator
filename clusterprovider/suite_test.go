@@ -33,10 +33,9 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	openshiftAPI "github.com/openshift/api/helm/v1beta1"
+	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	"github.com/rawagner/cluster-templates-operator/api/v1alpha1"
-	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -79,11 +78,9 @@ var _ = BeforeSuite(func() {
 
 	err = v1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
-	err = openshiftAPI.Install(scheme.Scheme)
-	Expect(err).NotTo(HaveOccurred())
 	err = hypershiftv1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
-	err = pipeline.AddToScheme(scheme.Scheme)
+	err = hivev1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
