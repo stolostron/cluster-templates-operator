@@ -29,17 +29,26 @@ func NewHelmClient(config *rest.Config, k8sClient client.Client, certDataFileNam
 	initSettings()
 	ns := "default"
 
+	ConfigFlags := &genericclioptions.ConfigFlags{
+		APIServer:   &config.Host,
+		BearerToken: &config.BearerToken,
+		Namespace:   &ns,
+		CAFile:      &config.CAFile,
+	}
+
+	if caDataFileName != nil {
+		ConfigFlags.CAFile = caDataFileName
+	}
+	if certDataFileName != nil {
+		ConfigFlags.CertFile = certDataFileName
+	}
+	if keyDataFileName != nil {
+		ConfigFlags.KeyFile = keyDataFileName
+	}
+
 	helmClient := HelmClient{
-		ConfigFlags: &genericclioptions.ConfigFlags{
-			APIServer:   &config.Host,
-			BearerToken: &config.BearerToken,
-			Namespace:   &ns,
-			CAFile:      caDataFileName,
-			CertFile:    certDataFileName,
-			Insecure:    &config.Insecure,
-			KeyFile:     keyDataFileName,
-		},
-		config: config,
+		ConfigFlags: ConfigFlags,
+		config:      config,
 	}
 
 	actionConfig := new(action.Configuration)

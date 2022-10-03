@@ -71,8 +71,10 @@ func (r *ClusterTemplateInstance) checkProps() error {
 	}
 
 	values := make(map[string]interface{})
-	if err := json.Unmarshal(r.Spec.Values, &values); err != nil {
-		return fmt.Errorf("could not unmarshal values - %q", err)
+	if len(r.Spec.Values) > 0 {
+		if err := json.Unmarshal(r.Spec.Values, &values); err != nil {
+			return fmt.Errorf("could not unmarshal values - %q", err)
+		}
 	}
 
 	for key, element := range values {
