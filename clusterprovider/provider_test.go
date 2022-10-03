@@ -1,7 +1,6 @@
 package clusterprovider
 
 import (
-	"context"
 	"encoding/json"
 	"os"
 
@@ -69,7 +68,7 @@ func testProvider(
 	It("Returns not ready and err when resource does not exist", func() {
 		client := fake.NewFakeClientWithScheme(scheme.Scheme)
 
-		ready, msg, err := clusterProvider.GetClusterStatus(context.TODO(), client, cti)
+		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(ready).Should(BeFalse())
 		Expect(msg).Should(Equal(""))
 		Expect(err).Should(HaveOccurred())
@@ -78,7 +77,7 @@ func testProvider(
 		resources := getResources(ResourceOpts{})
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
 
-		ready, msg, err := clusterProvider.GetClusterStatus(context.TODO(), client, cti)
+		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(ready).Should(BeFalse())
 		Expect(msg).Should(Equal("Not available - foo"))
 		Expect(err).NotTo(HaveOccurred())
@@ -87,7 +86,7 @@ func testProvider(
 		resources := getResources(ResourceOpts{isReady: true})
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
 
-		ready, msg, err := clusterProvider.GetClusterStatus(context.TODO(), client, cti)
+		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(ready).Should(BeFalse())
 		Expect(msg).Should(Equal("Waiting for pass/kubeconfig secrets"))
 		Expect(err).NotTo(HaveOccurred())
@@ -96,7 +95,7 @@ func testProvider(
 		resources := getResources(ResourceOpts{isReady: true, kubeadmin: true})
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
 
-		ready, msg, err := clusterProvider.GetClusterStatus(context.TODO(), client, cti)
+		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(ready).Should(BeFalse())
 		Expect(msg).Should(Equal("Waiting for pass/kubeconfig secrets"))
 		Expect(err).NotTo(HaveOccurred())
@@ -105,7 +104,7 @@ func testProvider(
 		resources := getResources(ResourceOpts{isReady: true, kubeconfig: true})
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
 
-		ready, msg, err := clusterProvider.GetClusterStatus(context.TODO(), client, cti)
+		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(ready).Should(BeFalse())
 		Expect(msg).Should(Equal("Waiting for pass/kubeconfig secrets"))
 		Expect(err).NotTo(HaveOccurred())
@@ -119,7 +118,7 @@ func testProvider(
 		})
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
 
-		ready, msg, err := clusterProvider.GetClusterStatus(context.TODO(), client, cti)
+		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(ready).Should(BeFalse())
 		Expect(msg).Should(Equal(""))
 		Expect(err).To(HaveOccurred())
@@ -133,7 +132,7 @@ func testProvider(
 		})
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
 
-		ready, msg, err := clusterProvider.GetClusterStatus(context.TODO(), client, cti)
+		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(ready).Should(BeFalse())
 		Expect(msg).Should(Equal(""))
 		Expect(err).To(HaveOccurred())
@@ -146,13 +145,13 @@ func testProvider(
 		})
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
 
-		ready, msg, err := clusterProvider.GetClusterStatus(context.TODO(), client, cti)
+		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(ready).Should(BeTrue())
 		Expect(msg).Should(Equal("Available"))
 		Expect(err).ToNot(HaveOccurred())
 
 		kubeadminSecret := &corev1.Secret{}
-		err = client.Get(context.TODO(), kubeClient.ObjectKey{Name: cti.GetKubeadminPassRef(), Namespace: cti.Namespace}, kubeadminSecret)
+		err = client.Get(ctx, kubeClient.ObjectKey{Name: cti.GetKubeadminPassRef(), Namespace: cti.Namespace}, kubeadminSecret)
 		Expect(err).ToNot(HaveOccurred())
 
 		val, ok := kubeadminSecret.Data["password"]
@@ -163,7 +162,7 @@ func testProvider(
 		Expect(pass).To(Equal("foo"))
 
 		kubeconfigSecret := &corev1.Secret{}
-		err = client.Get(context.TODO(), kubeClient.ObjectKey{Name: cti.GetKubeconfigRef(), Namespace: cti.Namespace}, kubeconfigSecret)
+		err = client.Get(ctx, kubeClient.ObjectKey{Name: cti.GetKubeconfigRef(), Namespace: cti.Namespace}, kubeconfigSecret)
 		Expect(err).ToNot(HaveOccurred())
 
 		val, ok = kubeconfigSecret.Data["kubeconfig"]
