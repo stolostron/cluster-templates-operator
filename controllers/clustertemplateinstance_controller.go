@@ -54,15 +54,15 @@ type ClusterTemplateInstanceReconciler struct {
 
 const clusterTemplateInstanceFinalizer = "clustertemplateinstance.openshift.io/finalizer"
 
-// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=*
-// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances/status,verbs=*
-// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates,verbs=*
-// +kubebuilder:rbac:groups=hypershift.openshift.io,resources=*,verbs=*
-// +kubebuilder:rbac:groups=hive.openshift.io,resources=*,verbs=*
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates,verbs=get;list;watch
+// +kubebuilder:rbac:groups=hypershift.openshift.io,resources=*,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=hive.openshift.io,resources=*,verbs=get;list;watch;create;delete
 // +kubebuilder:rbac:groups=helm.openshift.io,resources=helmchartrepositories,verbs=get;list;watch
 // +kubebuilder:rbac:groups=tekton.dev,resources=pipelines,verbs=get;list;watch
-// +kubebuilder:rbac:groups=tekton.dev,resources=pipelineruns,verbs=*
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=*
+// +kubebuilder:rbac:groups=tekton.dev,resources=pipelineruns,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;delete
 
 func (r *ClusterTemplateInstanceReconciler) Reconcile(
 	ctx context.Context,

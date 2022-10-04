@@ -36,10 +36,10 @@ type ClusterTemplateQuotaReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplatequotas,verbs=*
-// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplatequotas/status,verbs=*
-// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=*
-// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates,verbs=*
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplatequotas,verbs=get;list;watch;create;update;patch;delete
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplatequotas/status,verbs=get;update;patch
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=get;list;watch
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates,verbs=get;list;watch
 
 func (r *ClusterTemplateQuotaReconciler) Reconcile(
 	ctx context.Context,
