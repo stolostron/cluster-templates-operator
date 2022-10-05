@@ -26,15 +26,13 @@ func CreateSetupPipeline(
 ) error {
 	pipelines := pipelinev1beta1.PipelineList{}
 
-	usesNsReference := clusterTemplate.Spec.ClusterSetup.Pipeline.Name != ""
+	clusterSetup := clusterTemplate.Spec.ClusterSetup
 
-	if usesNsReference {
+	if clusterSetup.Pipeline.Name != "" {
 		if err := k8sClient.List(ctx, &pipelines, &client.ListOptions{}); err != nil {
 			return err
 		}
 	}
-
-	clusterSetup := clusterTemplate.Spec.ClusterSetup
 
 	log.Info("Create PipelineRun")
 	pipelineRun := &pipelinev1beta1.PipelineRun{

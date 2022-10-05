@@ -149,6 +149,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 	if len(clusterTemplateInstance.Status.Conditions) == 0 {
 		SetDefaultConditions(clusterTemplateInstance)
 		clusterTemplateInstance.Status.Phase = v1alpha1.PendingPhase
+		clusterTemplateInstance.Status.Message = v1alpha1.PendingMessage
 	}
 
 	err := r.reconcile(ctx, clusterTemplateInstance)
@@ -179,12 +180,16 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 	clusterTemplate := v1alpha1.ClusterTemplate{}
 	if err := r.Client.Get(ctx, client.ObjectKey{Name: clusterTemplateInstance.Spec.ClusterTemplateRef}, &clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.FailedPhase
-		return fmt.Errorf("failed to fetch clustertemplate %q", err)
+		errMsg := fmt.Sprintf("failed to fetch ClusterTemplate - %q", err)
+		clusterTemplateInstance.Status.Message = errMsg
+		return fmt.Errorf(errMsg)
 	}
 
 	if err := r.reconcileHelmChart(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.HelmChartInstallFailedPhase
-		return fmt.Errorf("failed to install helm chart %q", err)
+		errMsg := fmt.Sprintf("failed to install helm chart - %q", err)
+		clusterTemplateInstance.Status.Message = errMsg
+		return fmt.Errorf(errMsg)
 	}
 	if err := r.reconcileClusterStatus(
 		ctx,
@@ -192,22 +197,30 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 		clusterTemplate,
 	); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
-		return fmt.Errorf("failed to reconcile cluster status %q", err)
+		errMsg := fmt.Sprintf("failed to reconcile cluster status - %q", err)
+		clusterTemplateInstance.Status.Message = errMsg
+		return fmt.Errorf(errMsg)
 	}
 
 	if err := r.reconcileClusterSetupCreate(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.SetupPipelineCreateFailedPhase
-		return fmt.Errorf("failed to reconcile cluster setup creation %q", err)
+		errMsg := fmt.Sprintf("failed to create cluster setup pipeline - %q", err)
+		clusterTemplateInstance.Status.Message = errMsg
+		return fmt.Errorf(errMsg)
 	}
 
 	if err := r.reconcileClusterSetup(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.SetupPipelineFailedPhase
-		return fmt.Errorf("failed to reconcile cluster setup %q", err)
+		errMsg := fmt.Sprintf("failed to reconcile cluster setup - %q", err)
+		clusterTemplateInstance.Status.Message = errMsg
+		return fmt.Errorf(errMsg)
 	}
 
 	if err := r.reconcileClusterCredentials(ctx, clusterTemplateInstance); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.CredentialsFailedPhase
-		return fmt.Errorf("failed to reconcile cluster credentials %q", err)
+		errMsg := fmt.Sprintf("failed to reconcile cluster credentials - %q", err)
+		clusterTemplateInstance.Status.Message = errMsg
+		return fmt.Errorf(errMsg)
 	}
 
 	setPhase(clusterTemplateInstance)
@@ -221,6 +234,7 @@ func setPhase(clusterTemplateInstance *v1alpha1.ClusterTemplateInstance) {
 	)
 	if helmChartInstallCondition != nil && helmChartInstallCondition.Status == metav1.ConditionTrue {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallingPhase
+		clusterTemplateInstance.Status.Message = "Cluster is installing"
 	}
 
 	installSucceededCondition := meta.FindStatusCondition(
@@ -229,6 +243,7 @@ func setPhase(clusterTemplateInstance *v1alpha1.ClusterTemplateInstance) {
 	)
 	if installSucceededCondition != nil && installSucceededCondition.Status == metav1.ConditionTrue {
 		clusterTemplateInstance.Status.Phase = v1alpha1.SetupPipelineCreatingPhase
+		clusterTemplateInstance.Status.Message = "Creating cluster setup pipeline"
 	}
 
 	setupCreatedCondition := meta.FindStatusCondition(
@@ -237,6 +252,7 @@ func setPhase(clusterTemplateInstance *v1alpha1.ClusterTemplateInstance) {
 	)
 	if setupCreatedCondition != nil && setupCreatedCondition.Status == metav1.ConditionTrue {
 		clusterTemplateInstance.Status.Phase = v1alpha1.SetupPipelineRunningPhase
+		clusterTemplateInstance.Status.Message = "Cluster setup is running"
 	}
 
 	setupSucceededCondition := meta.FindStatusCondition(
@@ -245,6 +261,7 @@ func setPhase(clusterTemplateInstance *v1alpha1.ClusterTemplateInstance) {
 	)
 	if setupSucceededCondition != nil && setupSucceededCondition.Status == metav1.ConditionTrue {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ReadyPhase
+		clusterTemplateInstance.Status.Message = "Cluster is ready"
 	}
 }
 

@@ -64,17 +64,18 @@ type Pipeline struct {
 type Phase string
 
 const (
-	PendingPhase                   Phase = "Pending"
-	HelmChartInstallFailedPhase    Phase = "HelmChartInstallFailed"
-	ClusterInstallingPhase         Phase = "ClusterInstalling"
-	ClusterInstallFailedPhase      Phase = "ClusterInstallFailed"
-	SetupPipelineCreatingPhase     Phase = "SetupPipelineCreating"
-	SetupPipelineCreateFailedPhase Phase = "SetupPipelineCreateFailed"
-	SetupPipelineRunningPhase      Phase = "SetupPipelineRunning"
-	SetupPipelineFailedPhase       Phase = "SetupPipelineFailed"
-	ReadyPhase                     Phase = "Ready"
-	CredentialsFailedPhase         Phase = "CredentialsFailed"
-	FailedPhase                    Phase = "Failed"
+	PendingPhase                   Phase  = "Pending"
+	PendingMessage                 string = "Pending"
+	HelmChartInstallFailedPhase    Phase  = "HelmChartInstallFailed"
+	ClusterInstallingPhase         Phase  = "ClusterInstalling"
+	ClusterInstallFailedPhase      Phase  = "ClusterInstallFailed"
+	SetupPipelineCreatingPhase     Phase  = "SetupPipelineCreating"
+	SetupPipelineCreateFailedPhase Phase  = "SetupPipelineCreateFailed"
+	SetupPipelineRunningPhase      Phase  = "SetupPipelineRunning"
+	SetupPipelineFailedPhase       Phase  = "SetupPipelineFailed"
+	ReadyPhase                     Phase  = "Ready"
+	CredentialsFailedPhase         Phase  = "CredentialsFailed"
+	FailedPhase                    Phase  = "Failed"
 )
 
 type ClusterTemplateInstanceStatus struct {
@@ -84,6 +85,7 @@ type ClusterTemplateInstanceStatus struct {
 	Conditions    []metav1.Condition           `json:"conditions"`
 	ClusterSetup  *Pipeline                    `json:"clusterSetup,omitempty"`
 	Phase         Phase                        `json:"phase"`
+	Message       string                       `json:"message"`
 }
 
 //+kubebuilder:object:root=true

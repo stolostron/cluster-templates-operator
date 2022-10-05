@@ -10,37 +10,59 @@ rules:
   resources:
   - secrets
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - watch
 - apiGroups:
   - clustertemplate.openshift.io
   resources:
   - clustertemplateinstances
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - clustertemplate.openshift.io
   resources:
   - clustertemplateinstances/status
   verbs:
-  - '*'
+  - get
+  - patch
+  - update
 - apiGroups:
   - clustertemplate.openshift.io
   resources:
   - clustertemplatequotas
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - clustertemplate.openshift.io
   resources:
   - clustertemplatequotas/status
   verbs:
-  - '*'
+  - get
+  - patch
+  - update
 - apiGroups:
   - clustertemplate.openshift.io
   resources:
   - clustertemplates
   verbs:
-  - '*'
+  - get
+  - list
+  - watch
 - apiGroups:
   - helm.openshift.io
   resources:
@@ -54,19 +76,31 @@ rules:
   resources:
   - '*'
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - watch
 - apiGroups:
   - hypershift.openshift.io
   resources:
   - '*'
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - watch
 - apiGroups:
   - tekton.dev
   resources:
   - pipelineruns
   verbs:
-  - '*'
+  - create
+  - delete
+  - get
+  - list
+  - watch
 - apiGroups:
   - tekton.dev
   resources:
