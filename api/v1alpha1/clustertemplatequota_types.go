@@ -44,7 +44,7 @@ type ClusterTemplateQuotaStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=clustertemplatequotas,shortName=ctq;ctqs,scope=Namespaced
 
-// ClusterTemplateQuota is the Schema for the clustertemplatequota API
+// Defines which ClusterTemplates can be used in a given namespace
 type ClusterTemplateQuota struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

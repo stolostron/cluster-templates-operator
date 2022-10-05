@@ -98,7 +98,7 @@ type ClusterTemplateInstanceStatus struct {
 //+kubebuilder:printcolumn:name="Kubeconfig",type="string",JSONPath=".status.kubeconfig.name",description="Kubeconfig Secret"
 //+kubebuilder:printcolumn:name="API URL",type="string",JSONPath=".status.apiServerURL",description="API URL"
 
-// ClusterTemplateInstance is the Schema for the clustertemplateinstances API
+// Represents a request for instance of cluster
 type ClusterTemplateInstance struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

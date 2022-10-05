@@ -25,7 +25,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ClusterTemplate is the Schema for the clustertemplates API
+        description: Template of a cluster - defines resources required to start the
+          installation (via Helm chart) and optionally a post install setup of the
+          cluster (via Tekton pipeline)
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

@@ -21,8 +21,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ClusterTemplateQuota is the Schema for the clustertemplatequota
-          API
+        description: Defines which ClusterTemplates can be used in a given namespace
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

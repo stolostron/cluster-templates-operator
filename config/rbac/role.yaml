@@ -60,16 +60,20 @@ rules:
   resources:
   - clustertemplates
   verbs:
+  - create
   - get
   - list
+  - update
   - watch
 - apiGroups:
   - helm.openshift.io
   resources:
   - helmchartrepositories
   verbs:
+  - create
   - get
   - list
+  - update
   - watch
 - apiGroups:
   - hive.openshift.io

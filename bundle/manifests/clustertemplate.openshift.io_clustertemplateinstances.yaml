@@ -47,8 +47,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: ClusterTemplateInstance is the Schema for the clustertemplateinstances
-          API
+        description: Represents a request for instance of cluster
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

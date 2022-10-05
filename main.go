@@ -37,6 +37,7 @@ import (
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	v1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
 	"github.com/rawagner/cluster-templates-operator/controllers"
+	"github.com/rawagner/cluster-templates-operator/controllers/defaultresources"
 	"github.com/rawagner/cluster-templates-operator/helm"
 	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	//+kubebuilder:scaffold:imports
@@ -126,6 +127,20 @@ func main() {
 		RequeueTimeout: 60 * time.Second,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplateInstance")
+		os.Exit(1)
+	}
+	if err = (&defaultresources.HypershiftTemplateReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
+		os.Exit(1)
+	}
+	if err = (&defaultresources.HelmRepoReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "HelmRepo")
 		os.Exit(1)
 	}
 

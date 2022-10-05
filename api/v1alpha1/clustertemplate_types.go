@@ -99,7 +99,7 @@ type ClusterTemplateStatus struct {
 //+kubebuilder:resource:path=clustertemplates,shortName=ct;cts,scope=Cluster
 //+kubebuilder:printcolumn:name="Cost",type="integer",JSONPath=".spec.cost",description="Cluster cost"
 
-// ClusterTemplate is the Schema for the clustertemplates API
+// Template of a cluster - defines resources required to start the installation (via Helm chart) and optionally a post install setup of the cluster (via Tekton pipeline)
 type ClusterTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
