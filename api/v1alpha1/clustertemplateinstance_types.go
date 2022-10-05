@@ -79,13 +79,15 @@ const (
 )
 
 type ClusterTemplateInstanceStatus struct {
+	// A reference for secret which contains username and password under keys "username" and "password"
 	AdminPassword *corev1.LocalObjectReference `json:"adminPassword,omitempty"`
-	Kubeconfig    *corev1.LocalObjectReference `json:"kubeconfig,omitempty"`
-	APIserverURL  string                       `json:"apiServerURL,omitempty"`
-	Conditions    []metav1.Condition           `json:"conditions"`
-	ClusterSetup  *Pipeline                    `json:"clusterSetup,omitempty"`
-	Phase         Phase                        `json:"phase"`
-	Message       string                       `json:"message"`
+	// A reference for secret which contains kubeconfig under key "kubeconfig"
+	Kubeconfig   *corev1.LocalObjectReference `json:"kubeconfig,omitempty"`
+	APIserverURL string                       `json:"apiServerURL,omitempty"`
+	Conditions   []metav1.Condition           `json:"conditions"`
+	ClusterSetup *Pipeline                    `json:"clusterSetup,omitempty"`
+	Phase        Phase                        `json:"phase"`
+	Message      string                       `json:"message"`
 }
 
 //+kubebuilder:object:root=true
