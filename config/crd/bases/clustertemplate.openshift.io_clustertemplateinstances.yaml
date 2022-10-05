@@ -66,8 +66,8 @@ spec:
           status:
             properties:
               adminPassword:
-                description: LocalObjectReference contains enough information to let
-                  you locate the referenced object inside the same namespace.
+                description: A reference for secret which contains username and password
+                  under keys "username" and "password"
                 properties:
                   name:
                     description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
@@ -167,8 +167,8 @@ spec:
                   type: object
                 type: array
               kubeconfig:
-                description: LocalObjectReference contains enough information to let
-                  you locate the referenced object inside the same namespace.
+                description: A reference for secret which contains kubeconfig under
+                  key "kubeconfig"
                 properties:
                   name:
                     description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
