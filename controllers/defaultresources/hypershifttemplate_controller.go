@@ -29,8 +29,34 @@ func getHypershiftTemplate() *v1alpha1.ClusterTemplate {
 			Cost: 1,
 			HelmChartRef: &v1alpha1.HelmChartRef{
 				Repository: "cluster-templates",
-				Name:       "hypershift-chart",
+				Name:       "hypershift-template",
 				Version:    "0.0.1",
+			},
+			Properties: []v1alpha1.Property{
+				{
+					Name:         "baseDnsDomain",
+					Description:  "Base DNS domain of the cluster",
+					Type:         v1alpha1.PropertyTypeString,
+					Overwritable: true,
+				},
+				{
+					Name:         "releaseImage",
+					Description:  "Release image applied to the hosted control plane",
+					Type:         v1alpha1.PropertyTypeString,
+					Overwritable: true,
+				},
+				{
+					Name:         "sshPublicKey",
+					Description:  "SSH public key to be injected into all cluster node sshd servers",
+					Type:         v1alpha1.PropertyTypeString,
+					Overwritable: true,
+				},
+				{
+					Name:         "pullSecret",
+					Description:  "Base64 encoded pull secret to be injected into the container runtime of all cluster nodes",
+					Type:         v1alpha1.PropertyTypeString,
+					Overwritable: true,
+				},
 			},
 		},
 	}
