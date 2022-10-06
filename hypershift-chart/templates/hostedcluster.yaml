@@ -1,0 +1,40 @@
+apiVersion: hypershift.openshift.io/v1alpha1
+kind: HostedCluster
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  release:
+    image: {{ .Values.releaseImage }}
+  pullSecret:
+    name: pullsecret-cluster-{{ .Release.Name }}
+  sshKey:
+    name: sshkey-cluster-{{ .Release.Name }}
+  networking:
+    podCIDR: 10.132.0.0/14
+    serviceCIDR: 172.31.0.0/16
+    machineCIDR: 192.168.122.0/24
+    networkType: OVNKubernetes
+  platform:
+    type: Agent
+    agent:
+      agentNamespace: default
+  infraID: {{ .Release.Name }}
+  dns:
+    baseDomain: {{ .Values.baseDnsDomain }}
+  services:
+  - service: APIServer
+    servicePublishingStrategy:
+      type: LoadBalancer
+  - service: OAuthServer
+    servicePublishingStrategy:
+      type: Route
+  - service: OIDC
+    servicePublishingStrategy:
+      type: Route
+  - service: Konnectivity
+    servicePublishingStrategy:
+      type: Route
+  - service: Ignition
+    servicePublishingStrategy:
+      type: Route

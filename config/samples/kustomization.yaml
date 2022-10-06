@@ -1,6 +1,0 @@
-## Append samples you want in your CSV to this file as resources ##
-resources:
-- clustertemplate_v1alpha1_clustertemplate.yaml
-- clustertemplate_v1alpha1_clustertemplatequota.yaml
-- clustertemplate_v1alpha1_clustertemplateinstance.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples
