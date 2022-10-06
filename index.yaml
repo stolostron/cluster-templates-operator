@@ -5,12 +5,12 @@ entries:
       cluster-template: "true"
     apiVersion: v2
     appVersion: 1.16.0
-    created: "2022-10-06T11:01:10.381108878+02:00"
+    created: "2022-10-06T13:12:21.181979088+02:00"
     description: A Helm chart for Kubernetes
-    digest: cbaff54780db0064cae57c9108f4426cd75d53cc19152abad0ee07d413617235
+    digest: 7f80b5f555e0acc4f94048cdb4f1294adf0e12dde5feaed979c83ca86eeac319
     name: hypershift-template
     type: application
     urls:
     - hypershift-template-0.0.1.tgz
     version: 0.0.1
-generated: "2022-10-06T11:01:10.380787996+02:00"
+generated: "2022-10-06T13:12:21.181632193+02:00"

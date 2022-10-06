@@ -2,22 +2,22 @@
     "$schema": "http://json-schema.org/schema#",
     "type": "object",
     "required": [
-      "baseDnsDomain",
-      "pullSecret",
-      "sshPublicKey",
-      "releaseImage"
+      "ocpVersion",
+      "ocpArch",
+      "APIPublishingStrategy",
+      "baseDnsDomain"
     ],
     "properties": {
       "baseDnsDomain": {
         "type": "string"
       },
-      "pullSecret": {
+      "APIPublishingStrategy": {
         "type": "string"
       },
-      "sshPublicKey": {
+      "ocpArch": {
         "type": "string"
       },
-      "releaseImage": {
+      "ocpVersion": {
         "type": "string"
       }
     }
