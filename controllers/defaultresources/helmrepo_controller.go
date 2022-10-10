@@ -29,7 +29,7 @@ func getHelmRepo() *openshiftAPI.HelmChartRepository {
 		Spec: openshiftAPI.HelmChartRepositorySpec{
 			DisplayName: "Cluster templates",
 			ConnectionConfig: openshiftAPI.ConnectionConfig{
-				URL: "https://rawagner.github.io/cluster-templates-operator",
+				URL: "https://stolostron.github.io/cluster-templates-operator",
 			},
 		},
 	}
