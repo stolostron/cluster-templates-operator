@@ -18,7 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	v1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
+	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 )
 
 func getHypershiftTemplate() (*v1alpha1.ClusterTemplate, error) {

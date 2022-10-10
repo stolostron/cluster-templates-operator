@@ -14,6 +14,7 @@ rules:
   - delete
   - get
   - list
+  - update
   - watch
 - apiGroups:
   - clustertemplate.openshift.io

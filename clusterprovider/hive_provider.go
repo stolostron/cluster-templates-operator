@@ -9,7 +9,7 @@ import (
 	k8sYaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	v1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
+	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 )
 
 type ClusterDeploymentProvider struct {

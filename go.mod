@@ -1,4 +1,4 @@
-module github.com/rawagner/cluster-templates-operator
+module github.com/stolostron/cluster-templates-operator
 
 go 1.18
 

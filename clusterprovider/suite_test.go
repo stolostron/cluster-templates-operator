@@ -29,7 +29,7 @@ import (
 
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
-	"github.com/rawagner/cluster-templates-operator/api/v1alpha1"
+	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

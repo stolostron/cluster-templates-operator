@@ -30,11 +30,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	v1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
+	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 
-	"github.com/rawagner/cluster-templates-operator/clusterprovider"
-	"github.com/rawagner/cluster-templates-operator/clustersetup"
-	"github.com/rawagner/cluster-templates-operator/helm"
+	"github.com/stolostron/cluster-templates-operator/clusterprovider"
+	"github.com/stolostron/cluster-templates-operator/clustersetup"
+	"github.com/stolostron/cluster-templates-operator/helm"
 	"gopkg.in/yaml.v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
@@ -62,7 +62,7 @@ const clusterTemplateInstanceFinalizer = "clustertemplateinstance.openshift.io/f
 // +kubebuilder:rbac:groups=helm.openshift.io,resources=helmchartrepositories,verbs=get;list;watch
 // +kubebuilder:rbac:groups=tekton.dev,resources=pipelines,verbs=get;list;watch
 // +kubebuilder:rbac:groups=tekton.dev,resources=pipelineruns,verbs=get;list;watch;create;delete
-// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;delete
 
 func (r *ClusterTemplateInstanceReconciler) Reconcile(
 	ctx context.Context,

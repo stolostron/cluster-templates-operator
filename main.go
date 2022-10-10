@@ -35,10 +35,10 @@ import (
 	openshiftAPI "github.com/openshift/api/helm/v1beta1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
-	v1alpha1 "github.com/rawagner/cluster-templates-operator/api/v1alpha1"
-	"github.com/rawagner/cluster-templates-operator/controllers"
-	"github.com/rawagner/cluster-templates-operator/controllers/defaultresources"
-	"github.com/rawagner/cluster-templates-operator/helm"
+	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
+	"github.com/stolostron/cluster-templates-operator/controllers"
+	"github.com/stolostron/cluster-templates-operator/controllers/defaultresources"
+	"github.com/stolostron/cluster-templates-operator/helm"
 	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	//+kubebuilder:scaffold:imports
 )

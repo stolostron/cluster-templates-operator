@@ -5,14 +5,14 @@ plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
 projectName: cluster-templates-operator
-repo: github.com/rawagner/cluster-templates-operator
+repo: github.com/stolostron/cluster-templates-operator
 resources:
 - api:
     crdVersion: v1
   domain: openshift.io
   group: clustertemplate
   kind: ClusterTemplate
-  path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
+  path: github.com/stolostron/cluster-templates-operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -21,7 +21,7 @@ resources:
   domain: openshift.io
   group: clustertemplate
   kind: ClusterTemplateQuota
-  path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
+  path: github.com/stolostron/cluster-templates-operator/api/v1alpha1
   version: v1alpha1
   webhooks:
     validation: true
@@ -33,7 +33,7 @@ resources:
   domain: openshift.io
   group: clustertemplate
   kind: ClusterTemplateInstance
-  path: github.com/rawagner/cluster-templates-operator/api/v1alpha1
+  path: github.com/stolostron/cluster-templates-operator/api/v1alpha1
   version: v1alpha1
   webhooks:
     validation: true
