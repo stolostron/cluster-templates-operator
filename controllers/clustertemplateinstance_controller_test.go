@@ -88,7 +88,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
 			cti, ctiLookupKey = testutils.GetCTI()
-			Expect(k8sClient.Create(ctx, cti)).Should(Succeed())
 		})
 
 		AfterEach(func() {
@@ -103,6 +102,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		})
 
 		It("Should fail when not all required props are provided for helm chart", func() {
+			Expect(k8sClient.Create(ctx, cti)).Should(Succeed())
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, ctiLookupKey, cti)
 				if err != nil {
@@ -129,6 +129,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 
 			ct.Spec.Properties = props
 			Expect(k8sClient.Update(ctx, ct)).Should(Succeed())
+			Expect(k8sClient.Create(ctx, cti)).Should(Succeed())
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, ctiLookupKey, cti)
 				if err != nil {
