@@ -2,5 +2,4 @@ apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateQuota
 metadata:
   name: clustertemplatequota-sample
-spec:
-  # TODO(user): Add fields here
+spec: {}
