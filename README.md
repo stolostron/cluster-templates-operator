@@ -49,7 +49,6 @@ apiVersion: helm.openshift.io/v1beta1
 kind: HelmChartRepository
 metadata:
   name: cluster-charts
-  resourceVersion: '43589313'
 spec:
   connectionConfig:
     url: 'https://stolostron.github.io/helm-demo/index.yaml'
