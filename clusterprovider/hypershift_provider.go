@@ -2,7 +2,6 @@ package clusterprovider
 
 import (
 	"context"
-	"encoding/base64"
 	"errors"
 
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
@@ -86,13 +85,11 @@ func (hc HostedClusterProvider) GetClusterStatus(
 					return false, "", errors.New("unexpected kubeadmin password format")
 				}
 
-				username := base64.URLEncoding.EncodeToString([]byte("kubeadmin"))
-
 				err = CreateClusterSecrets(
 					ctx,
 					k8sClient,
 					kubeconfigBytes,
-					[]byte(username),
+					[]byte("kubeadmin"),
 					kubeadminPass,
 					templateInstance,
 				)
