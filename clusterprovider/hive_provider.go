@@ -6,14 +6,14 @@ import (
 
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	corev1 "k8s.io/api/core/v1"
-	k8sYaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 )
 
 type ClusterDeploymentProvider struct {
-	ClusterDeployment string
+	ClusterDeploymentName      string
+	ClusterDeploymentNamespace string
 }
 
 func (cd ClusterDeploymentProvider) GetClusterStatus(
@@ -22,14 +22,9 @@ func (cd ClusterDeploymentProvider) GetClusterStatus(
 	templateInstance v1alpha1.ClusterTemplateInstance,
 ) (bool, string, error) {
 	clusterDeployment := hivev1.ClusterDeployment{}
-	err := k8sYaml.Unmarshal([]byte(cd.ClusterDeployment), &clusterDeployment)
-	if err != nil {
-		return false, "", err
-	}
-
-	err = k8sClient.Get(
+	err := k8sClient.Get(
 		ctx,
-		client.ObjectKey{Name: clusterDeployment.Name, Namespace: clusterDeployment.Namespace},
+		client.ObjectKey{Name: cd.ClusterDeploymentName, Namespace: cd.ClusterDeploymentNamespace},
 		&clusterDeployment,
 	)
 
@@ -50,7 +45,8 @@ func (cd ClusterDeploymentProvider) GetClusterStatus(
 }
 
 type ClusterClaimProvider struct {
-	ClusterClaim string
+	ClusterClaimName      string
+	ClusterClaimNamespace string
 }
 
 func (cc ClusterClaimProvider) GetClusterStatus(
@@ -59,14 +55,10 @@ func (cc ClusterClaimProvider) GetClusterStatus(
 	templateInstance v1alpha1.ClusterTemplateInstance,
 ) (bool, string, error) {
 	clusterClaim := hivev1.ClusterClaim{}
-	err := k8sYaml.Unmarshal([]byte(cc.ClusterClaim), &clusterClaim)
-	if err != nil {
-		return false, "", err
-	}
 
-	err = k8sClient.Get(
+	err := k8sClient.Get(
 		ctx,
-		client.ObjectKey{Name: clusterClaim.Name, Namespace: clusterClaim.Namespace},
+		client.ObjectKey{Name: cc.ClusterClaimName, Namespace: cc.ClusterClaimNamespace},
 		&clusterClaim,
 	)
 

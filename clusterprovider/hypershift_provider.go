@@ -8,12 +8,13 @@ import (
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	k8sYaml "k8s.io/apimachinery/pkg/util/yaml"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 type HostedClusterProvider struct {
-	HostedCluster string
+	HostedClusterName      string
+	HostedClusterNamespace string
+	NodePoolNames          []string
 }
 
 func (hc HostedClusterProvider) GetClusterStatus(
@@ -21,16 +22,10 @@ func (hc HostedClusterProvider) GetClusterStatus(
 	k8sClient client.Client,
 	templateInstance v1alpha1.ClusterTemplateInstance,
 ) (bool, string, error) {
-	var hostedC hypershiftv1alpha1.HostedCluster
-	err := k8sYaml.Unmarshal([]byte(hc.HostedCluster), &hostedC)
-	if err != nil {
-		return false, "", err
-	}
-
 	hostedCluster := &hypershiftv1alpha1.HostedCluster{}
-	err = k8sClient.Get(
+	err := k8sClient.Get(
 		ctx,
-		client.ObjectKey{Name: hostedC.Name, Namespace: hostedC.Namespace},
+		client.ObjectKey{Name: hc.HostedClusterName, Namespace: hc.HostedClusterNamespace},
 		hostedCluster,
 	)
 
@@ -95,6 +90,35 @@ func (hc HostedClusterProvider) GetClusterStatus(
 				)
 				if err != nil {
 					return false, "", err
+				}
+
+				if len(hc.NodePoolNames) > 0 {
+					nodePools := &hypershiftv1alpha1.NodePoolList{}
+					err := k8sClient.List(ctx, nodePools, &client.ListOptions{Namespace: hc.HostedClusterNamespace})
+					if err != nil {
+						return false, "", err
+					}
+
+					allReady := true
+					for _, nodePool := range nodePools.Items {
+						if nodePool.Spec.ClusterName == hc.HostedClusterName {
+							conditionFound := false
+							for _, condition := range nodePool.Status.Conditions {
+								if condition.Type == string(hypershiftv1alpha1.NodePoolReadyConditionType) {
+									conditionFound = true
+									if condition.Status == corev1.ConditionFalse {
+										allReady = false
+									}
+								}
+							}
+							if !conditionFound {
+								allReady = false
+							}
+						}
+					}
+					if !allReady {
+						return false, "Not available, waiting for nodepools", nil
+					}
 				}
 				return true, "Available", nil
 			} else {

@@ -1,5 +1,0 @@
-apiVersion: hypershift.openshift.io/v1alpha1
-kind: HostedCluster
-metadata:
-  name: foo
-  namespace: bar

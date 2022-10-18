@@ -8,63 +8,69 @@ import (
 type ConditionType string
 
 const (
-	HelmChartInstallSucceeded ConditionType = "HelmChartInstallSucceeded"
-	ClusterInstallSucceeded   ConditionType = "ClusterInstallSucceeded"
-	SetupPipelineCreated      ConditionType = "SetupPipelineCreated"
-	SetupPipelineSucceeded    ConditionType = "SetupPipelineSucceeded"
-	Ready                     ConditionType = "Ready"
+	ClusterDefinitionCreated ConditionType = "ClusterDefinitionCreated"
+	ClusterInstallSucceeded  ConditionType = "ClusterInstallSucceeded"
+	ArgoClusterAdded         ConditionType = "ArgoClusterAdded"
+	ClusterSetupCreated      ConditionType = "ClusterSetupCreated"
+	ClusterSetupSucceeded    ConditionType = "ClusterSetupSucceeded"
+	Ready                    ConditionType = "Ready"
 )
 
-type HelmChartInstallReason string
+type ClusterDefinitionReason string
 
 const (
-	HelmReleasePreparing  HelmChartInstallReason = "HelmReleasePreparing"
-	HelmChartInstallError HelmChartInstallReason = "HelmChartInstallError"
-	HelmChartInstalled    HelmChartInstallReason = "HelmChartInstalled"
-	HelmChartNotSpecified HelmChartInstallReason = "HelmChartNotSpecified"
-	HelmRepoListError     HelmChartInstallReason = "HelmRepoListError"
+	ClusterDefinitionPending ClusterDefinitionReason = "ClusterDefinitionPending"
+	ClusterDefinitionFailed  ClusterDefinitionReason = "ClusterDefinitionFailed"
+	ApplicationCreated       ClusterDefinitionReason = "ApplicationCreated"
 )
 
 type ClusterInstallReason string
 
 const (
-	HelmReleaseNotInstalled        ClusterInstallReason = "HelmReleaseNotInstalled"
-	HelmReleaseGetFailed           ClusterInstallReason = "HelmReleaseGetFailed"
-	HelmReleaseNotFound            ClusterInstallReason = "HelmReleaseNotFound"
+	ApplicationFetchFailed         ClusterInstallReason = "ApplicationFetchFailed"
+	ApplicationDegraded            ClusterInstallReason = "ApplicationDegraded"
+	ClusterDefinitionNotCreated    ClusterInstallReason = "ClusterDefinitionNotCreated"
 	ClusterProviderDetectionFailed ClusterInstallReason = "ClusterProviderDetectionFailed"
 	ClusterStatusFailed            ClusterInstallReason = "ClusterStatusFailed"
 	ClusterInstalled               ClusterInstallReason = "ClusterInstalled"
 	ClusterInstalling              ClusterInstallReason = "ClusterInstalling"
 )
 
-type SetupPipelineCreatedReason string
+type ArgoClusterAddedReason string
 
 const (
-	ClusterNotInstalled    SetupPipelineCreatedReason = "ClusterNotInstalled"
-	PipelineCreationFailed SetupPipelineCreatedReason = "PipelineCreationFailed"
-	PipelineNotSpecified   SetupPipelineCreatedReason = "PipelineNotSpecified"
-	PipelineCreated        SetupPipelineCreatedReason = "PipelineCreated"
+	ArgoClusterFailed  ArgoClusterAddedReason = "ArgoClusterFailed"
+	ArgoClusterCreated ArgoClusterAddedReason = "ArgoClusterCreated"
+	ArgoClusterPending ArgoClusterAddedReason = "ArgoClusterPending"
 )
 
-type SetupPipelineReason string
+type ClusterSetupCreatedReason string
 
 const (
-	PipelineRunNotCreated SetupPipelineReason = "PipelineRunNotCreated"
-	PipelineNotDefined    SetupPipelineReason = "PipelineNotDefined"
-	PipelineFetchFailed   SetupPipelineReason = "PipelineFetchFailed"
-	PipelineNotFound      SetupPipelineReason = "PipelineNotFound"
-	PipelineRunSucceeded  SetupPipelineReason = "PipelineRunSucceeded"
-	PipelineRunFailed     SetupPipelineReason = "PipelineRunFailed"
-	PipelineRunRunning    SetupPipelineReason = "PipelineRunRunning"
+	ClusterNotInstalled        ClusterSetupCreatedReason = "ClusterNotInstalled"
+	ClusterSetupNotSpecified   ClusterSetupCreatedReason = "ClusterSetupNotSpecified"
+	ClusterSetupCreationFailed ClusterSetupCreatedReason = "ClusterSetupCreationFailed"
+	SetupCreated               ClusterSetupCreatedReason = "ClusterSetupCreated"
 )
 
-func (clusterInstance *ClusterTemplateInstance) SetHelmChartInstallCondition(
+type ClusterSetupSucceededReason string
+
+const (
+	ClusterSetupNotDefined   ClusterSetupSucceededReason = "ClusterSetupNotDefined"
+	ClusterSetupFetchFailed  ClusterSetupSucceededReason = "ClusterSetupFetchFailed"
+	ClusterSetupAppsNotFound ClusterSetupSucceededReason = "ClusterSetupAppsNotFound"
+	SetupSucceeded           ClusterSetupSucceededReason = "ClusterSetupSucceeded"
+	ClusterSetupDegraded     ClusterSetupSucceededReason = "ClusterSetupDegraded"
+	ClusterSetupNotCreated   ClusterSetupSucceededReason = "ClusterSetupNotCreated"
+)
+
+func (clusterInstance *ClusterTemplateInstance) SetClusterDefinitionCreatedCondition(
 	status metav1.ConditionStatus,
-	reason HelmChartInstallReason,
+	reason ClusterDefinitionReason,
 	message string,
 ) {
 	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
-		Type:               string(HelmChartInstallSucceeded),
+		Type:               string(ClusterDefinitionCreated),
 		Status:             status,
 		Reason:             string(reason),
 		Message:            message,
@@ -86,13 +92,13 @@ func (clusterInstance *ClusterTemplateInstance) SetClusterInstallCondition(
 	})
 }
 
-func (clusterInstance *ClusterTemplateInstance) SetSetupPipelineCreatedCondition(
+func (clusterInstance *ClusterTemplateInstance) SetClusterSetupCreatedCondition(
 	status metav1.ConditionStatus,
-	reason SetupPipelineCreatedReason,
+	reason ClusterSetupCreatedReason,
 	message string,
 ) {
 	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
-		Type:               string(SetupPipelineCreated),
+		Type:               string(ClusterSetupCreated),
 		Status:             status,
 		Reason:             string(reason),
 		Message:            message,
@@ -100,13 +106,27 @@ func (clusterInstance *ClusterTemplateInstance) SetSetupPipelineCreatedCondition
 	})
 }
 
-func (clusterInstance *ClusterTemplateInstance) SetSetupPipelineCondition(
+func (clusterInstance *ClusterTemplateInstance) SetArgoClusterAddedCondition(
 	status metav1.ConditionStatus,
-	reason SetupPipelineReason,
+	reason ArgoClusterAddedReason,
 	message string,
 ) {
 	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
-		Type:               string(SetupPipelineSucceeded),
+		Type:               string(ArgoClusterAdded),
+		Status:             status,
+		Reason:             string(reason),
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	})
+}
+
+func (clusterInstance *ClusterTemplateInstance) SetClusterSetupSucceededCondition(
+	status metav1.ConditionStatus,
+	reason ClusterSetupSucceededReason,
+	message string,
+) {
+	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
+		Type:               string(ClusterSetupSucceeded),
 		Status:             status,
 		Reason:             string(reason),
 		Message:            message,

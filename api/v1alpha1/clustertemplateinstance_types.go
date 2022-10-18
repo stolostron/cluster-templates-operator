@@ -17,65 +17,52 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"encoding/json"
-
+	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type PipelineStatus string
-
 const (
-	PipelineSucceeded PipelineStatus = "Succeeded"
-	PipelineFailed    PipelineStatus = "Failed"
-	PipelineRunning   PipelineStatus = "Running"
+	CTIFinalizer      = "clustertemplateinstance.openshift.io/finalizer"
+	CTINameLabel      = "clustertemplateinstance.openshift.io/name"
+	CTINamespaceLabel = "clustertemplateinstance.openshift.io/namespace"
+	CTISetupLabel     = "clustertemplate.openshift.io/cluster-setup"
+	ArgoNamespace     = "openshift-gitops" // TODO make configurable
 )
 
-type TaskStatus string
-
-const (
-	TaskPending   TaskStatus = "Pending"
-	TaskSucceeded TaskStatus = "Succeeded"
-	TaskFailed    TaskStatus = "Failed"
-	TaskRunning   TaskStatus = "Running"
-)
+type Parameter struct {
+	Name         string `json:"name"`
+	Value        string `json:"value"`
+	ClusterSetup string `json:"clusterSetup,omitempty"`
+}
 
 type ClusterTemplateInstanceSpec struct {
-	ClusterTemplateRef string `json:"clusterTemplateRef"`
-
-	// +kubebuilder:validation:Schemaless
-	// +kubebuilder:pruning:PreserveUnknownFields
-	// +kubebuilder:validation:Type=object
-	// +optional
-	Values json.RawMessage `json:"values,omitempty"`
+	ClusterTemplateRef string      `json:"clusterTemplateRef"`
+	Parameters         []Parameter `json:"parameters,omitempty"`
 }
 
-type Task struct {
-	Name   string     `json:"name"`
-	Status TaskStatus `json:"status"`
-}
-
-type Pipeline struct {
-	PipelineRef string         `json:"pipelineRef"`
-	Status      PipelineStatus `json:"status"`
-	Tasks       []Task         `json:"tasks,omitempty"`
+type ClusterSetupStatus struct {
+	Name   string            `json:"name"`
+	Status argo.HealthStatus `json:"status"`
 }
 
 type Phase string
 
 const (
-	PendingPhase                   Phase  = "Pending"
-	PendingMessage                 string = "Pending"
-	HelmChartInstallFailedPhase    Phase  = "HelmChartInstallFailed"
-	ClusterInstallingPhase         Phase  = "ClusterInstalling"
-	ClusterInstallFailedPhase      Phase  = "ClusterInstallFailed"
-	SetupPipelineCreatingPhase     Phase  = "SetupPipelineCreating"
-	SetupPipelineCreateFailedPhase Phase  = "SetupPipelineCreateFailed"
-	SetupPipelineRunningPhase      Phase  = "SetupPipelineRunning"
-	SetupPipelineFailedPhase       Phase  = "SetupPipelineFailed"
-	ReadyPhase                     Phase  = "Ready"
-	CredentialsFailedPhase         Phase  = "CredentialsFailed"
-	FailedPhase                    Phase  = "Failed"
+	PendingPhase                  Phase  = "Pending"
+	PendingMessage                string = "Pending"
+	ClusterDefinitionFailedPhase  Phase  = "ClusterDefinitionFailed"
+	ClusterInstallingPhase        Phase  = "ClusterInstalling"
+	ClusterInstallFailedPhase     Phase  = "ClusterInstallFailed"
+	ArgoClusterFailedPhase        Phase  = "ArgoClusterFailed"
+	AddingArgoClusterPhase        Phase  = "AddingArgoCluster"
+	ClusterSetupCreateFailedPhase Phase  = "ClusterSetupCreateFailedPhase"
+	CreatingClusterSetupPhase     Phase  = "CreatingClusterSetup"
+	ClusterSetupFailedPhase       Phase  = "ClusterSetupFailedPhase"
+	ClusterSetupRunningPhase      Phase  = "ClusterSetupRunning"
+	ReadyPhase                    Phase  = "Ready"
+	CredentialsFailedPhase        Phase  = "CredentialsFailed"
+	FailedPhase                   Phase  = "Failed"
 )
 
 type ClusterTemplateInstanceStatus struct {
@@ -85,7 +72,7 @@ type ClusterTemplateInstanceStatus struct {
 	Kubeconfig   *corev1.LocalObjectReference `json:"kubeconfig,omitempty"`
 	APIserverURL string                       `json:"apiServerURL,omitempty"`
 	Conditions   []metav1.Condition           `json:"conditions"`
-	ClusterSetup *Pipeline                    `json:"clusterSetup,omitempty"`
+	ClusterSetup *[]ClusterSetupStatus        `json:"clusterSetup,omitempty"`
 	Phase        Phase                        `json:"phase"`
 	Message      string                       `json:"message"`
 }
@@ -93,7 +80,7 @@ type ClusterTemplateInstanceStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:resource:path=clustertemplateinstances,shortName=cti;ctis,scope=Namespaced
 //+kubebuilder:subresource:status
-//+kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description="Cluster is ready"
+//+kubebuilder:printcolumn:name="Phase",type="string",JSONPath=".status.phase",description="Cluster phase"
 //+kubebuilder:printcolumn:name="Adminpassword",type="string",JSONPath=".status.adminPassword.name",description="Admin Secret"
 //+kubebuilder:printcolumn:name="Kubeconfig",type="string",JSONPath=".status.kubeconfig.name",description="Kubeconfig Secret"
 //+kubebuilder:printcolumn:name="API URL",type="string",JSONPath=".status.apiServerURL",description="API URL"
@@ -118,21 +105,4 @@ type ClusterTemplateInstanceList struct {
 
 func init() {
 	SchemeBuilder.Register(&ClusterTemplateInstance{}, &ClusterTemplateInstanceList{})
-}
-
-func (i *ClusterTemplateInstance) GetKubeadminPassRef() string {
-	return i.Name + "-admin-password"
-}
-
-func (i *ClusterTemplateInstance) GetKubeconfigRef() string {
-	return i.Name + "-admin-kubeconfig"
-}
-
-func (i *ClusterTemplateInstance) GetOwnerReference() metav1.OwnerReference {
-	return metav1.OwnerReference{
-		Kind:       "ClusterTemplateInstance",
-		APIVersion: APIVersion,
-		Name:       i.Name,
-		UID:        i.UID,
-	}
 }

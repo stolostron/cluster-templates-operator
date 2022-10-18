@@ -2,11 +2,8 @@ package clusterprovider
 
 import (
 	"context"
-	"strings"
 
-	"gopkg.in/yaml.v3"
-	"helm.sh/helm/v3/pkg/release"
-
+	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/go-logr/logr"
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -27,29 +24,44 @@ type ClusterProvider interface {
 	) (bool, string, error)
 }
 
-func GetClusterProvider(helmRelease *release.Release, log logr.Logger) (ClusterProvider, error) {
-	stringObjects := strings.Split(helmRelease.Manifest, "---\n")
-
-	for _, obj := range stringObjects {
-		var yamlObj map[string]interface{}
-		err := yaml.Unmarshal([]byte(obj), &yamlObj)
-		if err != nil {
-			return nil, err
-		}
-		switch yamlObj["kind"] {
+func GetClusterProvider(application argo.Application, log logr.Logger) ClusterProvider {
+	for _, obj := range application.Status.Resources {
+		switch obj.Kind {
 		case "HostedCluster":
 			log.Info("Cluster provider: HostedCluster")
-			return HostedClusterProvider{HostedCluster: obj}, nil
+			if obj.Version != "v1alpha1" {
+				log.Info("Unknown version: ", obj.Version)
+				return nil
+			}
+			nodePools := []string{}
+			for _, obj := range application.Status.Resources {
+				if obj.Kind == "NodePool" {
+					nodePools = append(nodePools, obj.Name)
+				}
+			}
+			return HostedClusterProvider{
+				HostedClusterName:      obj.Name,
+				HostedClusterNamespace: obj.Namespace,
+				NodePoolNames:          nodePools,
+			}
 		case "ClusterDeployment":
 			log.Info("Cluster provider: ClusterDeployment")
-			return ClusterDeploymentProvider{ClusterDeployment: obj}, nil
+			if obj.Version != "v1" {
+				log.Info("Unknown version: ", obj.Version)
+				return nil
+			}
+			return ClusterDeploymentProvider{ClusterDeploymentName: obj.Name, ClusterDeploymentNamespace: obj.Namespace}
 		case "ClusterClaim":
 			log.Info("Cluster provider: ClusterClaim")
-			return ClusterClaimProvider{ClusterClaim: obj}, nil
+			if obj.Version != "v1" {
+				log.Info("Unknown version: ", obj.Version)
+				return nil
+			}
+			return ClusterClaimProvider{ClusterClaimName: obj.Name, ClusterClaimNamespace: obj.Namespace}
 		}
 	}
 	log.Info("Cluster provider: Unknown")
-	return nil, nil
+	return nil
 }
 
 func CreateClusterSecrets(

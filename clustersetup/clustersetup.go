@@ -2,119 +2,206 @@ package clustersetup
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 
+	"gopkg.in/yaml.v3"
+	"k8s.io/client-go/tools/clientcmd"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	argoAppSet "github.com/argoproj/applicationset/pkg/utils"
 	"github.com/go-logr/logr"
-	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
-	pipelinev1beta1 "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	"github.com/kubernetes-client/go-base/config/api"
+	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-const (
-	ClusterSetupInstanceLabel = "clustertemplate.openshift.io/cluster-instance"
-)
+type ClusterConfig struct {
+	BearerToken     string          `json:"bearerToken"`
+	TLSClientConfig TLSClientConfig `json:"tlsClientConfig"`
+}
 
-func CreateSetupPipeline(
+type TLSClientConfig struct {
+	CAData string `json:"caData"`
+}
+
+func AddClusterToArgo(
 	ctx context.Context,
 	log logr.Logger,
 	k8sClient client.Client,
-	clusterTemplate v1alpha1.ClusterTemplate,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	getNewClusterClient func(configBytes []byte) (client.Client, error),
 ) error {
-	pipelines := pipelinev1beta1.PipelineList{}
 
-	clusterSetup := clusterTemplate.Spec.ClusterSetup
+	kubeconfigSecret := corev1.Secret{}
 
-	if clusterSetup.Pipeline.Name != "" {
-		if err := k8sClient.List(ctx, &pipelines, &client.ListOptions{}); err != nil {
-			return err
-		}
+	if err := k8sClient.Get(
+		ctx,
+		client.ObjectKey{
+			Name:      clusterTemplateInstance.GetKubeconfigRef(),
+			Namespace: clusterTemplateInstance.Namespace,
+		},
+		&kubeconfigSecret,
+	); err != nil {
+		return err
 	}
 
-	log.Info("Create PipelineRun")
-	pipelineRun := &pipelinev1beta1.PipelineRun{
+	newClusterClient, err := getNewClusterClient(kubeconfigSecret.Data["kubeconfig"])
+
+	if err != nil {
+		return err
+	}
+
+	sa := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: clusterTemplateInstance.Name + "-",
-			Namespace:    clusterTemplateInstance.Namespace,
-			OwnerReferences: []metav1.OwnerReference{
-				clusterTemplateInstance.GetOwnerReference(),
+			Name:      "argocd-manager",
+			Namespace: "kube-system",
+		},
+	}
+
+	if err := ensureResourceExists(ctx, newClusterClient, sa, false); err != nil {
+		return err
+	}
+
+	clusterRole := &rbacv1.ClusterRole{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: sa.Name + "-role",
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				Verbs:     []string{"*"},
+				APIGroups: []string{"*"},
+				Resources: []string{"*"},
 			},
+			{
+				NonResourceURLs: []string{"*"},
+				Verbs:           []string{"*"},
+			},
+		},
+	}
+
+	if err := ensureResourceExists(ctx, newClusterClient, clusterRole, false); err != nil {
+		return err
+	}
+
+	clusterRoleBinding := &rbacv1.ClusterRoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: sa.Name + "-role-binding",
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: "rbac.authorization.k8s.io",
+			Kind:     "ClusterRole",
+			Name:     clusterRole.Name,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      "ServiceAccount",
+				Name:      sa.Name,
+				Namespace: sa.Namespace,
+			},
+		},
+	}
+
+	if err := ensureResourceExists(ctx, newClusterClient, clusterRoleBinding, false); err != nil {
+		return err
+	}
+
+	tokenSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      sa.Name + "-token",
+			Namespace: sa.Namespace,
+			Annotations: map[string]string{
+				corev1.ServiceAccountNameKey: sa.Name,
+			},
+		},
+		Type: corev1.SecretTypeServiceAccountToken,
+	}
+
+	if err := ensureResourceExists(ctx, newClusterClient, tokenSecret, true); err != nil {
+		return err
+	}
+
+	if len(tokenSecret.Data["token"]) == 0 {
+		return fmt.Errorf("token not found")
+	}
+	if len(tokenSecret.Data["ca.crt"]) == 0 {
+		return fmt.Errorf("ca.crt not found")
+	}
+
+	kubeconfig := api.Config{}
+	if err := yaml.Unmarshal(kubeconfigSecret.Data["kubeconfig"], &kubeconfig); err != nil {
+		return err
+	}
+
+	config := ClusterConfig{
+		BearerToken: string(tokenSecret.Data["token"]),
+		TLSClientConfig: TLSClientConfig{
+			CAData: base64.URLEncoding.EncodeToString(tokenSecret.Data["ca.crt"]),
+		},
+	}
+
+	jsonConfig, err := json.Marshal(config)
+	if err != nil {
+		return err
+	}
+
+	app, err := clusterTemplateInstance.GetDay1Application(ctx, k8sClient)
+	if err != nil {
+		return err
+	}
+
+	clusterSecret := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      app.Name,
+			Namespace: app.Namespace,
 			Labels: map[string]string{
-				ClusterSetupInstanceLabel: clusterTemplateInstance.Name,
+				argoAppSet.ArgoCDSecretTypeLabel: argoAppSet.ArgoCDSecretTypeCluster,
+				v1alpha1.CTINameLabel:            clusterTemplateInstance.Name,
+				v1alpha1.CTINamespaceLabel:       clusterTemplateInstance.Namespace,
 			},
 		},
-		Spec: pipelinev1beta1.PipelineRunSpec{
-			Workspaces: []pipelinev1beta1.WorkspaceBinding{
-				{
-					Name: "kubeconfigSecret",
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: clusterTemplateInstance.GetKubeconfigRef(),
-					},
-				},
-				{
-					Name: "kubeadminPassSecret",
-					Secret: &corev1.SecretVolumeSource{
-						SecretName: clusterTemplateInstance.GetKubeadminPassRef(),
-					},
-				},
-			},
+		StringData: map[string]string{
+			"name":   clusterTemplateInstance.Namespace + "/" + clusterTemplateInstance.Name,
+			"server": kubeconfig.Clusters[0].Cluster.Server,
+			"config": string(jsonConfig),
 		},
+		Type: corev1.SecretTypeOpaque,
 	}
 
-	values := make(map[string]interface{})
-	if len(clusterTemplateInstance.Spec.Values) > 0 {
-		if err := json.Unmarshal(clusterTemplateInstance.Spec.Values, &values); err != nil {
-			return err
-		}
-	}
+	return ensureResourceExists(ctx, k8sClient, clusterSecret, false)
+}
 
-	clusterSetupParams := []pipelinev1beta1.Param{}
-	for _, prop := range clusterTemplate.Spec.Properties {
-		if prop.ClusterSetup {
-
-			value := ""
-
-			if len(prop.DefaultValue) > 0 {
-				if err := json.Unmarshal(prop.DefaultValue, &value); err != nil {
+func ensureResourceExists(ctx context.Context, newClusterClient client.Client, obj client.Object, loadBack bool) error {
+	err := newClusterClient.Get(ctx, client.ObjectKeyFromObject(obj), obj)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			err = newClusterClient.Create(ctx, obj)
+			if err != nil {
+				return err
+			}
+			if loadBack {
+				err = newClusterClient.Get(ctx, client.ObjectKeyFromObject(obj), obj)
+				if err != nil {
 					return err
 				}
 			}
-
-			if prop.Overwritable {
-				if val, ok := values[prop.Name]; ok {
-					value = val.(string)
-				}
-			}
-
-			clusterSetupParams = append(clusterSetupParams, pipelinev1beta1.Param{
-				Name: prop.Name,
-				Value: pipelinev1beta1.ArrayOrString{
-					Type:      pipelinev1beta1.ParamTypeString,
-					StringVal: value,
-				},
-			})
+		} else {
+			return err
 		}
 	}
+	return nil
+}
 
-	pipelineRun.Spec.Params = clusterSetupParams
+func GetClientForCluster(configBytes []byte) (client.Client, error) {
+	restConfig, err := clientcmd.RESTConfigFromKubeConfig(configBytes)
 
-	if clusterSetup.Pipeline.Namespace != "" {
-		var pipeline pipelinev1beta1.Pipeline
-		for _, p := range pipelines.Items {
-			if p.Name == clusterSetup.Pipeline.Name &&
-				p.Namespace == clusterSetup.Pipeline.Namespace {
-				pipeline = p
-				break
-			}
-		}
-
-		pipelineRun.Spec.PipelineSpec = &pipeline.Spec
-	} else {
-		pipelineRun.Spec.PipelineRef = &clusterSetup.PipelineRef
+	if err != nil {
+		return nil, err
 	}
-	log.Info("Submit PipelineRun")
-	return k8sClient.Create(ctx, pipelineRun)
+
+	return client.New(restConfig, client.Options{})
 }

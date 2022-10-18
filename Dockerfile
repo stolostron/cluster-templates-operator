@@ -13,7 +13,6 @@ RUN go mod download
 COPY main.go main.go
 COPY api/ api/
 COPY controllers/ controllers/
-COPY helm/ helm/
 COPY clusterprovider/ clusterprovider/
 COPY clustersetup/ clustersetup/
 
