@@ -17,23 +17,13 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"encoding/json"
-
-	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
+	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-type ResourceRef struct {
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
-}
-
 type ClusterSetup struct {
-	// +optional
-	PipelineRef pipeline.PipelineRef `json:"pipelineRef,omitempty"`
-
-	// +optional
-	Pipeline ResourceRef `json:"pipeline,omitempty"`
+	Name string               `json:"name"`
+	Spec argo.ApplicationSpec `json:"spec"`
 }
 
 type HelmChartRef struct {
@@ -42,50 +32,14 @@ type HelmChartRef struct {
 	Repository string `json:"repository"`
 }
 
-type PropertyType string
-
-const (
-	PropertyTypeString PropertyType = "string"
-	PropertyTypeBool   PropertyType = "bool"
-	PropertyTypeInt    PropertyType = "int"
-	PropertyTypeFloat  PropertyType = "float"
-)
-
-// TODO add admission webhook
-type Property struct {
-	Name string `json:"name"`
-
-	Description string `json:"description"`
-
-	// +kubebuilder:validation:Enum=string;bool;int;float
-	Type PropertyType `json:"type"`
-
-	Overwritable bool `json:"overwritable"`
-
-	// +kubebuilder:validation:Schemaless
-	// +kubebuilder:pruning:PreserveUnknownFields
-	// +optional
-	DefaultValue json.RawMessage `json:"defaultValue,omitempty"`
-
-	// +optional
-	SecretRef *ResourceRef `json:"secretRef,omitempty"`
-
-	// +optional
-	// prop Type can be string only
-	ClusterSetup bool `json:"clusterSetup,omitempty"`
-}
-
 type ClusterTemplateSpec struct {
-	HelmChartRef *HelmChartRef `json:"helmChartRef,omitempty"`
+	ClusterDefinition argo.ApplicationSpec `json:"clusterDefinition"`
 
 	// +optional
-	ClusterSetup *ClusterSetup `json:"clusterSetup,omitempty"`
+	ClusterSetup []ClusterSetup `json:"clusterSetup,omitempty"`
 
 	//+kubebuilder:validation:Minimum=0
 	Cost int `json:"cost"`
-
-	// +optional
-	Properties []Property `json:"properties,omitempty"`
 }
 
 // ClusterTemplateStatus defines the observed state of ClusterTemplate

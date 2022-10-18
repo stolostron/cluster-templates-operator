@@ -19,12 +19,9 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/kubernetes-client/go-base/config/api"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,34 +31,35 @@ import (
 
 	"github.com/stolostron/cluster-templates-operator/clusterprovider"
 	"github.com/stolostron/cluster-templates-operator/clustersetup"
-	"github.com/stolostron/cluster-templates-operator/helm"
 	"gopkg.in/yaml.v3"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 
-	openshiftAPI "github.com/openshift/api/helm/v1beta1"
-	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	argoHealth "github.com/argoproj/gitops-engine/pkg/health"
+	hivev1 "github.com/openshift/hive/apis/hive/v1"
+	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/selection"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 type ClusterTemplateInstanceReconciler struct {
 	client.Client
-	Scheme         *runtime.Scheme
-	HelmClient     *helm.HelmClient
-	RequeueTimeout time.Duration
+	Scheme *runtime.Scheme
 }
-
-const clusterTemplateInstanceFinalizer = "clustertemplateinstance.openshift.io/finalizer"
 
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates,verbs=get;list;watch
-// +kubebuilder:rbac:groups=hypershift.openshift.io,resources=*,verbs=get;list;watch;create;delete
-// +kubebuilder:rbac:groups=hive.openshift.io,resources=*,verbs=get;list;watch;create;delete
-// +kubebuilder:rbac:groups=helm.openshift.io,resources=helmchartrepositories,verbs=get;list;watch
-// +kubebuilder:rbac:groups=tekton.dev,resources=pipelines,verbs=get;list;watch
-// +kubebuilder:rbac:groups=tekton.dev,resources=pipelineruns,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=hypershift.openshift.io,resources=hostedclusters;nodepools,verbs=get;list;watch
+// +kubebuilder:rbac:groups=hive.openshift.io,resources=clusterclaims;clusterdeployments,verbs=get;list;watch
+// +kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list;watch;create;delete
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;delete
 
 func (r *ClusterTemplateInstanceReconciler) Reconcile(
@@ -79,68 +77,82 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 			)
 			return ctrl.Result{}, nil
 		}
-		return ctrl.Result{}, fmt.Errorf(
-			"failed to get clustertemplateinstance %q: %w",
-			req.NamespacedName,
-			err,
-		)
+		return ctrl.Result{}, err
 	}
 
 	if clusterTemplateInstance.GetDeletionTimestamp() != nil {
 		if controllerutil.ContainsFinalizer(
 			clusterTemplateInstance,
-			clusterTemplateInstanceFinalizer,
+			v1alpha1.CTIFinalizer,
 		) {
-			rel, err := r.HelmClient.GetRelease(clusterTemplateInstance.Name)
+			app, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client)
 			if err != nil {
-				_, ok := err.(*helm.ReleaseNotFoundErr)
-				if !ok {
-					return ctrl.Result{}, fmt.Errorf(
-						"failed to get helm release %q: %w",
-						req.NamespacedName,
-						err,
-					)
-				} else {
-					log.Info(
-						"Helm release does not exist",
-						"name",
-						req.NamespacedName,
-					)
+				if !apierrors.IsNotFound(err) {
+					return ctrl.Result{}, err
 				}
 			}
 
-			if rel != nil {
-				_, err = r.HelmClient.UninstallRelease(clusterTemplateInstance.Name)
-				if err != nil {
-					return ctrl.Result{}, fmt.Errorf(
-						"failed to uninstall helm release %q: %w",
-						req.NamespacedName,
-						err,
-					)
+			if app != nil {
+				if err := r.Client.Delete(ctx, app); err != nil {
+					return ctrl.Result{}, err
 				}
 			}
 
+			apps, err := clusterTemplateInstance.GetDay2Applications(ctx, r.Client)
+			if err != nil {
+				if !apierrors.IsNotFound(err) {
+					return ctrl.Result{}, err
+				}
+			}
+
+			if apps != nil {
+				for _, app := range apps.Items {
+					if err := r.Client.Delete(ctx, &app); err != nil {
+						return ctrl.Result{}, err
+					}
+				}
+			}
+
+			ctiNameLabelReq, _ := labels.NewRequirement(
+				v1alpha1.CTINameLabel,
+				selection.Equals,
+				[]string{clusterTemplateInstance.Name},
+			)
+			ctiNsLabelReq, _ := labels.NewRequirement(
+				v1alpha1.CTINamespaceLabel,
+				selection.Equals,
+				[]string{clusterTemplateInstance.Namespace},
+			)
+			selector := labels.NewSelector().Add(*ctiNameLabelReq, *ctiNsLabelReq)
+			secrets := &corev1.SecretList{}
+			if err := r.Client.List(ctx, secrets, &client.ListOptions{
+				LabelSelector: selector,
+				Namespace:     v1alpha1.ArgoNamespace,
+			}); err != nil {
+				return ctrl.Result{}, err
+			}
+
+			for _, secret := range secrets.Items {
+				if err := r.Client.Delete(ctx, &secret); err != nil {
+					return ctrl.Result{}, err
+				}
+			}
 			controllerutil.RemoveFinalizer(
 				clusterTemplateInstance,
-				clusterTemplateInstanceFinalizer,
+				v1alpha1.CTIFinalizer,
 			)
 			if err := r.Update(ctx, clusterTemplateInstance); err != nil {
-				return ctrl.Result{}, fmt.Errorf(
-					"failed to remove finalizer on clustertemplateinstance %q: %w",
-					req.NamespacedName,
-					err,
-				)
+				return ctrl.Result{}, err
 			}
 		}
-		log.Info("Deleted clustertemplateinstance", "name", req.NamespacedName)
-		return ctrl.Result{}, nil
+
 	}
 
 	if !controllerutil.ContainsFinalizer(
 		clusterTemplateInstance,
-		clusterTemplateInstanceFinalizer,
+		v1alpha1.CTIFinalizer,
 	) {
-		controllerutil.AddFinalizer(clusterTemplateInstance, clusterTemplateInstanceFinalizer)
+		controllerutil.AddFinalizer(clusterTemplateInstance, v1alpha1.CTIFinalizer)
 		if err := r.Update(ctx, clusterTemplateInstance); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -154,11 +166,6 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 
 	err := r.reconcile(ctx, clusterTemplateInstance)
 
-	setupSucceededCondition := meta.FindStatusCondition(
-		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.SetupPipelineSucceeded),
-	)
-
 	if updErr := r.Status().Update(ctx, clusterTemplateInstance); updErr != nil {
 		return ctrl.Result{}, fmt.Errorf("failed to update status of clustertemplateinstance %q: %w",
 			req.NamespacedName,
@@ -166,11 +173,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 		)
 	}
 
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	return ctrl.Result{Requeue: setupSucceededCondition.Status == metav1.ConditionFalse, RequeueAfter: r.RequeueTimeout}, nil
+	return ctrl.Result{}, err
 }
 
 func (r *ClusterTemplateInstanceReconciler) reconcile(
@@ -185,9 +188,9 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 		return fmt.Errorf(errMsg)
 	}
 
-	if err := r.reconcileHelmChart(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
-		clusterTemplateInstance.Status.Phase = v1alpha1.HelmChartInstallFailedPhase
-		errMsg := fmt.Sprintf("failed to install helm chart - %q", err)
+	if err := r.reconcileClusterCreate(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterDefinitionFailedPhase
+		errMsg := fmt.Sprintf("failed to create cluster definition - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
@@ -202,15 +205,22 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 		return fmt.Errorf(errMsg)
 	}
 
+	if err := r.reconcileAddClusterToArgo(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
+		clusterTemplateInstance.Status.Phase = v1alpha1.ArgoClusterFailedPhase
+		errMsg := fmt.Sprintf("failed to add cluster to argo - %q", err)
+		clusterTemplateInstance.Status.Message = errMsg
+		return fmt.Errorf(errMsg)
+	}
+
 	if err := r.reconcileClusterSetupCreate(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
-		clusterTemplateInstance.Status.Phase = v1alpha1.SetupPipelineCreateFailedPhase
-		errMsg := fmt.Sprintf("failed to create cluster setup pipeline - %q", err)
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupCreateFailedPhase
+		errMsg := fmt.Sprintf("failed to create cluster setup - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
 
 	if err := r.reconcileClusterSetup(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
-		clusterTemplateInstance.Status.Phase = v1alpha1.SetupPipelineFailedPhase
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupFailedPhase
 		errMsg := fmt.Sprintf("failed to reconcile cluster setup - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
@@ -228,11 +238,11 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 }
 
 func setPhase(clusterTemplateInstance *v1alpha1.ClusterTemplateInstance) {
-	helmChartInstallCondition := meta.FindStatusCondition(
+	clusterDefinitionCreatedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.HelmChartInstallSucceeded),
+		string(v1alpha1.ClusterDefinitionCreated),
 	)
-	if helmChartInstallCondition != nil && helmChartInstallCondition.Status == metav1.ConditionTrue {
+	if clusterDefinitionCreatedCondition.Status == metav1.ConditionTrue {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallingPhase
 		clusterTemplateInstance.Status.Message = "Cluster is installing"
 	}
@@ -241,97 +251,64 @@ func setPhase(clusterTemplateInstance *v1alpha1.ClusterTemplateInstance) {
 		clusterTemplateInstance.Status.Conditions,
 		string(v1alpha1.ClusterInstallSucceeded),
 	)
-	if installSucceededCondition != nil && installSucceededCondition.Status == metav1.ConditionTrue {
-		clusterTemplateInstance.Status.Phase = v1alpha1.SetupPipelineCreatingPhase
-		clusterTemplateInstance.Status.Message = "Creating cluster setup pipeline"
+	if installSucceededCondition.Status == metav1.ConditionTrue {
+		clusterTemplateInstance.Status.Phase = v1alpha1.AddingArgoClusterPhase
+		clusterTemplateInstance.Status.Message = "Adding cluster to argo"
 	}
 
-	setupCreatedCondition := meta.FindStatusCondition(
+	argoClusterCreatedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.SetupPipelineCreated),
+		string(v1alpha1.ArgoClusterAdded),
 	)
-	if setupCreatedCondition != nil && setupCreatedCondition.Status == metav1.ConditionTrue {
-		clusterTemplateInstance.Status.Phase = v1alpha1.SetupPipelineRunningPhase
+	if argoClusterCreatedCondition.Status == metav1.ConditionTrue {
+		clusterTemplateInstance.Status.Phase = v1alpha1.CreatingClusterSetupPhase
+		clusterTemplateInstance.Status.Message = "Creating cluster setup"
+	}
+
+	clusterSetupCreatedCondition := meta.FindStatusCondition(
+		clusterTemplateInstance.Status.Conditions,
+		string(v1alpha1.ClusterSetupCreated),
+	)
+	if clusterSetupCreatedCondition.Status == metav1.ConditionTrue {
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupRunningPhase
 		clusterTemplateInstance.Status.Message = "Cluster setup is running"
 	}
 
-	setupSucceededCondition := meta.FindStatusCondition(
+	clusterSetupSucceededCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.SetupPipelineSucceeded),
+		string(v1alpha1.ClusterSetupSucceeded),
 	)
-	if setupSucceededCondition != nil && setupSucceededCondition.Status == metav1.ConditionTrue {
+	if clusterSetupSucceededCondition.Status == metav1.ConditionTrue {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ReadyPhase
 		clusterTemplateInstance.Status.Message = "Cluster is ready"
 	}
 }
-
-func (r *ClusterTemplateInstanceReconciler) reconcileHelmChart(
+func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
-	log := ctrl.LoggerFrom(ctx)
-	helmChartInstallCondition := meta.FindStatusCondition(
+
+	clusterDefinitionCreatedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.HelmChartInstallSucceeded),
+		string(v1alpha1.ClusterDefinitionCreated),
 	)
 
-	if helmChartInstallCondition.Status == metav1.ConditionTrue {
-		return nil
-	}
-
-	if clusterTemplate.Spec.HelmChartRef == nil {
-		if _, ok := clusterTemplate.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
-			clusterTemplateInstance.SetHelmChartInstallCondition(
-				metav1.ConditionTrue,
-				v1alpha1.HelmChartNotSpecified,
-				"No helm chart defined for the cluster template",
+	if clusterDefinitionCreatedCondition.Status == metav1.ConditionFalse {
+		if err := clusterTemplateInstance.CreateDay1Application(ctx, r.Client, clusterTemplate); err != nil {
+			clusterTemplateInstance.SetClusterDefinitionCreatedCondition(
+				metav1.ConditionFalse,
+				v1alpha1.ClusterDefinitionFailed,
+				fmt.Sprintf("Failed to create application - %q", err),
 			)
-			return nil
+			return err
 		}
-		clusterTemplateInstance.SetHelmChartInstallCondition(
-			metav1.ConditionFalse,
-			v1alpha1.HelmChartNotSpecified,
-			"No helm chart defined for the cluster template",
+		clusterTemplateInstance.SetClusterDefinitionCreatedCondition(
+			metav1.ConditionTrue,
+			v1alpha1.ApplicationCreated,
+			"Application created",
 		)
-		return nil
 	}
-
-	log.Info(
-		"Get helm chart of clustertemplateinstance",
-		"name",
-		clusterTemplateInstance.Name,
-	)
-
-	helmRepository := &openshiftAPI.HelmChartRepository{}
-	if err := r.Client.Get(ctx, types.NamespacedName{Name: clusterTemplate.Spec.HelmChartRef.Repository}, helmRepository); err != nil {
-		clusterTemplateInstance.SetHelmChartInstallCondition(
-			metav1.ConditionFalse,
-			v1alpha1.HelmRepoListError,
-			fmt.Sprintf("Failed to get helm chart repository - %q", err),
-		)
-		return err
-	}
-
-	if err := r.HelmClient.InstallChart(
-		ctx,
-		*helmRepository,
-		clusterTemplate,
-		*clusterTemplateInstance,
-	); err != nil {
-		clusterTemplateInstance.SetHelmChartInstallCondition(
-			metav1.ConditionFalse,
-			v1alpha1.HelmChartInstallError,
-			fmt.Sprintf("Failed to install helm chart - %q", err),
-		)
-		return err
-	}
-
-	clusterTemplateInstance.SetHelmChartInstallCondition(
-		metav1.ConditionTrue,
-		v1alpha1.HelmChartInstalled,
-		"Helm chart installed",
-	)
 	return nil
 }
 
@@ -341,11 +318,12 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
 	log := ctrl.LoggerFrom(ctx)
-	helmChartInstallCondition := meta.FindStatusCondition(
+	log.Info("getting status")
+	appCreatedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.HelmChartInstallSucceeded),
+		string(v1alpha1.ClusterDefinitionCreated),
 	)
-	if helmChartInstallCondition.Status == metav1.ConditionFalse {
+	if appCreatedCondition.Status == metav1.ConditionFalse {
 		return nil
 	}
 
@@ -354,44 +332,45 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 		return nil
 	}
 
-	log.Info("Get helm release for clustertemplateinstance", "name", clusterTemplateInstance.Name)
-	release, err := r.HelmClient.GetRelease(clusterTemplateInstance.Name)
+	log.Info("getting app")
+	application, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client)
 
 	if err != nil {
 		clusterTemplateInstance.SetClusterInstallCondition(
 			metav1.ConditionFalse,
-			v1alpha1.HelmReleaseGetFailed,
-			fmt.Sprintf("Failed to get helm release - %q", err),
+			v1alpha1.ApplicationFetchFailed,
+			fmt.Sprintf("Failed to fetch application - %q", err),
 		)
 		return err
 	}
-	if release == nil {
+
+	if application.Status.Health.Status == argoHealth.HealthStatusDegraded {
 		clusterTemplateInstance.SetClusterInstallCondition(
 			metav1.ConditionFalse,
-			v1alpha1.HelmReleaseNotFound,
-			fmt.Sprintf("Failed to find helm release - %q", err),
+			v1alpha1.ApplicationDegraded,
+			fmt.Sprintf("Failed to sync cluster - %s", application.Status.Health.Message),
+		)
+		return fmt.Errorf("application is degraded - %s", application.Status.Health.Message)
+	}
+
+	if application.Status.Health.Status != argoHealth.HealthStatusHealthy {
+		clusterTemplateInstance.SetClusterInstallCondition(
+			metav1.ConditionFalse,
+			v1alpha1.ClusterInstalling,
+			application.Status.Health.Message,
 		)
 		return nil
 	}
 
-	provider, err := clusterprovider.GetClusterProvider(release, log)
-
-	if err != nil {
-		clusterTemplateInstance.SetClusterInstallCondition(
-			metav1.ConditionFalse,
-			v1alpha1.ClusterProviderDetectionFailed,
-			fmt.Sprintf("Failed to detect cluster provider - %q", err),
-		)
-		return err
-	}
+	provider := clusterprovider.GetClusterProvider(*application, log)
 
 	if provider == nil {
 		clusterTemplateInstance.SetClusterInstallCondition(
-			metav1.ConditionTrue,
-			v1alpha1.ClusterInstalled,
-			"Available",
+			metav1.ConditionFalse,
+			v1alpha1.ClusterProviderDetectionFailed,
+			"Failed to detect cluster provider",
 		)
-		return nil
+		return fmt.Errorf("failed to detect cluster provider")
 	}
 
 	ready, status, err := provider.GetClusterStatus(ctx, r.Client, *clusterTemplateInstance)
@@ -425,12 +404,12 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCredentials(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 ) error {
-	setupSucceededCondition := meta.FindStatusCondition(
+	clusterSetupSucceededCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.SetupPipelineSucceeded),
+		string(v1alpha1.ClusterSetupSucceeded),
 	)
 
-	if setupSucceededCondition.Status == metav1.ConditionFalse {
+	if clusterSetupSucceededCondition.Status == metav1.ConditionFalse {
 		return nil
 	}
 
@@ -464,12 +443,13 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCredentials(
 	return nil
 }
 
-func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
+func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
 	log := ctrl.LoggerFrom(ctx)
+
 	installSucceededCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
 		string(v1alpha1.ClusterInstallSucceeded),
@@ -479,47 +459,93 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 		return nil
 	}
 
-	if clusterTemplate.Spec.ClusterSetup == nil {
-		clusterTemplateInstance.SetSetupPipelineCreatedCondition(
+	argoClusterAddedCondition := meta.FindStatusCondition(
+		clusterTemplateInstance.Status.Conditions,
+		string(v1alpha1.ArgoClusterAdded),
+	)
+
+	if argoClusterAddedCondition.Status == metav1.ConditionTrue {
+		return nil
+	}
+
+	if err := clustersetup.AddClusterToArgo(
+		ctx,
+		log,
+		r.Client,
+		clusterTemplateInstance,
+		clustersetup.GetClientForCluster,
+	); err != nil {
+		clusterTemplateInstance.SetArgoClusterAddedCondition(
+			metav1.ConditionFalse,
+			v1alpha1.ArgoClusterFailed,
+			fmt.Sprintf("Failed to add cluster to argo - %q", err),
+		)
+		return err
+	}
+	clusterTemplateInstance.SetArgoClusterAddedCondition(
+		metav1.ConditionTrue,
+		v1alpha1.ArgoClusterCreated,
+		"Cluster added to argo successfully",
+	)
+	return nil
+}
+
+func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
+	ctx context.Context,
+	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplate v1alpha1.ClusterTemplate,
+) error {
+	log := ctrl.LoggerFrom(ctx)
+
+	argoClusterAddedCondition := meta.FindStatusCondition(
+		clusterTemplateInstance.Status.Conditions,
+		string(v1alpha1.ArgoClusterAdded),
+	)
+
+	if argoClusterAddedCondition.Status == metav1.ConditionFalse {
+		return nil
+	}
+
+	if len(clusterTemplate.Spec.ClusterSetup) == 0 {
+		clusterTemplateInstance.SetClusterSetupCreatedCondition(
 			metav1.ConditionTrue,
-			v1alpha1.PipelineNotSpecified,
-			"No pipeline specified",
+			v1alpha1.ClusterSetupNotSpecified,
+			"No cluster setup specified",
 		)
 		return nil
 	}
 
-	pipelineCreatedCondition := meta.FindStatusCondition(
+	clusterSetupCreatedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.SetupPipelineCreated),
+		string(v1alpha1.ClusterSetupCreated),
 	)
 
-	if pipelineCreatedCondition.Status == metav1.ConditionTrue {
+	if clusterSetupCreatedCondition.Status == metav1.ConditionTrue {
 		return nil
 	}
 
 	log.Info(
-		"Create cluster setup tekton pipeline for clustertemplateinstance",
+		"Create cluster setup for clustertemplateinstance",
 		"name",
 		clusterTemplateInstance.Name,
 	)
-	if err := clustersetup.CreateSetupPipeline(
+	if err := clusterTemplateInstance.CreateDay2Applications(
 		ctx,
 		log,
 		r.Client,
 		clusterTemplate,
-		clusterTemplateInstance,
 	); err != nil {
-		clusterTemplateInstance.SetSetupPipelineCreatedCondition(
+		clusterTemplateInstance.SetClusterSetupCreatedCondition(
 			metav1.ConditionFalse,
-			v1alpha1.PipelineCreationFailed,
-			fmt.Sprintf("Failed to create tekton pipeline - %q", err),
+			v1alpha1.ClusterSetupCreationFailed,
+			fmt.Sprintf("Failed to create cluster setup - %q", err),
 		)
 		return err
 	}
-	clusterTemplateInstance.SetSetupPipelineCreatedCondition(
+	clusterTemplateInstance.SetClusterSetupCreatedCondition(
 		metav1.ConditionTrue,
-		v1alpha1.PipelineCreated,
-		"Tekton pipeline created",
+		v1alpha1.SetupCreated,
+		"Cluster setup created",
 	)
 	return nil
 }
@@ -531,141 +557,196 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 ) error {
 	log := ctrl.LoggerFrom(ctx)
 
-	setupPipelineCreatedCondition := meta.FindStatusCondition(
+	clusterSetupCreatedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.SetupPipelineCreated),
+		string(v1alpha1.ClusterSetupCreated),
 	)
 
-	if setupPipelineCreatedCondition.Status == metav1.ConditionFalse {
+	if clusterSetupCreatedCondition.Status == metav1.ConditionFalse {
 		return nil
 	}
 
-	if clusterTemplate.Spec.ClusterSetup == nil {
-		clusterTemplateInstance.SetSetupPipelineCondition(
+	if len(clusterTemplate.Spec.ClusterSetup) == 0 {
+		clusterTemplateInstance.SetClusterSetupSucceededCondition(
 			metav1.ConditionTrue,
-			v1alpha1.PipelineNotDefined,
-			"No pipeline defined",
+			v1alpha1.ClusterSetupNotDefined,
+			"No cluster setup defined",
 		)
 		return nil
 	}
 
 	log.Info(
-		"reconcile tekton pipelines for clustertemplateinstance",
+		"reconcile cluster setup for clustertemplateinstance",
 		"name",
 		clusterTemplateInstance.Name,
 	)
-	pipelineRuns := &pipeline.PipelineRunList{}
+	applications, err := clusterTemplateInstance.GetDay2Applications(ctx, r.Client)
 
-	pipelineLabelReq, _ := labels.NewRequirement(
-		clustersetup.ClusterSetupInstanceLabel,
-		selection.Equals,
-		[]string{clusterTemplateInstance.Name},
-	)
-	selector := labels.NewSelector().Add(*pipelineLabelReq)
-
-	if err := r.Client.List(
-		ctx,
-		pipelineRuns,
-		&client.ListOptions{
-			LabelSelector: selector,
-			Namespace:     clusterTemplateInstance.Namespace,
-		},
-	); err != nil {
-		clusterTemplateInstance.SetSetupPipelineCondition(
+	if err != nil {
+		clusterTemplateInstance.SetClusterSetupSucceededCondition(
 			metav1.ConditionFalse,
-			v1alpha1.PipelineFetchFailed,
-			fmt.Sprintf("Failed to list pipelines - %q", err),
+			v1alpha1.ClusterSetupFetchFailed,
+			fmt.Sprintf("Failed to list setup apps - %q", err),
 		)
 		return err
 	}
 
-	if len(pipelineRuns.Items) == 0 {
-		clusterTemplateInstance.SetSetupPipelineCondition(
+	if len(applications.Items) == 0 {
+		clusterTemplateInstance.SetClusterSetupSucceededCondition(
 			metav1.ConditionFalse,
-			v1alpha1.PipelineNotFound,
-			"Failed to find pipeline",
+			v1alpha1.ClusterSetupAppsNotFound,
+			"Failed to find cluster setup apps",
 		)
-		return nil
+		return fmt.Errorf("failed to find cluster setup apps")
 	}
 
-	pipelineRun := pipelineRuns.Items[0]
-	clusterSetupStatus := v1alpha1.Pipeline{
-		PipelineRef: pipelineRun.Name,
-		Status:      v1alpha1.PipelineRunning,
-	}
-	for i := range pipelineRun.Status.Conditions {
-		if pipelineRun.Status.Conditions[i].Type == "Succeeded" {
-			switch pipelineRun.Status.Conditions[i].Status {
-			case corev1.ConditionTrue:
-				clusterSetupStatus.Status = v1alpha1.PipelineSucceeded
-				clusterTemplateInstance.SetSetupPipelineCondition(
-					metav1.ConditionTrue,
-					v1alpha1.PipelineRunSucceeded,
-					"Pipeline run succeeded",
-				)
-			case corev1.ConditionFalse:
-				clusterSetupStatus.Status = v1alpha1.PipelineFailed
-				clusterTemplateInstance.SetSetupPipelineCondition(
-					metav1.ConditionFalse,
-					v1alpha1.PipelineRunFailed,
-					"Pipeline run failed",
-				)
-			default:
-				clusterSetupStatus.Status = v1alpha1.PipelineRunning
-				clusterTemplateInstance.SetSetupPipelineCondition(
-					metav1.ConditionFalse,
-					v1alpha1.PipelineRunRunning,
-					"Pipeline run is running",
-				)
+	clusterSetupStatus := []v1alpha1.ClusterSetupStatus{}
+	allSynced := true
+	for _, app := range applications.Items {
+		setupName := app.Labels[v1alpha1.CTISetupLabel]
+		clusterSetupStatus = append(clusterSetupStatus, v1alpha1.ClusterSetupStatus{
+			Name:   setupName,
+			Status: app.Status.Health,
+		})
+		if app.Status.Health.Status != argoHealth.HealthStatusHealthy ||
+			app.Status.Sync.Status != argo.SyncStatusCodeSynced {
+			allSynced = false
+		}
+
+		if app.Status.Health.Status == argoHealth.HealthStatusDegraded {
+			healthMsg := app.Status.Health.Message
+			msg := fmt.Sprintf("Cluster setup %s degraded", setupName)
+			if healthMsg != "" {
+				msg = msg + " - " + healthMsg
 			}
+			clusterTemplateInstance.SetClusterSetupSucceededCondition(
+				metav1.ConditionFalse,
+				v1alpha1.ClusterSetupDegraded,
+				msg,
+			)
+			return nil
 		}
 	}
 
-	taskRunStatuses := []v1alpha1.Task{}
-
-	if pipelineRun.Status.PipelineSpec != nil {
-		for _, task := range pipelineRun.Status.PipelineSpec.Tasks {
-			taskRunStatus := v1alpha1.Task{
-				Name:   task.Name,
-				Status: v1alpha1.TaskPending,
-			}
-
-			for _, taskRun := range pipelineRun.Status.TaskRuns {
-				if taskRun != nil && taskRun.PipelineTaskName == task.Name {
-					for _, condition := range taskRun.Status.Conditions {
-						if condition.Type == "Succeeded" {
-							switch condition.Status {
-							case corev1.ConditionTrue:
-								taskRunStatus.Status = v1alpha1.TaskSucceeded
-							case corev1.ConditionFalse:
-								taskRunStatus.Status = v1alpha1.TaskFailed
-							default:
-								taskRunStatus.Status = v1alpha1.TaskRunning
-							}
-						}
-					}
-				}
-			}
-
-			taskRunStatuses = append(taskRunStatuses, taskRunStatus)
-		}
+	if allSynced {
+		clusterTemplateInstance.SetClusterSetupSucceededCondition(
+			metav1.ConditionTrue,
+			v1alpha1.SetupSucceeded,
+			"Cluster setup succeeded",
+		)
 	}
 
-	clusterSetupStatus.Tasks = taskRunStatuses
 	clusterTemplateInstance.Status.ClusterSetup = &clusterSetupStatus
 	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClusterTemplateInstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+
+	mapApplicationToInstance := func(app client.Object) []reconcile.Request {
+		reply := []reconcile.Request{}
+		name := ""
+		namespace := ""
+		for key, val := range app.GetLabels() {
+			if key == v1alpha1.CTINameLabel {
+				name = val
+			}
+			if key == v1alpha1.CTINamespaceLabel {
+				namespace = val
+			}
+		}
+		if name != "" && namespace != "" {
+			reply = append(reply, reconcile.Request{NamespacedName: types.NamespacedName{
+				Namespace: namespace,
+				Name:      name,
+			}})
+		}
+		return reply
+	}
+
+	mapResourceToInstance := func(res client.Object) []reconcile.Request {
+		reply := []reconcile.Request{}
+		apps := &argo.ApplicationList{}
+
+		ctiNameLabelReq, _ := labels.NewRequirement(
+			v1alpha1.CTINameLabel,
+			selection.Exists,
+			[]string{},
+		)
+		ctiNsLabelReq, _ := labels.NewRequirement(
+			v1alpha1.CTINamespaceLabel,
+			selection.Exists,
+			[]string{},
+		)
+		ctiSetupReq, _ := labels.NewRequirement(
+			v1alpha1.CTISetupLabel,
+			selection.DoesNotExist,
+			[]string{},
+		)
+		selector := labels.NewSelector().Add(*ctiNameLabelReq, *ctiNsLabelReq, *ctiSetupReq)
+
+		if err := r.Client.List(context.TODO(), apps, &client.ListOptions{
+			LabelSelector: selector,
+			Namespace:     v1alpha1.ArgoNamespace,
+		}); err != nil {
+			return reply
+		}
+
+		for _, app := range apps.Items {
+			name := ""
+			namespace := ""
+			for key, val := range app.GetLabels() {
+				if key == v1alpha1.CTINameLabel {
+					name = val
+				}
+				if key == v1alpha1.CTINamespaceLabel {
+					name = val
+				}
+			}
+			if name != "" && namespace != "" {
+				for _, argoRes := range app.Status.Resources {
+					if res.GetObjectKind().GroupVersionKind().Kind == argoRes.Kind &&
+						res.GetNamespace() == argoRes.Namespace &&
+						res.GetName() == argoRes.Name {
+						reply = append(reply, reconcile.Request{NamespacedName: types.NamespacedName{
+							Namespace: namespace,
+							Name:      name,
+						}})
+					}
+				}
+			}
+		}
+		return reply
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.ClusterTemplateInstance{}).
+		Watches(
+			&source.Kind{Type: &argo.Application{}},
+			handler.EnqueueRequestsFromMapFunc(mapApplicationToInstance)).
+		Watches(
+			&source.Kind{Type: &hivev1.ClusterClaim{}},
+			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
+		Watches(
+			&source.Kind{Type: &hivev1.ClusterDeployment{}},
+			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
+		Watches(
+			&source.Kind{Type: &hypershiftv1alpha1.HostedCluster{}},
+			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
+		Watches(
+			&source.Kind{Type: &hypershiftv1alpha1.NodePool{}},
+			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
 		Complete(r)
 }
 
 func SetDefaultConditions(clusterInstance *v1alpha1.ClusterTemplateInstance) {
-	clusterInstance.SetHelmChartInstallCondition(metav1.ConditionFalse, v1alpha1.HelmReleasePreparing, "Installing helm release")
-	clusterInstance.SetClusterInstallCondition(metav1.ConditionFalse, v1alpha1.HelmReleaseNotInstalled, "Waiting for helm release")
-	clusterInstance.SetSetupPipelineCreatedCondition(metav1.ConditionFalse, v1alpha1.ClusterNotInstalled, "Waiting for cluster to be ready")
-	clusterInstance.SetSetupPipelineCondition(metav1.ConditionFalse, v1alpha1.PipelineRunNotCreated, "Waiting for PipelineRun to be created")
+	clusterInstance.SetClusterDefinitionCreatedCondition(metav1.ConditionFalse, v1alpha1.ClusterDefinitionPending, "Pending")
+	clusterInstance.SetClusterInstallCondition(metav1.ConditionFalse, v1alpha1.ClusterDefinitionNotCreated, "Waiting for cluster definition to be created")
+	clusterInstance.SetArgoClusterAddedCondition(
+		metav1.ConditionFalse,
+		v1alpha1.ArgoClusterPending,
+		"Waiting for cluster to be ready",
+	)
+	clusterInstance.SetClusterSetupCreatedCondition(metav1.ConditionFalse, v1alpha1.ClusterNotInstalled, "Waiting for cluster to be ready")
+	clusterInstance.SetClusterSetupSucceededCondition(metav1.ConditionFalse, v1alpha1.ClusterSetupNotCreated, "Waiting for cluster setup to be created")
 }

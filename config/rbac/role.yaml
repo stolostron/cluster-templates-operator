@@ -17,6 +17,16 @@ rules:
   - update
   - watch
 - apiGroups:
+  - argoproj.io
+  resources:
+  - applications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - watch
+- apiGroups:
   - clustertemplate.openshift.io
   resources:
   - clustertemplateinstances
@@ -79,37 +89,17 @@ rules:
 - apiGroups:
   - hive.openshift.io
   resources:
-  - '*'
+  - clusterclaims
+  - clusterdeployments
   verbs:
-  - create
-  - delete
   - get
   - list
   - watch
 - apiGroups:
   - hypershift.openshift.io
   resources:
-  - '*'
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - watch
-- apiGroups:
-  - tekton.dev
-  resources:
-  - pipelineruns
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - watch
-- apiGroups:
-  - tekton.dev
-  resources:
-  - pipelines
+  - hostedclusters
+  - nodepools
   verbs:
   - get
   - list

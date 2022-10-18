@@ -28,9 +28,9 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - description: Cluster is ready
-      jsonPath: .status.conditions[?(@.type=="Ready")].status
-      name: Ready
+    - description: Cluster phase
+      jsonPath: .status.phase
+      name: Phase
       type: string
     - description: Admin Secret
       jsonPath: .status.adminPassword.name
@@ -65,9 +65,20 @@ spec:
             properties:
               clusterTemplateRef:
                 type: string
-              values:
-                type: object
-                x-kubernetes-preserve-unknown-fields: true
+              parameters:
+                items:
+                  properties:
+                    clusterSetup:
+                      type: string
+                    name:
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - name
+                  - value
+                  type: object
+                type: array
             required:
             - clusterTemplateRef
             type: object
@@ -85,27 +96,28 @@ spec:
               apiServerURL:
                 type: string
               clusterSetup:
-                properties:
-                  pipelineRef:
-                    type: string
-                  status:
-                    type: string
-                  tasks:
-                    items:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    status:
+                      description: HealthStatus contains information about the currently
+                        observed health state of an application or resource
                       properties:
-                        name:
+                        message:
+                          description: Message is a human-readable informational message
+                            describing the health status
                           type: string
                         status:
+                          description: Status holds the status code of the application
+                            or resource
                           type: string
-                      required:
-                      - name
-                      - status
                       type: object
-                    type: array
-                required:
-                - pipelineRef
-                - status
-                type: object
+                  required:
+                  - name
+                  - status
+                  type: object
+                type: array
               conditions:
                 items:
                   description: "Condition contains details for one aspect of the current

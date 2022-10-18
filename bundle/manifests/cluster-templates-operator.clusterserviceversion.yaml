@@ -10,7 +10,7 @@ metadata:
           "metadata": {
             "name": "clustertemplate-sample"
           },
-          "spec": null
+          "spec": {}
         },
         {
           "apiVersion": "clustertemplate.openshift.io/v1alpha1",
@@ -18,7 +18,7 @@ metadata:
           "metadata": {
             "name": "clustertemplateinstance-sample"
           },
-          "spec": null
+          "spec": {}
         },
         {
           "apiVersion": "clustertemplate.openshift.io/v1alpha1",
@@ -26,7 +26,7 @@ metadata:
           "metadata": {
             "name": "clustertemplatequota-sample"
           },
-          "spec": null
+          "spec": {}
         }
       ]
     capabilities: Basic Install
@@ -81,6 +81,16 @@ spec:
           - get
           - list
           - update
+          - watch
+        - apiGroups:
+          - argoproj.io
+          resources:
+          - applications
+          verbs:
+          - create
+          - delete
+          - get
+          - list
           - watch
         - apiGroups:
           - clustertemplate.openshift.io
@@ -145,37 +155,17 @@ spec:
         - apiGroups:
           - hive.openshift.io
           resources:
-          - '*'
+          - clusterclaims
+          - clusterdeployments
           verbs:
-          - create
-          - delete
           - get
           - list
           - watch
         - apiGroups:
           - hypershift.openshift.io
           resources:
-          - '*'
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - watch
-        - apiGroups:
-          - tekton.dev
-          resources:
-          - pipelineruns
-          verbs:
-          - create
-          - delete
-          - get
-          - list
-          - watch
-        - apiGroups:
-          - tekton.dev
-          resources:
-          - pipelines
+          - hostedclusters
+          - nodepools
           verbs:
           - get
           - list
@@ -237,7 +227,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/stolostron/cluster-templates-operator:latest
+                image: quay.io/rawagner/cluster-templates-operator:latest
                 livenessProbe:
                   httpGet:
                     path: /healthz

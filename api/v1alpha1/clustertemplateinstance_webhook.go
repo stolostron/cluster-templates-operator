@@ -18,9 +18,7 @@ package v1alpha1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
-	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -70,65 +68,9 @@ func (r *ClusterTemplateInstance) checkProps() error {
 		return fmt.Errorf("failed to get cluster template - %q", err)
 	}
 
-	values := make(map[string]interface{})
-	if len(r.Spec.Values) > 0 {
-		if err := json.Unmarshal(r.Spec.Values, &values); err != nil {
-			return fmt.Errorf("could not unmarshal values - %q", err)
-		}
-	}
-
-	for key, element := range values {
-		index := -1
-		for idx := range template.Spec.Properties {
-			if template.Spec.Properties[idx].Name == key {
-				index = idx
-				break
-			}
-		}
-
-		if index == -1 {
-			return fmt.Errorf("property '%v' not found", key)
-		}
-
-		if !template.Spec.Properties[index].Overwritable {
-			return fmt.Errorf("property '%v' is not overwriable", key)
-		}
-
-		kind := reflect.TypeOf(element).Kind()
-
-		switch template.Spec.Properties[index].Type {
-		case PropertyTypeInt:
-			if err := ensurePropType(key, kind, reflect.Int); err != nil {
-				return err
-			}
-		case PropertyTypeFloat:
-			if err := ensurePropType(key, kind, reflect.Float64); err != nil {
-				return err
-			}
-		case PropertyTypeBool:
-			if err := ensurePropType(key, kind, reflect.Bool); err != nil {
-				return err
-			}
-		case PropertyTypeString:
-			if err := ensurePropType(key, kind, reflect.String); err != nil {
-				return err
-			}
-		}
-	}
+	// TODO check values
 	return nil
 
-}
-
-func ensurePropType(prop string, detectedKind reflect.Kind, expectedKind reflect.Kind) error {
-	if detectedKind != expectedKind {
-		return fmt.Errorf(
-			"incorrect property type '%s' for %v but should be %v",
-			detectedKind,
-			prop,
-			expectedKind,
-		)
-	}
-	return nil
 }
 
 func (r *ClusterTemplateInstance) checkQuota() error {

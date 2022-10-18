@@ -19,7 +19,6 @@ package main
 import (
 	"flag"
 	"os"
-	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -32,14 +31,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	openshiftAPI "github.com/openshift/api/helm/v1beta1"
+	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/controllers"
 	"github.com/stolostron/cluster-templates-operator/controllers/defaultresources"
-	"github.com/stolostron/cluster-templates-operator/helm"
-	pipeline "github.com/tektoncd/pipeline/pkg/apis/pipeline/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -52,8 +49,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	utilruntime.Must(hypershiftv1alpha1.AddToScheme(scheme))
-	utilruntime.Must(pipeline.AddToScheme(scheme))
-	utilruntime.Must(openshiftAPI.AddToScheme(scheme))
+	utilruntime.Must(argo.AddToScheme(scheme))
 	utilruntime.Must(hivev1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
@@ -111,8 +107,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	helmClient := helm.NewHelmClient(config, mgr.GetClient(), nil, nil, nil)
-
 	if err = (&controllers.ClusterTemplateQuotaReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -121,10 +115,8 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.ClusterTemplateInstanceReconciler{
-		Client:         mgr.GetClient(),
-		Scheme:         mgr.GetScheme(),
-		HelmClient:     helmClient,
-		RequeueTimeout: 60 * time.Second,
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplateInstance")
 		os.Exit(1)
@@ -136,13 +128,15 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
 		os.Exit(1)
 	}
-	if err = (&defaultresources.HelmRepoReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "HelmRepo")
-		os.Exit(1)
-	}
+	/*
+		if err = (&defaultresources.HelmRepoReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "HelmRepo")
+			os.Exit(1)
+		}
+	*/
 
 	if err = (&v1alpha1.ClusterTemplateQuota{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateQuota")

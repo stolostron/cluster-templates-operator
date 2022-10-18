@@ -1,24 +1,27 @@
 # Cluster as a service operator
-**Self-service clusters with guardrails!** Cluster templates operator provides an easy way to define clusters as templates and allows creating instances of those templates even for non-privileged developer/devops engineers. Cluster templates operator also allows specifing quotas for the developer/devops engineers.
+**Self-service clusters with guardrails!** Cluster as a service operator provides an easy way to define clusters as templates and allows creating instances of those templates even for non-privileged developer/devops engineers. Cluster templates operator also allows specifing quotas for the developer/devops engineers.
 
 ## Description
-Cluster templates operator adds 3 new CRDs.
+Cluster as a service operator adds 3 new CRDs.
 
-**ClusterTemplate** - cluster-scoped resource which defines how the cluster should look like (using [Helm Chart](https://github.com/helm/helm)) and optionally a post-install configuration of the cluster (using [Tekton Pipeline](https://github.com/tektoncd/pipeline))
+**ClusterTemplate** - cluster-scoped resource which defines day1 (cluster installation) and day2 (cluster setup) operations. Both day1 and day2 are defined as argocd Applications. To allow easy customization of the cluster, the argocd Application source is usually helm chart.
 
-**ClusterTemplateQuota** - namespace-scoped resource which defines which ClusterTemplates can be instantiated in a given namespace<br>
+**ClusterTemplateQuota** - namespace-scoped resource which defines which ClusterTemplates can be instantiated in a given namespace
 
 **ClusterTemplateInstance** - namespace-scoped resource which represents a request for instance of ClusterTemplate
 
 [Hypershift](https://github.com/openshift/hypershift) and [Hive](https://github.com/openshift/hive) (both ClusterDeployment and ClusterClaim) clusters are supported.
 
-The intended flows for admin and developer/devops enginer
+The intended flows for admin and developer/devops engineer
 
 ![ClusterTemplates](https://user-images.githubusercontent.com/2078045/193281667-1e1de2ce-9eab-4079-9ab9-f2c0d91a3e50.jpg)
 
 
 ## Getting Started
-You’ll need a Kubernetes cluster to run against.
+You’ll need:
+1. Kubernetes cluster to run against
+2. Hypershift and Hive operator for cluster installation.
+3. ArgoCD operator
 
 ### Running on the cluster
 1. Build and push your image to the location specified by `IMG`:
@@ -33,42 +36,35 @@ make docker-build docker-push IMG=<some-registry>/cluster-templates-operator:tag
 operator-sdk run bundle <some-registry>/cluster-templates-operator-bundle:latest
 ```
 
-### Uninstall the operator
-To delete the operator from the cluster:
-
-```sh
-operator-sdk cleanup cluster-templates-operator
-```
-
 ### Try It Out
-As mentioned before, every ClusterTemplate is backed by some Helm chart - you can use [this](https://stolostron.github.io/helm-demo/index.yaml) repository as a quickstart where the `hypershift-template` is hosted. The `hypershift-template` is easiest to use (requires Hypershift operator).
+The operator already ships with `hypershift-template` ClusterTemplate.
 
-1. Create HelmChartRepository CR
+Explore the ClusterTemplate definition
+`kubectl get ct hypershift-template -o yaml`
+
+#### Create new Cluster
+
+1. Create `clusters` namespace and add following secrets
 ```
-apiVersion: helm.openshift.io/v1beta1
-kind: HelmChartRepository
+kind: Secret
+apiVersion: v1
 metadata:
-  name: cluster-charts
-spec:
-  connectionConfig:
-    url: 'https://stolostron.github.io/helm-demo/index.yaml'
-```
-
-2. Create ClusterTemplate CR which will use the `cluster-charts` HelmChartRepository and `hypershift-template` Helm Chart
-```
-apiVersion: clustertemplate.openshift.io/v1alpha1
-kind: ClusterTemplate
+  name: pullsecret-cluster
+  namespace: clusters
+stringData:
+  .dockerconfigjson: '<your_pull_secret>'
+type: kubernetes.io/dockerconfigjson
+---
+apiVersion: v1
+kind: Secret
 metadata:
-  name: my-cluster-template
-spec:
-  cost: 10
-  helmChartRef:
-    name: hypershift-template
-    repository: cluster-charts
-    version: 0.1.0
+  name: sshkey-cluster
+  namespace: clusters
+stringData:
+  id_rsa.pub: <your_public_ssh_key>
 ```
 
-3. Create ClusterTemplateQuota CR which will allow 1 instance of `my-cluster-template` template in quota's namespace
+2. Create ClusterTemplateQuota CR which will allow creating instances of `hypershift-template` template in quota's namespace
 ```
 apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateQuota
@@ -77,11 +73,10 @@ metadata:
   namespace: default
 spec:
   allowedTemplates:
-    - name: my-cluster-template
-      count: 1
+    - name: hypershift-template
 ```
 
-4. Finally, create ClusterTemplateInstance
+3. Finally, create ClusterTemplateInstance
 
 ```
 apiVersion: clustertemplate.openshift.io/v1alpha1
@@ -90,10 +85,18 @@ metadata:
   name: mycluster
   namespace: default
 spec:
-  clusterTemplateRef: my-cluster-template
+  clusterTemplateRef: hypershift-template
 ```
 
-Now you will just need for cluster to be created. Observer the ClusterTemplateInstance's status to get the latest info aby the progress.
+Now you will need to wait for the cluster to be ready. Observe the ClusterTemplateInstance's status to get the latest info on the progress.
+
+
+### Uninstall the operator
+To delete the operator from the cluster:
+
+```sh
+operator-sdk cleanup cluster-templates-operator
+```
 
 
 ## License
