@@ -237,7 +237,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/rawagner/cluster-templates-operator:latest
+                image: quay.io/stolostron/cluster-templates-operator:latest
                 livenessProbe:
                   httpGet:
                     path: /healthz
