@@ -1,15 +1,14 @@
 apiVersion: hypershift.openshift.io/v1alpha1
 kind: HostedCluster
 metadata:
-  name: {{ .Release.Name }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ .Release.Namespace }}-{{ .Release.Name }}
 spec:
   release:
     image: quay.io/openshift-release-dev/ocp-release:{{ .Values.ocpVersion }}-{{ .Values.ocpArch }}
   pullSecret:
-    name: pullsecret-cluster-{{ .Release.Name }}
+    name: pullsecret-cluster
   sshKey:
-    name: sshkey-cluster-{{ .Release.Name }}
+    name: sshkey-cluster
   networking:
     podCIDR: 10.132.0.0/14
     serviceCIDR: 172.31.0.0/16
@@ -17,7 +16,7 @@ spec:
     networkType: OVNKubernetes
   platform:
     type: None
-  infraID: {{ .Release.Name }}
+  infraID: {{ .Release.Namespace }}-{{ .Release.Name }}
   dns:
     baseDomain: {{ .Values.baseDnsDomain }}
   services:
