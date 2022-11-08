@@ -1,20 +1,17 @@
 package controllers
 
 import (
-	"net/http/httptest"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/argoproj/gitops-engine/pkg/health"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/testutils"
-	"github.com/stolostron/cluster-templates-operator/testutils/helmserver"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
-	"github.com/argoproj/gitops-engine/pkg/health"
-	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -70,7 +67,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		ctiLookupKey := types.NamespacedName{}
 
 		ct := &v1alpha1.ClusterTemplate{}
-		helmRepoServer := &httptest.Server{}
 		ns := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "openshift-gitops",
@@ -78,13 +74,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		}
 
 		BeforeEach(func() {
-			helmRepoServer = helmserver.StartHelmRepoServer()
-
-			ctemp, err := testutils.GetCT(helmRepoServer.URL, false, false)
-			if err != nil {
-				Fail(err.Error())
-			}
-			ct = ctemp
+			ct = testutils.GetCT(false, false)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
 			cti, ctiLookupKey = testutils.GetCTI()
@@ -100,7 +90,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			}, timeout, interval).Should(BeTrue())
 			Expect(k8sClient.Delete(ctx, ct)).Should(Succeed())
 			Expect(k8sClient.Delete(ctx, ns)).Should(Succeed())
-			helmRepoServer.Close()
 		})
 
 		It("Should create cluster definition argo app", func() {
@@ -125,24 +114,14 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			Expect(app).ShouldNot(BeNil())
 		})
 	})
-
 	Context("Cluster status phase", func() {
 		cti := &v1alpha1.ClusterTemplateInstance{}
 		ctiLookupKey := types.NamespacedName{}
-
 		ct := &v1alpha1.ClusterTemplate{}
-		helmRepoServer := &httptest.Server{}
-		kubeConfigSecret := &corev1.Secret{}
-		kubeAdminSecret := &corev1.Secret{}
 
 		BeforeEach(func() {
-			helmRepoServer = helmserver.StartHelmRepoServer()
 
-			ctemp, err := testutils.GetCT(helmRepoServer.URL, true, false)
-			ct = ctemp
-			if err != nil {
-				Fail(err.Error())
-			}
+			ct = testutils.GetCT(true, false)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
 			cti, ctiLookupKey = testutils.GetCTI()
@@ -152,57 +131,11 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(app).ShouldNot(BeNil())
 
-			app.Status.Resources = []argo.ResourceStatus{
-				{
-					Kind:      "HostedCluster",
-					Group:     "hypershift.openshift.io",
-					Version:   "v1alpha1",
-					Name:      "hosted-cluster",
-					Namespace: "default",
-				},
-			}
 			app.Status.Health = argo.HealthStatus{
-				Status: health.HealthStatusHealthy,
+				Status: health.HealthStatusDegraded,
 			}
 
 			Expect(k8sClient.Update(ctx, app)).Should(Succeed())
-
-			hostedCluster := &hypershiftv1alpha1.HostedCluster{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "hosted-cluster",
-					Namespace: "default",
-				},
-				Spec: hypershiftv1alpha1.HostedClusterSpec{
-					Platform: hypershiftv1alpha1.PlatformSpec{
-						Type: hypershiftv1alpha1.NonePlatform,
-					},
-					Networking: hypershiftv1alpha1.ClusterNetworking{
-						NetworkType: hypershiftv1alpha1.OpenShiftSDN,
-					},
-					Etcd: hypershiftv1alpha1.EtcdSpec{
-						ManagementType: hypershiftv1alpha1.Managed,
-					},
-					Release: hypershiftv1alpha1.Release{
-						Image: "foo",
-					},
-					Services: []hypershiftv1alpha1.ServicePublishingStrategyMapping{},
-				},
-			}
-
-			err = k8sClient.Create(ctx, hostedCluster)
-			Expect(err).ShouldNot(HaveOccurred())
-
-			kubeConfigSecret, err = testutils.GetKubeconfigSecret()
-			if err != nil {
-				Fail(err.Error())
-			}
-			Expect(k8sClient.Create(ctx, kubeConfigSecret)).Should(Succeed())
-
-			kubeAdminSecret, err = testutils.GetKubeadminSecret()
-			if err != nil {
-				Fail(err.Error())
-			}
-			Expect(k8sClient.Create(ctx, kubeAdminSecret)).Should(Succeed())
 		})
 
 		AfterEach(func() {
@@ -212,19 +145,9 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				return apierrors.IsNotFound(err)
 			}, timeout, interval).Should(BeTrue())
 			Expect(k8sClient.Delete(ctx, ct)).Should(Succeed())
-			//Expect(k8sClient.Delete(ctx, kubeConfigSecret)).Should(Succeed())
-			//Expect(k8sClient.Delete(ctx, kubeAdminSecret)).Should(Succeed())
-			helmRepoServer.Close()
 		})
 
-		It("Detects when HostedCluster is ready", func() {
-
-			hostedCluster := &hypershiftv1alpha1.HostedCluster{}
-			Eventually(func() error {
-				return k8sClient.Get(ctx, types.NamespacedName{Name: "hosted-cluster", Namespace: "default"}, hostedCluster)
-			}, timeout, interval).Should(Succeed())
-			testutils.SetHostedClusterReady(hostedCluster, kubeConfigSecret.Name, kubeAdminSecret.Name)
-			Expect(k8sClient.Status().Update(ctx, hostedCluster)).Should(Succeed())
+		It("Detects app degraded", func() {
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, ctiLookupKey, cti)
 				if err != nil {
@@ -237,11 +160,70 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				if clusterCondition == nil {
 					return false
 				}
-				return clusterCondition.Status == metav1.ConditionTrue
+				return clusterCondition.Status == metav1.ConditionFalse && clusterCondition.Reason == string(v1alpha1.ApplicationDegraded)
 			}, timeout, interval).Should(BeTrue())
-			//Expect(cti.Status.Phase).Should(Equal(v1alpha1.ArgoClusterFailed))
-			//Expect(cti.Status.AdminPassword.Name).Should(Equal(cti.Name + "-admin-password"))
-			//Expect(cti.Status.Kubeconfig.Name).Should(Equal(cti.Name + "-admin-kubeconfig"))
+		})
+
+		It("Handles unknwn provider", func() {
+			app, err := cti.GetDay1Application(ctx, k8sClient)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(app).ShouldNot(BeNil())
+
+			app.Status.Health = argo.HealthStatus{
+				Status: health.HealthStatusHealthy,
+			}
+
+			Expect(k8sClient.Update(ctx, app)).Should(Succeed())
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, ctiLookupKey, cti)
+				if err != nil {
+					return false
+				}
+				clusterCondition := meta.FindStatusCondition(
+					cti.Status.Conditions,
+					string(v1alpha1.ClusterInstallSucceeded),
+				)
+				if clusterCondition == nil {
+					return false
+				}
+				return clusterCondition.Status == metav1.ConditionFalse && clusterCondition.Reason == string(v1alpha1.ClusterProviderDetectionFailed)
+			}, timeout, interval).Should(BeTrue())
+		})
+
+		It("Handles known provider", func() {
+			app, err := cti.GetDay1Application(ctx, k8sClient)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(app).ShouldNot(BeNil())
+
+			app.Status.Health = argo.HealthStatus{
+				Status: health.HealthStatusHealthy,
+			}
+
+			app.Status.Resources = []argo.ResourceStatus{
+				{
+					Group:     "hypershift.openshift.io",
+					Version:   "v1alpha1",
+					Kind:      "HostedCluster",
+					Name:      "foo",
+					Namespace: "bar",
+				},
+			}
+
+			Expect(k8sClient.Update(ctx, app)).Should(Succeed())
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, ctiLookupKey, cti)
+				if err != nil {
+					return false
+				}
+				clusterCondition := meta.FindStatusCondition(
+					cti.Status.Conditions,
+					string(v1alpha1.ClusterInstallSucceeded),
+				)
+				if clusterCondition == nil {
+					return false
+				}
+				return clusterCondition.Status == metav1.ConditionFalse && clusterCondition.Reason == string(v1alpha1.ClusterStatusFailed)
+			}, timeout, interval).Should(BeTrue())
 		})
 	})
 

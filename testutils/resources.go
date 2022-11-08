@@ -35,7 +35,7 @@ func GetCTI() (*v1alpha1.ClusterTemplateInstance, types.NamespacedName) {
 	return cti, types.NamespacedName{Name: cti.Name, Namespace: cti.Namespace}
 }
 
-func GetCT(helmRepoURL string, withProps bool, withSetup bool) (*v1alpha1.ClusterTemplate, error) {
+func GetCT(withProps bool, withSetup bool) *v1alpha1.ClusterTemplate {
 	ct := &v1alpha1.ClusterTemplate{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.GroupVersion.Identifier(),
@@ -47,7 +47,7 @@ func GetCT(helmRepoURL string, withProps bool, withSetup bool) (*v1alpha1.Cluste
 		Spec: v1alpha1.ClusterTemplateSpec{
 			ClusterDefinition: argo.ApplicationSpec{
 				Source: argo.ApplicationSource{
-					RepoURL:        helmRepoURL,
+					RepoURL:        "http://foo.com",
 					TargetRevision: "0.1.0",
 					Chart:          "hypershift-template",
 				},
@@ -72,7 +72,7 @@ func GetCT(helmRepoURL string, withProps bool, withSetup bool) (*v1alpha1.Cluste
 			}
 		}
 	*/
-	return ct, nil
+	return ct
 }
 
 func GetKubeconfigSecret() (*corev1.Secret, error) {
@@ -117,21 +117,26 @@ func GetKubeadminSecret() (*corev1.Secret, error) {
 	return kubeAdminSecret, nil
 }
 
-func SetHostedClusterReady(hostedCluster *hypershiftv1alpha1.HostedCluster, kubeconfigName string, kubeadminName string) {
-	hostedCluster.Status = hypershiftv1alpha1.HostedClusterStatus{
-		Conditions: []metav1.Condition{
-			{
-				Type:               string(hypershiftv1alpha1.HostedClusterAvailable),
-				Status:             metav1.ConditionTrue,
-				Reason:             "Foo",
-				LastTransitionTime: metav1.Now(),
-			},
-		},
-		KubeConfig: &corev1.LocalObjectReference{
-			Name: kubeconfigName,
-		},
-		KubeadminPassword: &corev1.LocalObjectReference{
-			Name: kubeadminName,
+func SetHostedClusterReady(hostedCluster hypershiftv1alpha1.HostedCluster, kubeconfigName string, kubeadminName string) hypershiftv1alpha1.HostedCluster {
+	status := hypershiftv1alpha1.HostedClusterStatus{}
+
+	status.Conditions = []metav1.Condition{
+		{
+			Type:               string(hypershiftv1alpha1.HostedClusterAvailable),
+			Status:             metav1.ConditionTrue,
+			Reason:             "Foo",
+			LastTransitionTime: metav1.Now(),
 		},
 	}
+	status.KubeConfig = &corev1.LocalObjectReference{
+		Name: kubeconfigName,
+	}
+	status.KubeadminPassword = &corev1.LocalObjectReference{
+		Name: kubeadminName,
+	}
+	hostedCluster.Status = status
+	hostedCluster.Labels = map[string]string{
+		"foo": "bar",
+	}
+	return hostedCluster
 }

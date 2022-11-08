@@ -11,7 +11,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -34,8 +33,6 @@ func GetNewClient(configBytes []byte) (client.Client, error) {
 
 var _ = Describe("Test cluster setup", func() {
 	It("AddClusterToArgo", func() {
-		log := ctrl.LoggerFrom(ctx)
-
 		cti := &v1alpha1.ClusterTemplateInstance{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
@@ -79,7 +76,7 @@ var _ = Describe("Test cluster setup", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, app)
-		err = AddClusterToArgo(ctx, log, client, cti, GetNewClient)
+		err = AddClusterToArgo(ctx, client, cti, GetNewClient)
 		Expect(err).Should(BeNil())
 
 		argoClusterSecret := &corev1.Secret{}

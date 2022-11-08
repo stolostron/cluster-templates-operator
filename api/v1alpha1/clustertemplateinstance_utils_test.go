@@ -9,7 +9,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -450,9 +449,8 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 		}
 
-		log := ctrl.LoggerFrom(ctx)
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret)
-		err = cti.CreateDay2Applications(ctx, log, client, ct)
+		err = cti.CreateDay2Applications(ctx, client, ct)
 		Expect(err).ShouldNot(HaveOccurred())
 
 		apps := argo.ApplicationList{}
@@ -482,7 +480,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 
 		client = fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret)
-		err = cti.CreateDay2Applications(ctx, log, client, ct)
+		err = cti.CreateDay2Applications(ctx, client, ct)
 		Expect(err).ShouldNot(HaveOccurred())
 
 		apps = argo.ApplicationList{}

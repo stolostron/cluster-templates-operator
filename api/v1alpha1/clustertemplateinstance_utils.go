@@ -22,7 +22,6 @@ import (
 	"gopkg.in/yaml.v3"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
-	"github.com/go-logr/logr"
 	"github.com/kubernetes-client/go-base/config/api"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -30,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -174,10 +174,10 @@ func (i *ClusterTemplateInstance) GetDay2Applications(ctx context.Context, k8sCl
 
 func (i *ClusterTemplateInstance) CreateDay2Applications(
 	ctx context.Context,
-	log logr.Logger,
 	k8sClient client.Client,
 	clusterTemplate ClusterTemplate,
 ) error {
+	log := ctrl.LoggerFrom(ctx)
 	apps, err := i.GetDay2Applications(ctx, k8sClient)
 
 	if err != nil {

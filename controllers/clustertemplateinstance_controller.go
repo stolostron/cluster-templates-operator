@@ -318,7 +318,11 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
 	log := ctrl.LoggerFrom(ctx)
-	log.Info("getting status")
+	log.Info(
+		"Reconcile instance status",
+		"name",
+		clusterTemplateInstance.Namespace+"/"+clusterTemplateInstance.Name,
+	)
 	appCreatedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
 		string(v1alpha1.ClusterDefinitionCreated),
@@ -332,7 +336,11 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 		return nil
 	}
 
-	log.Info("getting app")
+	log.Info(
+		"Fetch day1 argo application",
+		"name",
+		clusterTemplateInstance.Namespace+"/"+clusterTemplateInstance.Name,
+	)
 	application, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client)
 
 	if err != nil {
@@ -374,6 +382,11 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	}
 
 	ready, status, err := provider.GetClusterStatus(ctx, r.Client, *clusterTemplateInstance)
+	log.Info(
+		"Instance status - "+status,
+		"name",
+		clusterTemplateInstance.Namespace+"/"+clusterTemplateInstance.Name,
+	)
 	if err != nil {
 		clusterTemplateInstance.SetClusterInstallCondition(
 			metav1.ConditionFalse,
@@ -448,8 +461,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
-	log := ctrl.LoggerFrom(ctx)
-
 	installSucceededCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
 		string(v1alpha1.ClusterInstallSucceeded),
@@ -470,7 +481,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 
 	if err := clustersetup.AddClusterToArgo(
 		ctx,
-		log,
 		r.Client,
 		clusterTemplateInstance,
 		clustersetup.GetClientForCluster,
@@ -531,7 +541,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 	)
 	if err := clusterTemplateInstance.CreateDay2Applications(
 		ctx,
-		log,
 		r.Client,
 		clusterTemplate,
 	); err != nil {
