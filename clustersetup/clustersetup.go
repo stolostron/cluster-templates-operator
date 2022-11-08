@@ -11,7 +11,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	argoAppSet "github.com/argoproj/applicationset/pkg/utils"
-	"github.com/go-logr/logr"
 	"github.com/kubernetes-client/go-base/config/api"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -31,12 +30,10 @@ type TLSClientConfig struct {
 
 func AddClusterToArgo(
 	ctx context.Context,
-	log logr.Logger,
 	k8sClient client.Client,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 	getNewClusterClient func(configBytes []byte) (client.Client, error),
 ) error {
-
 	kubeconfigSecret := corev1.Secret{}
 
 	if err := k8sClient.Get(
