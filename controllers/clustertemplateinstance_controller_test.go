@@ -23,7 +23,7 @@ const (
 	interval = time.Millisecond * 250
 )
 
-func deleteResource(obj client.Object) {
+func DeleteResource(obj client.Object) {
 	Expect(k8sClient.Delete(ctx, obj)).Should(Succeed())
 	Eventually(func() bool {
 		err := k8sClient.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
@@ -45,8 +45,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		})
 
 		AfterEach(func() {
-			deleteResource(cti)
-			deleteResource(ct)
+			DeleteResource(cti)
+			DeleteResource(ct)
 		})
 
 		It("Should create default conditions", func() {
@@ -70,7 +70,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		})
 
 		AfterEach(func() {
-			deleteResource(cti)
+			DeleteResource(cti)
 		})
 		It("Should have failed phase when ct does not exist", func() {
 			Eventually(func() bool {
@@ -104,8 +104,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		})
 
 		AfterEach(func() {
-			deleteResource(cti)
-			deleteResource(ct)
+			DeleteResource(cti)
+			DeleteResource(ct)
 		})
 
 		It("Should create cluster definition argo app", func() {

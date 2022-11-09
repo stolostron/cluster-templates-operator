@@ -40,14 +40,34 @@ type ClusterTemplateSpec struct {
 	// Cost of the cluster, used for quotas
 	Cost int `json:"cost"`
 
+	// A namespace where ArgoCD Applications will be created
 	ArgoCDNamespace string `json:"argocdNamespace"`
+}
+
+type ClusterDefinitionSchema struct {
+	// Content of helm chart values.yaml
+	Values string `json:"values,omitempty"`
+	// Content of helm chart values.schema.json
+	Schema string `json:"schema,omitempty"`
+}
+
+type ClusterSetupSchema struct {
+	// Name of the cluster setup step
+	Name string `json:"name"`
+	// Content of helm chart values.yaml
+	Values string `json:"values,omitempty"`
+	// Content of helm chart values.schema.json
+	Schema string `json:"schema,omitempty"`
 }
 
 // ClusterTemplateStatus defines the observed state of ClusterTemplate
 type ClusterTemplateStatus struct {
-	// Resource conditions
+	// Describes helm chart properties and their schema
 	// +operator-sdk:csv:customresourcedefinitions:type=status
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
+	ClusterDefinition ClusterDefinitionSchema `json:"clusterDefinition,omitempty"`
+	// Describes helm chart properties and schema for every cluster setup step
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	ClusterSetup []ClusterSetupSchema `json:"clusterSetup,omitempty"`
 }
 
 //+kubebuilder:object:root=true

@@ -101,10 +101,6 @@ spec:
       - kind: Pod
         name: ""
         version: v1
-      statusDescriptors:
-      - description: Resource conditions
-        displayName: Conditions
-        path: conditions
       version: v1alpha1
   description: |
     **Self-service clusters with guardrails!**

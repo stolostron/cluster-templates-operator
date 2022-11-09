@@ -15,6 +15,7 @@ COPY api/ api/
 COPY controllers/ controllers/
 COPY clusterprovider/ clusterprovider/
 COPY clustersetup/ clustersetup/
+COPY helm/ helm/
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go
