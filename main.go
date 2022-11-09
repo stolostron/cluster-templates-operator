@@ -40,6 +40,7 @@ import (
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/controllers"
 	"github.com/stolostron/cluster-templates-operator/controllers/defaultresources"
+	"github.com/stolostron/cluster-templates-operator/helm"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -120,6 +121,8 @@ func main() {
 		Resource: "ClusterDeployment",
 	})
 
+	helmClient := helm.NewHelmClient(config, mgr.GetClient(), nil, nil, nil)
+
 	if err = (&controllers.ClusterTemplateQuotaReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -162,13 +165,24 @@ func main() {
 		}
 	}
 
-	if err = (&v1alpha1.ClusterTemplateQuota{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateQuota")
+	if err = (&controllers.ClusterTemplateReconciler{
+		Client:     mgr.GetClient(),
+		Scheme:     mgr.GetScheme(),
+		HelmClient: helmClient,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplate")
 		os.Exit(1)
 	}
-	if err = (&v1alpha1.ClusterTemplateInstance{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateInstance")
-		os.Exit(1)
+
+	if os.Getenv("DISABLE_WEBHOOKS") == "" {
+		if err = (&v1alpha1.ClusterTemplateQuota{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateQuota")
+			os.Exit(1)
+		}
+		if err = (&v1alpha1.ClusterTemplateInstance{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateInstance")
+			os.Exit(1)
+		}
 	}
 
 	//+kubebuilder:scaffold:builder

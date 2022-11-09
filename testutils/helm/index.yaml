@@ -1,0 +1,55 @@
+apiVersion: v1
+entries:
+  hypershift-template:
+  - annotations:
+      cluster-template: "true"
+    apiVersion: v2
+    appVersion: 1.16.0
+    created: "2022-11-29T08:00:14.346753596+01:00"
+    description: A Helm chart for Kubernetes
+    digest: 8d28f41aacf684e8ff8baec39b40524cfd40f136b528f7ffd6696a3747aedacb
+    name: hypershift-template
+    type: application
+    urls:
+    - hypershift-template-0.0.2.tgz
+    version: 0.0.2
+  hypershift-template-no-schema:
+  - annotations:
+      cluster-template: "true"
+    apiVersion: v2
+    appVersion: 1.16.0
+    created: "2022-11-29T08:00:14.347001788+01:00"
+    description: A Helm chart for Kubernetes
+    digest: ed6502c469dc1deae72a824c9434cf516156552b1c676ebbdde02300a2ce1898
+    name: hypershift-template-no-schema
+    type: application
+    urls:
+    - hypershift-template-no-schema-0.0.2.tgz
+    version: 0.0.2
+  hypershift-template-no-val:
+  - annotations:
+      cluster-template: "true"
+    apiVersion: v2
+    appVersion: 1.16.0
+    created: "2022-11-29T08:00:14.347228869+01:00"
+    description: A Helm chart for Kubernetes
+    digest: 0029537c425fbeef6fb14acb9d8360d27a81c542f3154afba58f8f8c4cce4f1c
+    name: hypershift-template-no-val
+    type: application
+    urls:
+    - hypershift-template-no-val-0.0.2.tgz
+    version: 0.0.2
+  hypershift-template-no-val-schema:
+  - annotations:
+      cluster-template: "true"
+    apiVersion: v2
+    appVersion: 1.16.0
+    created: "2022-11-29T08:00:14.347398802+01:00"
+    description: A Helm chart for Kubernetes
+    digest: 00fe8e9a3864389e25a1b9bf9e8cba2eb26b62c621fd7287b7b1df075d965986
+    name: hypershift-template-no-val-schema
+    type: application
+    urls:
+    - hypershift-template-no-val-schema-0.0.2.tgz
+    version: 0.0.2
+generated: "2022-11-29T08:00:14.34626895+01:00"

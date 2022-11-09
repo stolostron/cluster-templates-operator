@@ -123,6 +123,7 @@ spec:
               clusterTemplateSpec:
                 properties:
                   argocdNamespace:
+                    description: A namespace where ArgoCD Applications will be created
                     type: string
                   clusterDefinition:
                     description: ArgoCD application spec which is used for installation
