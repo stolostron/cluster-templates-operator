@@ -22,36 +22,37 @@ import (
 )
 
 type ClusterSetup struct {
-	Name string               `json:"name"`
+	// Name of the cluster setup
+	Name string `json:"name"`
+	// ArgoCD application spec which is used for setting up the cluster
 	Spec argo.ApplicationSpec `json:"spec"`
 }
 
-type HelmChartRef struct {
-	Name       string `json:"name"`
-	Version    string `json:"version"`
-	Repository string `json:"repository"`
-}
-
 type ClusterTemplateSpec struct {
+	// ArgoCD application spec which is used for installation of the cluster
 	ClusterDefinition argo.ApplicationSpec `json:"clusterDefinition"`
 
 	// +optional
+	// Array of ArgoCD application specs which are used for post installation setup of the cluster
 	ClusterSetup []ClusterSetup `json:"clusterSetup,omitempty"`
 
 	//+kubebuilder:validation:Minimum=0
+	// Cost of the cluster, used for quotas
 	Cost int `json:"cost"`
 }
 
 // ClusterTemplateStatus defines the observed state of ClusterTemplate
 type ClusterTemplateStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// Resource conditions
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=clustertemplates,shortName=ct;cts,scope=Cluster
 //+kubebuilder:printcolumn:name="Cost",type="integer",JSONPath=".spec.cost",description="Cluster cost"
+//+operator-sdk:csv:customresourcedefinitions:displayName="Cluster template",resources={{Pod, v1, ""}}
 
 // Template of a cluster - defines resources required to start the installation (via Helm chart) and optionally a post install setup of the cluster (via Tekton pipeline)
 type ClusterTemplate struct {

@@ -47,18 +47,24 @@ spec:
           spec:
             properties:
               allowedTemplates:
+                description: Represents all ClusterTemplates which can be used in
+                  given namespace
                 items:
                   properties:
                     count:
+                      description: Defines how many instances of the ClusterTemplate
+                        can exist
                       minimum: 1
                       type: integer
                     name:
+                      description: Name of the ClusterTemplate
                       type: string
                   required:
                   - name
                   type: object
                 type: array
               budget:
+                description: Total budget for all clusters within given namespace
                 minimum: 1
                 type: integer
             required:
@@ -69,14 +75,19 @@ spec:
               ClusterTemplateQuota
             properties:
               budgetSpent:
+                description: How much budget is currenly spent
                 type: integer
               templateInstances:
+                description: Which instances are in use
                 items:
                   properties:
                     count:
+                      description: Defines how many instances of the ClusterTemplate
+                        can exist
                       minimum: 1
                       type: integer
                     name:
+                      description: Name of the ClusterTemplate
                       type: string
                   required:
                   - name

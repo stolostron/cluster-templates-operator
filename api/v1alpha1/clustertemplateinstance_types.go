@@ -31,18 +31,26 @@ const (
 )
 
 type Parameter struct {
-	Name         string `json:"name"`
-	Value        string `json:"value"`
+	// Name of the Helm parameter
+	Name string `json:"name"`
+	// Value of the Helm parameter
+	Value string `json:"value"`
+	// If empty, the parameter is passed to cluster installation chart
+	// otherwise the field value needs to match name of ClusterSetup of ClusterTemplate
 	ClusterSetup string `json:"clusterSetup,omitempty"`
 }
 
 type ClusterTemplateInstanceSpec struct {
-	ClusterTemplateRef string      `json:"clusterTemplateRef"`
-	Parameters         []Parameter `json:"parameters,omitempty"`
+	// A reference to ClusterTemplate which will be used for installing and setting up the cluster
+	ClusterTemplateRef string `json:"clusterTemplateRef"`
+	// Helm parameters to be passed to cluster installation or setup
+	Parameters []Parameter `json:"parameters,omitempty"`
 }
 
 type ClusterSetupStatus struct {
-	Name   string            `json:"name"`
+	// Name of the cluster setup
+	Name string `json:"name"`
+	// Status of the cluster setup
 	Status argo.HealthStatus `json:"status"`
 }
 
@@ -67,14 +75,26 @@ const (
 
 type ClusterTemplateInstanceStatus struct {
 	// A reference for secret which contains username and password under keys "username" and "password"
+	// +operator-sdk:csv:customresourcedefinitions:type=status
 	AdminPassword *corev1.LocalObjectReference `json:"adminPassword,omitempty"`
 	// A reference for secret which contains kubeconfig under key "kubeconfig"
-	Kubeconfig   *corev1.LocalObjectReference `json:"kubeconfig,omitempty"`
-	APIserverURL string                       `json:"apiServerURL,omitempty"`
-	Conditions   []metav1.Condition           `json:"conditions"`
-	ClusterSetup *[]ClusterSetupStatus        `json:"clusterSetup,omitempty"`
-	Phase        Phase                        `json:"phase"`
-	Message      string                       `json:"message"`
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	Kubeconfig *corev1.LocalObjectReference `json:"kubeconfig,omitempty"`
+	// API server URL of the new cluster
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	APIserverURL string `json:"apiServerURL,omitempty"`
+	// Resource conditions
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	Conditions []metav1.Condition `json:"conditions"`
+	// Status of each cluster setup
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	ClusterSetup *[]ClusterSetupStatus `json:"clusterSetup,omitempty"`
+	// Represents instance installaton & setup phase
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	Phase Phase `json:"phase"`
+	// Additional message for Phase
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	Message string `json:"message"`
 }
 
 //+kubebuilder:object:root=true
@@ -84,6 +104,7 @@ type ClusterTemplateInstanceStatus struct {
 //+kubebuilder:printcolumn:name="Adminpassword",type="string",JSONPath=".status.adminPassword.name",description="Admin Secret"
 //+kubebuilder:printcolumn:name="Kubeconfig",type="string",JSONPath=".status.kubeconfig.name",description="Kubeconfig Secret"
 //+kubebuilder:printcolumn:name="API URL",type="string",JSONPath=".status.apiServerURL",description="API URL"
+//+operator-sdk:csv:customresourcedefinitions:displayName="Cluster template instance",resources={{Pod, v1, ""}}
 
 // Represents a request for instance of cluster
 type ClusterTemplateInstance struct {

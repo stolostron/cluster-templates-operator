@@ -21,28 +21,37 @@ import (
 )
 
 type AllowedTemplate struct {
+	// Name of the ClusterTemplate
 	Name string `json:"name"`
 	//+kubebuilder:validation:Minimum=1
 	// +optional
+	// Defines how many instances of the ClusterTemplate can exist
 	Count int `json:"count,omitempty"`
 }
 
 type ClusterTemplateQuotaSpec struct {
 	//+kubebuilder:validation:Minimum=1
 	// +optional
-	Budget           int               `json:"budget,omitempty"`
+	// Total budget for all clusters within given namespace
+	Budget int `json:"budget,omitempty"`
+	// Represents all ClusterTemplates which can be used in given namespace
 	AllowedTemplates []AllowedTemplate `json:"allowedTemplates"`
 }
 
 // ClusterTemplateQuotaStatus defines the observed state of ClusterTemplateQuota
 type ClusterTemplateQuotaStatus struct {
-	BudgetSpent       int               `json:"budgetSpent"`
+	// How much budget is currenly spent
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	BudgetSpent int `json:"budgetSpent"`
+	// Which instances are in use
+	// +operator-sdk:csv:customresourcedefinitions:type=status
 	TemplateInstances []AllowedTemplate `json:"templateInstances"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=clustertemplatequotas,shortName=ctq;ctqs,scope=Namespaced
+//+operator-sdk:csv:customresourcedefinitions:displayName="Cluster template quota",resources={{Pod, v1, ""}}
 
 // Defines which ClusterTemplates can be used in a given namespace
 type ClusterTemplateQuota struct {

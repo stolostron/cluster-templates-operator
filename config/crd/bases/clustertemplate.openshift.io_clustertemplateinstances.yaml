@@ -55,15 +55,24 @@ spec:
           spec:
             properties:
               clusterTemplateRef:
+                description: A reference to ClusterTemplate which will be used for
+                  installing and setting up the cluster
                 type: string
               parameters:
+                description: Helm parameters to be passed to cluster installation
+                  or setup
                 items:
                   properties:
                     clusterSetup:
+                      description: If empty, the parameter is passed to cluster installation
+                        chart otherwise the field value needs to match name of ClusterSetup
+                        of ClusterTemplate
                       type: string
                     name:
+                      description: Name of the Helm parameter
                       type: string
                     value:
+                      description: Value of the Helm parameter
                       type: string
                   required:
                   - name
@@ -85,15 +94,17 @@ spec:
                     type: string
                 type: object
               apiServerURL:
+                description: API server URL of the new cluster
                 type: string
               clusterSetup:
+                description: Status of each cluster setup
                 items:
                   properties:
                     name:
+                      description: Name of the cluster setup
                       type: string
                     status:
-                      description: HealthStatus contains information about the currently
-                        observed health state of an application or resource
+                      description: Status of the cluster setup
                       properties:
                         message:
                           description: Message is a human-readable informational message
@@ -110,6 +121,7 @@ spec:
                   type: object
                 type: array
               conditions:
+                description: Resource conditions
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
@@ -187,8 +199,10 @@ spec:
                     type: string
                 type: object
               message:
+                description: Additional message for Phase
                 type: string
               phase:
+                description: Represents instance installaton & setup phase
                 type: string
             required:
             - conditions
