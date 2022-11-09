@@ -44,21 +44,67 @@ spec:
   customresourcedefinitions:
     owned:
     - description: Represents a request for instance of cluster
-      displayName: Cluster Template Instance
+      displayName: Cluster template instance
       kind: ClusterTemplateInstance
       name: clustertemplateinstances.clustertemplate.openshift.io
+      resources:
+      - kind: Pod
+        name: ""
+        version: v1
+      statusDescriptors:
+      - description: A reference for secret which contains username and password under
+          keys "username" and "password"
+        displayName: Admin Password
+        path: adminPassword
+      - description: API server URL of the new cluster
+        displayName: APIserver URL
+        path: apiServerURL
+      - description: Status of each cluster setup
+        displayName: Cluster Setup
+        path: clusterSetup
+      - description: Resource conditions
+        displayName: Conditions
+        path: conditions
+      - description: A reference for secret which contains kubeconfig under key "kubeconfig"
+        displayName: Kubeconfig
+        path: kubeconfig
+      - description: Additional message for Phase
+        displayName: Message
+        path: message
+      - description: Represents instance installaton & setup phase
+        displayName: Phase
+        path: phase
       version: v1alpha1
     - description: Defines which ClusterTemplates can be used in a given namespace
-      displayName: Cluster Template Quota
+      displayName: Cluster template quota
       kind: ClusterTemplateQuota
       name: clustertemplatequotas.clustertemplate.openshift.io
+      resources:
+      - kind: Pod
+        name: ""
+        version: v1
+      statusDescriptors:
+      - description: How much budget is currenly spent
+        displayName: Budget Spent
+        path: budgetSpent
+      - description: Which instances are in use
+        displayName: Template Instances
+        path: templateInstances
       version: v1alpha1
     - description: Template of a cluster - defines resources required to start the
         installation (via Helm chart) and optionally a post install setup of the cluster
         (via Tekton pipeline)
-      displayName: Cluster Template
+      displayName: Cluster template
       kind: ClusterTemplate
       name: clustertemplates.clustertemplate.openshift.io
+      resources:
+      - kind: Pod
+        name: ""
+        version: v1
+      statusDescriptors:
+      - description: Resource conditions
+        displayName: Conditions
+        path: conditions
       version: v1alpha1
   description: |
     **Self-service clusters with guardrails!**
