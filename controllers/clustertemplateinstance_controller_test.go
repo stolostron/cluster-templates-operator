@@ -160,7 +160,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				if clusterCondition == nil {
 					return false
 				}
-				return clusterCondition.Status == metav1.ConditionFalse && clusterCondition.Reason == string(v1alpha1.ApplicationDegraded)
+				return clusterCondition.Status == metav1.ConditionFalse &&
+					clusterCondition.Reason == string(v1alpha1.ApplicationDegraded)
 			}, timeout, interval).Should(BeTrue())
 		})
 
@@ -186,7 +187,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				if clusterCondition == nil {
 					return false
 				}
-				return clusterCondition.Status == metav1.ConditionFalse && clusterCondition.Reason == string(v1alpha1.ClusterProviderDetectionFailed)
+				return clusterCondition.Status == metav1.ConditionFalse &&
+					clusterCondition.Reason == string(v1alpha1.ClusterProviderDetectionFailed)
 			}, timeout, interval).Should(BeTrue())
 		})
 
@@ -222,7 +224,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				if clusterCondition == nil {
 					return false
 				}
-				return clusterCondition.Status == metav1.ConditionFalse && clusterCondition.Reason == string(v1alpha1.ClusterStatusFailed)
+				return clusterCondition.Status == metav1.ConditionFalse &&
+					clusterCondition.Reason == string(v1alpha1.ClusterStatusFailed)
 			}, timeout, interval).Should(BeTrue())
 		})
 	})

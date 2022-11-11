@@ -117,7 +117,11 @@ func GetKubeadminSecret() (*corev1.Secret, error) {
 	return kubeAdminSecret, nil
 }
 
-func SetHostedClusterReady(hostedCluster hypershiftv1alpha1.HostedCluster, kubeconfigName string, kubeadminName string) hypershiftv1alpha1.HostedCluster {
+func SetHostedClusterReady(
+	hostedCluster hypershiftv1alpha1.HostedCluster,
+	kubeconfigName string,
+	kubeadminName string,
+) hypershiftv1alpha1.HostedCluster {
 	status := hypershiftv1alpha1.HostedClusterStatus{}
 
 	status.Conditions = []metav1.Condition{

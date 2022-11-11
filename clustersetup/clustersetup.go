@@ -60,7 +60,7 @@ func AddClusterToArgo(
 		},
 	}
 
-	if err := ensureResourceExists(ctx, newClusterClient, sa, false); err != nil {
+	if err = ensureResourceExists(ctx, newClusterClient, sa, false); err != nil {
 		return err
 	}
 
@@ -81,7 +81,7 @@ func AddClusterToArgo(
 		},
 	}
 
-	if err := ensureResourceExists(ctx, newClusterClient, clusterRole, false); err != nil {
+	if err = ensureResourceExists(ctx, newClusterClient, clusterRole, false); err != nil {
 		return err
 	}
 
@@ -103,7 +103,7 @@ func AddClusterToArgo(
 		},
 	}
 
-	if err := ensureResourceExists(ctx, newClusterClient, clusterRoleBinding, false); err != nil {
+	if err = ensureResourceExists(ctx, newClusterClient, clusterRoleBinding, false); err != nil {
 		return err
 	}
 
@@ -118,7 +118,7 @@ func AddClusterToArgo(
 		Type: corev1.SecretTypeServiceAccountToken,
 	}
 
-	if err := ensureResourceExists(ctx, newClusterClient, tokenSecret, true); err != nil {
+	if err = ensureResourceExists(ctx, newClusterClient, tokenSecret, true); err != nil {
 		return err
 	}
 
@@ -172,17 +172,19 @@ func AddClusterToArgo(
 	return ensureResourceExists(ctx, k8sClient, clusterSecret, false)
 }
 
-func ensureResourceExists(ctx context.Context, newClusterClient client.Client, obj client.Object, loadBack bool) error {
-	err := newClusterClient.Get(ctx, client.ObjectKeyFromObject(obj), obj)
-	if err != nil {
+func ensureResourceExists(
+	ctx context.Context,
+	newClusterClient client.Client,
+	obj client.Object,
+	loadBack bool,
+) error {
+	if err := newClusterClient.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
 		if apierrors.IsNotFound(err) {
-			err = newClusterClient.Create(ctx, obj)
-			if err != nil {
+			if err = newClusterClient.Create(ctx, obj); err != nil {
 				return err
 			}
 			if loadBack {
-				err = newClusterClient.Get(ctx, client.ObjectKeyFromObject(obj), obj)
-				if err != nil {
+				if err = newClusterClient.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
 					return err
 				}
 			}

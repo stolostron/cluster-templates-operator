@@ -55,7 +55,10 @@ func (i *ClusterTemplateInstance) GetOwnerReference() metav1.OwnerReference {
 	}
 }
 
-func (i *ClusterTemplateInstance) GetDay1Application(ctx context.Context, k8sClient client.Client) (*argo.Application, error) {
+func (i *ClusterTemplateInstance) GetDay1Application(
+	ctx context.Context,
+	k8sClient client.Client,
+) (*argo.Application, error) {
 	apps := &argo.ApplicationList{}
 
 	ctiNameLabelReq, _ := labels.NewRequirement(
@@ -144,7 +147,10 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 	return k8sClient.Create(ctx, argoApp)
 }
 
-func (i *ClusterTemplateInstance) GetDay2Applications(ctx context.Context, k8sClient client.Client) (*argo.ApplicationList, error) {
+func (i *ClusterTemplateInstance) GetDay2Applications(
+	ctx context.Context,
+	k8sClient client.Client,
+) (*argo.ApplicationList, error) {
 	applications := &argo.ApplicationList{}
 
 	ctiNameLabelReq, _ := labels.NewRequirement(

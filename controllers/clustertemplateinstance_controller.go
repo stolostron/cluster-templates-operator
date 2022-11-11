@@ -94,7 +94,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 			}
 
 			if app != nil {
-				if err := r.Client.Delete(ctx, app); err != nil {
+				if err = r.Client.Delete(ctx, app); err != nil {
 					return ctrl.Result{}, err
 				}
 			}
@@ -108,7 +108,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 
 			if apps != nil {
 				for _, app := range apps.Items {
-					if err := r.Client.Delete(ctx, &app); err != nil {
+					if err = r.Client.Delete(ctx, &app); err != nil {
 						return ctrl.Result{}, err
 					}
 				}
@@ -168,7 +168,8 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 	err := r.reconcile(ctx, clusterTemplateInstance)
 
 	if updErr := r.Status().Update(ctx, clusterTemplateInstance); updErr != nil {
-		return ctrl.Result{}, fmt.Errorf("failed to update status of clustertemplateinstance %q: %w",
+		return ctrl.Result{}, fmt.Errorf(
+			"failed to update status of clustertemplateinstance %q: %w",
 			req.NamespacedName,
 			updErr,
 		)
@@ -718,10 +719,13 @@ func (r *ClusterTemplateInstanceReconciler) SetupWithManager(mgr ctrl.Manager) e
 					if res.GetObjectKind().GroupVersionKind().Kind == argoRes.Kind &&
 						res.GetNamespace() == argoRes.Namespace &&
 						res.GetName() == argoRes.Name {
-						reply = append(reply, reconcile.Request{NamespacedName: types.NamespacedName{
-							Namespace: namespace,
-							Name:      name,
-						}})
+						reply = append(
+							reply,
+							reconcile.Request{NamespacedName: types.NamespacedName{
+								Namespace: namespace,
+								Name:      name,
+							}},
+						)
 					}
 				}
 			}
@@ -753,13 +757,29 @@ func (r *ClusterTemplateInstanceReconciler) SetupWithManager(mgr ctrl.Manager) e
 }
 
 func SetDefaultConditions(clusterInstance *v1alpha1.ClusterTemplateInstance) {
-	clusterInstance.SetClusterDefinitionCreatedCondition(metav1.ConditionFalse, v1alpha1.ClusterDefinitionPending, "Pending")
-	clusterInstance.SetClusterInstallCondition(metav1.ConditionFalse, v1alpha1.ClusterDefinitionNotCreated, "Waiting for cluster definition to be created")
+	clusterInstance.SetClusterDefinitionCreatedCondition(
+		metav1.ConditionFalse,
+		v1alpha1.ClusterDefinitionPending,
+		"Pending",
+	)
+	clusterInstance.SetClusterInstallCondition(
+		metav1.ConditionFalse,
+		v1alpha1.ClusterDefinitionNotCreated,
+		"Waiting for cluster definition to be created",
+	)
 	clusterInstance.SetArgoClusterAddedCondition(
 		metav1.ConditionFalse,
 		v1alpha1.ArgoClusterPending,
 		"Waiting for cluster to be ready",
 	)
-	clusterInstance.SetClusterSetupCreatedCondition(metav1.ConditionFalse, v1alpha1.ClusterNotInstalled, "Waiting for cluster to be ready")
-	clusterInstance.SetClusterSetupSucceededCondition(metav1.ConditionFalse, v1alpha1.ClusterSetupNotCreated, "Waiting for cluster setup to be created")
+	clusterInstance.SetClusterSetupCreatedCondition(
+		metav1.ConditionFalse,
+		v1alpha1.ClusterNotInstalled,
+		"Waiting for cluster to be ready",
+	)
+	clusterInstance.SetClusterSetupSucceededCondition(
+		metav1.ConditionFalse,
+		v1alpha1.ClusterSetupNotCreated,
+		"Waiting for cluster setup to be created",
+	)
 }

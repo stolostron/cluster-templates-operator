@@ -50,14 +50,20 @@ func GetClusterProvider(application argo.Application, log logr.Logger) ClusterPr
 				log.Info("Unknown version: ", obj.Version)
 				return nil
 			}
-			return ClusterDeploymentProvider{ClusterDeploymentName: obj.Name, ClusterDeploymentNamespace: obj.Namespace}
+			return ClusterDeploymentProvider{
+				ClusterDeploymentName:      obj.Name,
+				ClusterDeploymentNamespace: obj.Namespace,
+			}
 		case "ClusterClaim":
 			log.Info("Cluster provider: ClusterClaim")
 			if obj.Version != "v1" {
 				log.Info("Unknown version: ", obj.Version)
 				return nil
 			}
-			return ClusterClaimProvider{ClusterClaimName: obj.Name, ClusterClaimNamespace: obj.Namespace}
+			return ClusterClaimProvider{
+				ClusterClaimName:      obj.Name,
+				ClusterClaimNamespace: obj.Namespace,
+			}
 		}
 	}
 	log.Info("Cluster provider: Unknown")
@@ -76,22 +82,19 @@ func CreateClusterSecrets(
 	kubeconfigSecret.Name = templateInstance.GetKubeconfigRef()
 	kubeconfigSecret.Namespace = templateInstance.Namespace
 
-	err := k8sClient.Get(ctx, client.ObjectKeyFromObject(&kubeconfigSecret), &kubeconfigSecret)
-	if err != nil {
-		if apierrors.IsNotFound(err) {
-			kubeconfigSecret.Data = map[string][]byte{
-				"kubeconfig": kubeconfig,
-			}
-			kubeconfigSecret.OwnerReferences = []metav1.OwnerReference{
-				templateInstance.GetOwnerReference(),
-			}
+	if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(&kubeconfigSecret), &kubeconfigSecret); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return err
+		}
 
-			err := k8sClient.Create(ctx, &kubeconfigSecret)
+		kubeconfigSecret.Data = map[string][]byte{
+			"kubeconfig": kubeconfig,
+		}
+		kubeconfigSecret.OwnerReferences = []metav1.OwnerReference{
+			templateInstance.GetOwnerReference(),
+		}
 
-			if err != nil {
-				return err
-			}
-		} else {
+		if err := k8sClient.Create(ctx, &kubeconfigSecret); err != nil {
 			return err
 		}
 	}
@@ -100,9 +103,7 @@ func CreateClusterSecrets(
 	kubeadminSecret.Name = templateInstance.GetKubeadminPassRef()
 	kubeadminSecret.Namespace = templateInstance.Namespace
 
-	err = k8sClient.Get(ctx, client.ObjectKeyFromObject(&kubeadminSecret), &kubeadminSecret)
-
-	if err != nil {
+	if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(&kubeadminSecret), &kubeadminSecret); err != nil {
 		if apierrors.IsNotFound(err) {
 			kubeadminSecret.Data = map[string][]byte{
 				"username": kubeadmin,
@@ -112,9 +113,7 @@ func CreateClusterSecrets(
 				templateInstance.GetOwnerReference(),
 			}
 
-			err = k8sClient.Create(ctx, &kubeadminSecret)
-
-			if err != nil {
+			if err = k8sClient.Create(ctx, &kubeadminSecret); err != nil {
 				return err
 			}
 		} else {
