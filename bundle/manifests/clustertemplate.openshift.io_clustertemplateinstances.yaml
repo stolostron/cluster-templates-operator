@@ -47,7 +47,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Represents a request for instance of cluster
+        description: Represents instance of a cluster
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation

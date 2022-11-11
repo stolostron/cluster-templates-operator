@@ -54,7 +54,7 @@ type ClusterTemplateStatus struct {
 //+kubebuilder:printcolumn:name="Cost",type="integer",JSONPath=".spec.cost",description="Cluster cost"
 //+operator-sdk:csv:customresourcedefinitions:displayName="Cluster template",resources={{Pod, v1, ""}}
 
-// Template of a cluster - defines resources required to start the installation (via Helm chart) and optionally a post install setup of the cluster (via Tekton pipeline)
+// Template of a cluster - both installation and post-install setup are defined as ArgoCD application spec. Any application source is supported - typically a Helm chart
 type ClusterTemplate struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

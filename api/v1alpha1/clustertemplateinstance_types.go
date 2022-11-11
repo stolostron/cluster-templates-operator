@@ -106,7 +106,7 @@ type ClusterTemplateInstanceStatus struct {
 //+kubebuilder:printcolumn:name="API URL",type="string",JSONPath=".status.apiServerURL",description="API URL"
 //+operator-sdk:csv:customresourcedefinitions:displayName="Cluster template instance",resources={{Pod, v1, ""}}
 
-// Represents a request for instance of cluster
+// Represents instance of a cluster
 type ClusterTemplateInstance struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

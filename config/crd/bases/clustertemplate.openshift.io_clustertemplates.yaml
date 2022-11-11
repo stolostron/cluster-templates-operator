@@ -26,9 +26,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: Template of a cluster - defines resources required to start the
-          installation (via Helm chart) and optionally a post install setup of the
-          cluster (via Tekton pipeline)
+        description: Template of a cluster - both installation and post-install setup
+          are defined as ArgoCD application spec. Any application source is supported
+          - typically a Helm chart
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
