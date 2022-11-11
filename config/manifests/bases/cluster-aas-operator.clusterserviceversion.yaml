@@ -4,7 +4,7 @@ metadata:
   annotations:
     categories: Integration & Delivery,OpenShift Optional
     certified: "false"
-    containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-c1ca1463f668ab53fd3f0d88c581e74173d6e491
+    containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-d6ce1f162f00effe5c3963629dc5fc39243b22f1
     description: Easily install fully configured clusters with guard-rails.
     repository: https://github.com/stolostron/cluster-templates-operator
   name: cluster-aas-operator.v0.0.0
@@ -13,7 +13,7 @@ spec:
   apiservicedefinitions: {}
   customresourcedefinitions:
     owned:
-    - description: Represents a request for instance of cluster
+    - description: Represents instance of a cluster
       displayName: Cluster template instance
       kind: ClusterTemplateInstance
       name: clustertemplateinstances.clustertemplate.openshift.io
@@ -61,9 +61,9 @@ spec:
         displayName: Template Instances
         path: templateInstances
       version: v1alpha1
-    - description: Template of a cluster - defines resources required to start the
-        installation (via Helm chart) and optionally a post install setup of the cluster
-        (via Tekton pipeline)
+    - description: Template of a cluster - both installation and post-install setup
+        are defined as ArgoCD application spec. Any application source is supported
+        - typically a Helm chart
       displayName: Cluster template
       kind: ClusterTemplate
       name: clustertemplates.clustertemplate.openshift.io
@@ -79,6 +79,12 @@ spec:
   description: |
     **Self-service clusters with guardrails!**
     Cluster as a service operator provides an easy way to define clusters as templates and allows creating instances of those templates even for non-privileged developer/devops engineers. Cluster templates operator also allows specifing quotas for the developer/devops engineers.
+
+    ### Documentation
+    Documentation can be found on our [website](https://github.com/stolostron/cluster-templates-operator).
+
+    ### Getting help
+    To report any issues or ask questions, create an issue on our [Github repo](https://github.com/stolostron/cluster-templates-operator/issues)
   displayName: Cluster as a service operator
   icon:
   - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTguNTEgMjU4LjUxIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2QxZDFkMTt9LmNscy0ye2ZpbGw6IzhkOGQ4Zjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPkFzc2V0IDQ8L3RpdGxlPjxnIGlkPSJMYXllcl8yIiBkYXRhLW5hbWU9IkxheWVyIDIiPjxnIGlkPSJMYXllcl8xLTIiIGRhdGEtbmFtZT0iTGF5ZXIgMSI+PHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTI5LjI1LDIwQTEwOS4xLDEwOS4xLDAsMCwxLDIwNi40LDIwNi40LDEwOS4xLDEwOS4xLDAsMSwxLDUyLjExLDUyLjExLDEwOC40NSwxMDguNDUsMCwwLDEsMTI5LjI1LDIwbTAtMjBoMEM1OC4xNiwwLDAsNTguMTYsMCwxMjkuMjVIMGMwLDcxLjA5LDU4LjE2LDEyOS4yNiwxMjkuMjUsMTI5LjI2aDBjNzEuMDksMCwxMjkuMjYtNTguMTcsMTI5LjI2LTEyOS4yNmgwQzI1OC41MSw1OC4xNiwyMDAuMzQsMCwxMjkuMjUsMFoiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik0xNzcuNTQsMTAzLjQxSDE0MS42NkwxNTQuOSw2NS43NmMxLjI1LTQuNC0yLjMzLTguNzYtNy4yMS04Ljc2SDEwMi45M2E3LjMyLDcuMzIsMCwwLDAtNy40LDZsLTEwLDY5LjYxYy0uNTksNC4xNywyLjg5LDcuODksNy40LDcuODloMzYuOUwxMTUuNTUsMTk3Yy0xLjEyLDQuNDEsMi40OCw4LjU1LDcuMjQsOC41NWE3LjU4LDcuNTgsMCwwLDAsNi40Ny0zLjQ4TDE4NCwxMTMuODVDMTg2Ljg2LDEwOS4yNCwxODMuMjksMTAzLjQxLDE3Ny41NCwxMDMuNDFaIi8+PC9nPjwvZz48L3N2Zz4=
