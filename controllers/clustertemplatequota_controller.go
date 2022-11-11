@@ -46,8 +46,7 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 	req ctrl.Request,
 ) (ctrl.Result, error) {
 	clusterTemplateQuota := &v1alpha1.ClusterTemplateQuota{}
-	err := r.Get(ctx, req.NamespacedName, clusterTemplateQuota)
-	if err != nil {
+	if err := r.Get(ctx, req.NamespacedName, clusterTemplateQuota); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -55,14 +54,12 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 	listOpts := []client.ListOption{
 		client.InNamespace(req.NamespacedName.Namespace),
 	}
-	err = r.List(ctx, clusterTemplateInstanceList, listOpts...)
-	if err != nil {
+	if err := r.List(ctx, clusterTemplateInstanceList, listOpts...); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	clusterTemplateList := &v1alpha1.ClusterTemplateList{}
-	err = r.List(ctx, clusterTemplateList, []client.ListOption{}...)
-	if err != nil {
+	if err := r.List(ctx, clusterTemplateList, []client.ListOption{}...); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -96,9 +93,7 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 		TemplateInstances: currentInstances,
 	}
 
-	err = r.Status().Update(ctx, clusterTemplateQuota)
-
-	if err != nil {
+	if err := r.Status().Update(ctx, clusterTemplateQuota); err != nil {
 		return ctrl.Result{}, err
 	}
 

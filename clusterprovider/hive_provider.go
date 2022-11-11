@@ -22,13 +22,11 @@ func (cd ClusterDeploymentProvider) GetClusterStatus(
 	templateInstance v1alpha1.ClusterTemplateInstance,
 ) (bool, string, error) {
 	clusterDeployment := hivev1.ClusterDeployment{}
-	err := k8sClient.Get(
+	if err := k8sClient.Get(
 		ctx,
 		client.ObjectKey{Name: cd.ClusterDeploymentName, Namespace: cd.ClusterDeploymentNamespace},
 		&clusterDeployment,
-	)
-
-	if err != nil {
+	); err != nil {
 		return false, "", err
 	}
 
@@ -56,13 +54,11 @@ func (cc ClusterClaimProvider) GetClusterStatus(
 ) (bool, string, error) {
 	clusterClaim := hivev1.ClusterClaim{}
 
-	err := k8sClient.Get(
+	if err := k8sClient.Get(
 		ctx,
 		client.ObjectKey{Name: cc.ClusterClaimName, Namespace: cc.ClusterClaimNamespace},
 		&clusterClaim,
-	)
-
-	if err != nil {
+	); err != nil {
 		return false, "", err
 	}
 
@@ -76,13 +72,11 @@ func (cc ClusterClaimProvider) GetClusterStatus(
 	}
 
 	clusterDeployment := hivev1.ClusterDeployment{}
-	err = k8sClient.Get(
+	if err := k8sClient.Get(
 		ctx,
 		client.ObjectKey{Name: clusterClaim.Spec.Namespace, Namespace: clusterClaim.Spec.Namespace},
 		&clusterDeployment,
-	)
-
-	if err != nil {
+	); err != nil {
 		return false, "", err
 	}
 
@@ -118,13 +112,11 @@ func createCDSecrets(
 	}
 
 	cdKubeconfigSecret := corev1.Secret{}
-	err := k8sClient.Get(
+	if err := k8sClient.Get(
 		ctx,
 		client.ObjectKey{Name: cdKubeConfig, Namespace: clusterDeployment.Namespace},
 		&cdKubeconfigSecret,
-	)
-
-	if err != nil {
+	); err != nil {
 		return false, "", err
 	}
 
@@ -135,13 +127,11 @@ func createCDSecrets(
 	}
 
 	cdKubeadminSecret := corev1.Secret{}
-	err = k8sClient.Get(
+	if err := k8sClient.Get(
 		ctx,
 		client.ObjectKey{Name: cdKubeAdmin, Namespace: clusterDeployment.Namespace},
 		&cdKubeadminSecret,
-	)
-
-	if err != nil {
+	); err != nil {
 		return false, "", err
 	}
 
@@ -155,15 +145,14 @@ func createCDSecrets(
 		return false, "", errors.New("unexpected kubeadmin format")
 	}
 
-	err = CreateClusterSecrets(
+	if err := CreateClusterSecrets(
 		ctx,
 		k8sClient,
 		kubeconfigBytes,
 		username,
 		password,
 		templateInstance,
-	)
-	if err != nil {
+	); err != nil {
 		return false, "", err
 	}
 	return true, "Available", nil

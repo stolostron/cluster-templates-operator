@@ -80,7 +80,11 @@ var _ = Describe("Test cluster setup", func() {
 		Expect(err).Should(BeNil())
 
 		argoClusterSecret := &corev1.Secret{}
-		err = client.Get(ctx, types.NamespacedName{Name: app.Name, Namespace: app.Namespace}, argoClusterSecret)
+		err = client.Get(
+			ctx,
+			types.NamespacedName{Name: app.Name, Namespace: app.Namespace},
+			argoClusterSecret,
+		)
 		Expect(err).Should(BeNil())
 	})
 })

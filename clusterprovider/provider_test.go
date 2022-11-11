@@ -251,34 +251,40 @@ func testProvider(
 		Expect(ready).Should(BeFalse())
 		Expect(msg).Should(Equal("Waiting for pass/kubeconfig secrets"))
 	})
-	It("Returns not ready when resource condition is true and kubeadmin has incorrect format", func() {
-		resources := getResources(ResourceOpts{
-			isReady:          true,
-			kubeadmin:        true,
-			kubeadminInvalid: true,
-			kubeconfig:       true,
-		})
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
+	It(
+		"Returns not ready when resource condition is true and kubeadmin has incorrect format",
+		func() {
+			resources := getResources(ResourceOpts{
+				isReady:          true,
+				kubeadmin:        true,
+				kubeadminInvalid: true,
+				kubeconfig:       true,
+			})
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
 
-		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
-		Expect(err).To(HaveOccurred())
-		Expect(ready).Should(BeFalse())
-		Expect(msg).Should(Equal(""))
-	})
-	It("Returns not ready when resource condition is true and kubeconfig has incorrect format", func() {
-		resources := getResources(ResourceOpts{
-			isReady:           true,
-			kubeadmin:         true,
-			kubeconfig:        true,
-			kubeconfigInvalid: true,
-		})
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
+			ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
+			Expect(err).To(HaveOccurred())
+			Expect(ready).Should(BeFalse())
+			Expect(msg).Should(Equal(""))
+		},
+	)
+	It(
+		"Returns not ready when resource condition is true and kubeconfig has incorrect format",
+		func() {
+			resources := getResources(ResourceOpts{
+				isReady:           true,
+				kubeadmin:         true,
+				kubeconfig:        true,
+				kubeconfigInvalid: true,
+			})
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
 
-		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
-		Expect(err).To(HaveOccurred())
-		Expect(ready).Should(BeFalse())
-		Expect(msg).Should(Equal(""))
-	})
+			ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
+			Expect(err).To(HaveOccurred())
+			Expect(ready).Should(BeFalse())
+			Expect(msg).Should(Equal(""))
+		},
+	)
 	It("Returns ready when resource condition is true and secrets are ready", func() {
 		resources := getResources(ResourceOpts{
 			isReady:    true,
@@ -293,7 +299,11 @@ func testProvider(
 		Expect(msg).Should(Equal("Available"))
 
 		kubeadminSecret := &corev1.Secret{}
-		err = client.Get(ctx, kubeClient.ObjectKey{Name: cti.GetKubeadminPassRef(), Namespace: cti.Namespace}, kubeadminSecret)
+		err = client.Get(
+			ctx,
+			kubeClient.ObjectKey{Name: cti.GetKubeadminPassRef(), Namespace: cti.Namespace},
+			kubeadminSecret,
+		)
 		Expect(err).ToNot(HaveOccurred())
 
 		val, ok := kubeadminSecret.Data["password"]
@@ -304,7 +314,11 @@ func testProvider(
 		Expect(pass).To(Equal("foo"))
 
 		kubeconfigSecret := &corev1.Secret{}
-		err = client.Get(ctx, kubeClient.ObjectKey{Name: cti.GetKubeconfigRef(), Namespace: cti.Namespace}, kubeconfigSecret)
+		err = client.Get(
+			ctx,
+			kubeClient.ObjectKey{Name: cti.GetKubeconfigRef(), Namespace: cti.Namespace},
+			kubeconfigSecret,
+		)
 		Expect(err).ToNot(HaveOccurred())
 
 		val, ok = kubeconfigSecret.Data["kubeconfig"]

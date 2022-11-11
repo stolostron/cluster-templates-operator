@@ -23,13 +23,11 @@ func (hc HostedClusterProvider) GetClusterStatus(
 	templateInstance v1alpha1.ClusterTemplateInstance,
 ) (bool, string, error) {
 	hostedCluster := &hypershiftv1alpha1.HostedCluster{}
-	err := k8sClient.Get(
+	if err := k8sClient.Get(
 		ctx,
 		client.ObjectKey{Name: hc.HostedClusterName, Namespace: hc.HostedClusterNamespace},
 		hostedCluster,
-	)
-
-	if err != nil {
+	); err != nil {
 		return false, "", err
 	}
 
@@ -44,16 +42,14 @@ func (hc HostedClusterProvider) GetClusterStatus(
 				}
 
 				hypershiftKubeconfigSecret := corev1.Secret{}
-				err := k8sClient.Get(
+				if err := k8sClient.Get(
 					ctx,
 					client.ObjectKey{
 						Name:      hypershiftKubeConfig,
 						Namespace: hostedCluster.Namespace,
 					},
 					&hypershiftKubeconfigSecret,
-				)
-
-				if err != nil {
+				); err != nil {
 					return false, "", err
 				}
 
@@ -64,13 +60,11 @@ func (hc HostedClusterProvider) GetClusterStatus(
 				}
 
 				hypershiftKubeadminSecret := corev1.Secret{}
-				err = k8sClient.Get(
+				if err := k8sClient.Get(
 					ctx,
 					client.ObjectKey{Name: hypershiftPass, Namespace: hostedCluster.Namespace},
 					&hypershiftKubeadminSecret,
-				)
-
-				if err != nil {
+				); err != nil {
 					return false, "", err
 				}
 
@@ -80,22 +74,20 @@ func (hc HostedClusterProvider) GetClusterStatus(
 					return false, "", errors.New("unexpected kubeadmin password format")
 				}
 
-				err = CreateClusterSecrets(
+				if err := CreateClusterSecrets(
 					ctx,
 					k8sClient,
 					kubeconfigBytes,
 					[]byte("kubeadmin"),
 					kubeadminPass,
 					templateInstance,
-				)
-				if err != nil {
+				); err != nil {
 					return false, "", err
 				}
 
 				if len(hc.NodePoolNames) > 0 {
 					nodePools := &hypershiftv1alpha1.NodePoolList{}
-					err := k8sClient.List(ctx, nodePools, &client.ListOptions{Namespace: hc.HostedClusterNamespace})
-					if err != nil {
+					if err := k8sClient.List(ctx, nodePools, &client.ListOptions{Namespace: hc.HostedClusterNamespace}); err != nil {
 						return false, "", err
 					}
 
@@ -104,7 +96,9 @@ func (hc HostedClusterProvider) GetClusterStatus(
 						if nodePool.Spec.ClusterName == hc.HostedClusterName {
 							conditionFound := false
 							for _, condition := range nodePool.Status.Conditions {
-								if condition.Type == string(hypershiftv1alpha1.NodePoolReadyConditionType) {
+								if condition.Type == string(
+									hypershiftv1alpha1.NodePoolReadyConditionType,
+								) {
 									conditionFound = true
 									if condition.Status == corev1.ConditionFalse {
 										allReady = false
