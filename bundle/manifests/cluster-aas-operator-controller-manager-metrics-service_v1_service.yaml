@@ -4,7 +4,7 @@ metadata:
   creationTimestamp: null
   labels:
     control-plane: controller-manager
-  name: cluster-templates-operator-controller-manager-metrics-service
+  name: cluster-aas-operator-controller-manager-metrics-service
 spec:
   ports:
   - name: https

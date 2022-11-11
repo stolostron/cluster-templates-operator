@@ -29,7 +29,6 @@ metadata:
           "spec": {}
         }
       ]
-    capabilities: Basic Install
     categories: Integration & Delivery,OpenShift Optional
     certified: "false"
     containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-c1ca1463f668ab53fd3f0d88c581e74173d6e491
@@ -37,7 +36,7 @@ metadata:
     operators.operatorframework.io/builder: operator-sdk-v1.22.2
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/stolostron/cluster-templates-operator
-  name: cluster-templates-operator.v0.0.1
+  name: cluster-aas-operator.v0.0.1
   namespace: placeholder
 spec:
   apiservicedefinitions: {}
@@ -109,7 +108,7 @@ spec:
   description: |
     **Self-service clusters with guardrails!**
     Cluster as a service operator provides an easy way to define clusters as templates and allows creating instances of those templates even for non-privileged developer/devops engineers. Cluster templates operator also allows specifing quotas for the developer/devops engineers.
-  displayName: Cluster Templates
+  displayName: Cluster as a service operator
   icon:
   - base64data: PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTguNTEgMjU4LjUxIj48ZGVmcz48c3R5bGU+LmNscy0xe2ZpbGw6I2QxZDFkMTt9LmNscy0ye2ZpbGw6IzhkOGQ4Zjt9PC9zdHlsZT48L2RlZnM+PHRpdGxlPkFzc2V0IDQ8L3RpdGxlPjxnIGlkPSJMYXllcl8yIiBkYXRhLW5hbWU9IkxheWVyIDIiPjxnIGlkPSJMYXllcl8xLTIiIGRhdGEtbmFtZT0iTGF5ZXIgMSI+PHBhdGggY2xhc3M9ImNscy0xIiBkPSJNMTI5LjI1LDIwQTEwOS4xLDEwOS4xLDAsMCwxLDIwNi40LDIwNi40LDEwOS4xLDEwOS4xLDAsMSwxLDUyLjExLDUyLjExLDEwOC40NSwxMDguNDUsMCwwLDEsMTI5LjI1LDIwbTAtMjBoMEM1OC4xNiwwLDAsNTguMTYsMCwxMjkuMjVIMGMwLDcxLjA5LDU4LjE2LDEyOS4yNiwxMjkuMjUsMTI5LjI2aDBjNzEuMDksMCwxMjkuMjYtNTguMTcsMTI5LjI2LTEyOS4yNmgwQzI1OC41MSw1OC4xNiwyMDAuMzQsMCwxMjkuMjUsMFoiLz48cGF0aCBjbGFzcz0iY2xzLTIiIGQ9Ik0xNzcuNTQsMTAzLjQxSDE0MS42NkwxNTQuOSw2NS43NmMxLjI1LTQuNC0yLjMzLTguNzYtNy4yMS04Ljc2SDEwMi45M2E3LjMyLDcuMzIsMCwwLDAtNy40LDZsLTEwLDY5LjYxYy0uNTksNC4xNywyLjg5LDcuODksNy40LDcuODloMzYuOUwxMTUuNTUsMTk3Yy0xLjEyLDQuNDEsMi40OCw4LjU1LDcuMjQsOC41NWE3LjU4LDcuNTgsMCwwLDAsNi40Ny0zLjQ4TDE4NCwxMTMuODVDMTg2Ljg2LDEwOS4yNCwxODMuMjksMTAzLjQxLDE3Ny41NCwxMDMuNDFaIi8+PC9nPjwvZz48L3N2Zz4=
     mediatype: image/svg+xml
@@ -228,11 +227,11 @@ spec:
           - subjectaccessreviews
           verbs:
           - create
-        serviceAccountName: cluster-templates-operator-controller-manager
+        serviceAccountName: cluster-aas-operator-controller-manager
       deployments:
       - label:
           control-plane: controller-manager
-        name: cluster-templates-operator-controller-manager
+        name: cluster-aas-operator-controller-manager
         spec:
           replicas: 1
           selector:
@@ -273,7 +272,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/stolostron/cluster-templates-operator:2.7.0-7b86811828a53e6e3cc5c49cd2dc5abd6b83c9e2
+                image: quay.io/stolostron/cluster-templates-operator:2.7.0-c1ca1463f668ab53fd3f0d88c581e74173d6e491
                 livenessProbe:
                   httpGet:
                     path: /healthz
@@ -302,7 +301,7 @@ spec:
                   allowPrivilegeEscalation: false
               securityContext:
                 runAsNonRoot: true
-              serviceAccountName: cluster-templates-operator-controller-manager
+              serviceAccountName: cluster-aas-operator-controller-manager
               terminationGracePeriodSeconds: 10
       permissions:
       - rules:
@@ -337,7 +336,7 @@ spec:
           verbs:
           - create
           - patch
-        serviceAccountName: cluster-templates-operator-controller-manager
+        serviceAccountName: cluster-aas-operator-controller-manager
     strategy: deployment
   installModes:
   - supported: false
@@ -366,6 +365,7 @@ spec:
   - email: rawagner@redhat.com
     name: Rastislav Wagner
   maturity: alpha
+  minKubeVersion: 1.24.0
   provider:
     name: Stolostron
   version: 0.0.1
@@ -376,7 +376,7 @@ spec:
     conversionCRDs:
     - clustertemplateinstances.clustertemplate.openshift.io
     - clustertemplatequotas.clustertemplate.openshift.io
-    deploymentName: cluster-templates-operator-controller-manager
+    deploymentName: cluster-aas-operator-controller-manager
     generateName: cclustertemplateinstancesclustertemplatequotas.kb.io
     sideEffects: None
     targetPort: 9443
@@ -385,7 +385,7 @@ spec:
   - admissionReviewVersions:
     - v1
     containerPort: 443
-    deploymentName: cluster-templates-operator-controller-manager
+    deploymentName: cluster-aas-operator-controller-manager
     failurePolicy: Fail
     generateName: vclustertemplateinstance.kb.io
     rules:
@@ -405,7 +405,7 @@ spec:
   - admissionReviewVersions:
     - v1
     containerPort: 443
-    deploymentName: cluster-templates-operator-controller-manager
+    deploymentName: cluster-aas-operator-controller-manager
     failurePolicy: Fail
     generateName: vclustertemplatequota.kb.io
     rules:

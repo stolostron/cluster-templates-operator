@@ -350,7 +350,14 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				Name:      "foo",
 				Namespace: "default",
 			},
-			Spec: ClusterTemplateInstanceSpec{},
+			Spec: ClusterTemplateInstanceSpec{
+				Parameters: []Parameter{
+					{
+						Name:  "fooParam",
+						Value: "foo",
+					},
+				},
+			},
 		}
 
 		ct := ClusterTemplate{
@@ -400,6 +407,8 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		Expect(apps.Items[0].Labels[CTINameLabel]).To(Equal("foo"))
 		Expect(apps.Items[0].Labels[CTINamespaceLabel]).To(Equal("default"))
 		Expect(apps.Items[0].Spec.Destination.Namespace).To(Equal("default"))
+		Expect(apps.Items[0].Spec.Source.Helm.Parameters[0].Name).To(Equal("fooParam"))
+		Expect(apps.Items[0].Spec.Source.Helm.Parameters[0].Value).To(Equal("foo"))
 
 	})
 
@@ -409,7 +418,15 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				Name:      "foo",
 				Namespace: "default",
 			},
-			Spec: ClusterTemplateInstanceSpec{},
+			Spec: ClusterTemplateInstanceSpec{
+				Parameters: []Parameter{
+					{
+						Name:         "fooParam",
+						Value:        "foo",
+						ClusterSetup: "foo-day2",
+					},
+				},
+			},
 		}
 
 		ct := ClusterTemplate{
@@ -460,6 +477,8 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		Expect(apps.Items[0].Labels[CTINameLabel]).To(Equal("foo"))
 		Expect(apps.Items[0].Labels[CTINamespaceLabel]).To(Equal("default"))
 		Expect(apps.Items[0].Labels[CTISetupLabel]).To(Equal("foo-day2"))
+		Expect(apps.Items[0].Spec.Source.Helm.Parameters[0].Name).To(Equal("fooParam"))
+		Expect(apps.Items[0].Spec.Source.Helm.Parameters[0].Value).To(Equal("foo"))
 
 		ct = ClusterTemplate{
 			Spec: ClusterTemplateSpec{

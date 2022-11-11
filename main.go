@@ -25,6 +25,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -107,6 +108,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	_, err = mgr.GetClient().RESTMapper().KindFor(schema.GroupVersionResource{
+		Group:    "hypershift.openshift.io",
+		Resource: "HostedCluster",
+	})
+
+	enableHypershift := true
+	if err != nil {
+		setupLog.Info("Hypershift APIs not found")
+		enableHypershift = false
+	}
+
 	if err = (&controllers.ClusterTemplateQuotaReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -115,18 +127,22 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.ClusterTemplateInstanceReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		EnableHypershift: enableHypershift,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplateInstance")
 		os.Exit(1)
 	}
-	if err = (&defaultresources.HypershiftTemplateReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
-		os.Exit(1)
+
+	if enableHypershift {
+		if err = (&defaultresources.HypershiftTemplateReconciler{
+			Client: mgr.GetClient(),
+			Scheme: mgr.GetScheme(),
+		}).SetupWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
+			os.Exit(1)
+		}
 	}
 	/*
 		if err = (&defaultresources.HelmRepoReconciler{

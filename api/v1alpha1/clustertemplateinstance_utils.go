@@ -116,7 +116,10 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 
 	appSpec := clusterTemplate.Spec.ClusterDefinition
 
-	if appSpec.Source.Helm != nil {
+	if len(params) > 0 {
+		if appSpec.Source.Helm == nil {
+			appSpec.Source.Helm = &argo.ApplicationSourceHelm{}
+		}
 		appSpec.Source.Helm.Parameters = params
 	}
 
@@ -219,7 +222,10 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 				return err
 			}
 
-			if clusterSetup.Spec.Source.Helm != nil {
+			if len(params) > 0 {
+				if clusterSetup.Spec.Source.Helm == nil {
+					clusterSetup.Spec.Source.Helm = &argo.ApplicationSourceHelm{}
+				}
 				clusterSetup.Spec.Source.Helm.Parameters = params
 			}
 
