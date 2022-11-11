@@ -11,8 +11,8 @@ spec:
     webhook:
       clientConfig:
         service:
-          name: cluster-templates-operator-webhook-service
-          namespace: cluster-templates-operator-system
+          name: cluster-aas-operator-webhook-service
+          namespace: cluster-aas-operator-system
           path: /convert
       conversionReviewVersions:
       - v1

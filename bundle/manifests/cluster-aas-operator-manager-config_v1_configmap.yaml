@@ -14,4 +14,4 @@ data:
       resourceName: 135184d5.openshift.io
 kind: ConfigMap
 metadata:
-  name: cluster-templates-operator-manager-config
+  name: cluster-aas-operator-manager-config

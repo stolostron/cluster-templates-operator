@@ -51,7 +51,8 @@ import (
 
 type ClusterTemplateInstanceReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme           *runtime.Scheme
+	EnableHypershift bool
 }
 
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=get;list;watch;create;update;patch;delete
@@ -728,7 +729,7 @@ func (r *ClusterTemplateInstanceReconciler) SetupWithManager(mgr ctrl.Manager) e
 		return reply
 	}
 
-	return ctrl.NewControllerManagedBy(mgr).
+	builder := ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.ClusterTemplateInstance{}).
 		Watches(
 			&source.Kind{Type: &argo.Application{}},
@@ -738,14 +739,17 @@ func (r *ClusterTemplateInstanceReconciler) SetupWithManager(mgr ctrl.Manager) e
 			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
 		Watches(
 			&source.Kind{Type: &hivev1.ClusterDeployment{}},
-			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
-		Watches(
+			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance))
+
+	if r.EnableHypershift {
+		builder = builder.Watches(
 			&source.Kind{Type: &hypershiftv1alpha1.HostedCluster{}},
 			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
-		Watches(
-			&source.Kind{Type: &hypershiftv1alpha1.NodePool{}},
-			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
-		Complete(r)
+			Watches(
+				&source.Kind{Type: &hypershiftv1alpha1.NodePool{}},
+				handler.EnqueueRequestsFromMapFunc(mapResourceToInstance))
+	}
+	return builder.Complete(r)
 }
 
 func SetDefaultConditions(clusterInstance *v1alpha1.ClusterTemplateInstance) {

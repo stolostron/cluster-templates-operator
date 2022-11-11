@@ -1,16 +1,6 @@
 dependencies:
 - type: olm.gvk
   value:
-    group: hypershift.openshift.io
-    kind: HostedCluster
-    version: v1alpha1
-- type: olm.gvk
-  value:
-    group: hypershift.openshift.io
-    kind: NodePool
-    version: v1alpha1
-- type: olm.gvk
-  value:
     group: hive.openshift.io
     kind: ClusterDeployment
     version: v1
