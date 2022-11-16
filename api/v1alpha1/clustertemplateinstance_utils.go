@@ -24,6 +24,7 @@ import (
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/kubernetes-client/go-base/config/api"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -291,4 +292,101 @@ func (i *ClusterTemplateInstance) GetHelmParameters(
 	}
 
 	return params, nil
+}
+
+func (i *ClusterTemplateInstance) GetSubjectsWithClusterTemplateUserRole(ctx context.Context, k8sClient client.Client) (subjects []rbacv1.Subject, err error) {
+	allRoleBindingsInNamespace := &rbacv1.RoleBindingList{}
+
+	if err := k8sClient.List(ctx, allRoleBindingsInNamespace, &client.ListOptions{
+		Namespace: i.Namespace,
+	}); err != nil {
+		return nil, err
+	}
+
+	result := []rbacv1.Subject{}
+	keys := make(map[string]bool)
+	for _, rb := range allRoleBindingsInNamespace.Items {
+		if rb.RoleRef.Kind == "ClusterRole" && rb.RoleRef.Name == "cluster-templates-user" {
+			for _, subject := range rb.Subjects {
+				key := subject.Kind + "*" + subject.Name
+				if _, value := keys[key]; !value {
+					keys[key] = true
+					result = append(result, subject)
+				}
+			}
+		}
+	}
+
+	return result, nil
+}
+
+func (i *ClusterTemplateInstance) CreateDynamicRole(ctx context.Context, k8sClient client.Client, secretNames []string) (r *rbacv1.Role, err error) {
+	roleName := i.Name + "-role"
+	roleNamespace := i.Namespace
+
+	existingRole := &rbacv1.Role{}
+	err = k8sClient.Get(
+		ctx,
+		client.ObjectKey{
+			Name:      roleName,
+			Namespace: roleNamespace,
+		},
+		existingRole,
+	)
+
+	desiredRole := &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            roleName,
+			Namespace:       roleNamespace,
+			OwnerReferences: []metav1.OwnerReference{i.GetOwnerReference()},
+		},
+		Rules: []rbacv1.PolicyRule{{
+			APIGroups:     []string{""},
+			Verbs:         []string{"Get"},
+			Resources:     []string{"secrets"},
+			ResourceNames: secretNames,
+		}},
+	}
+
+	if err == nil {
+		// Results in no action if there is no difference in content
+		return desiredRole, k8sClient.Update(ctx, desiredRole)
+	} else {
+		return desiredRole, k8sClient.Create(ctx, desiredRole)
+	}
+}
+
+func (i *ClusterTemplateInstance) CreateDynamicRoleBinding(ctx context.Context, k8sClient client.Client, role *rbacv1.Role, roleSubjects []rbacv1.Subject) (rb *rbacv1.RoleBinding, err error) {
+	roleBindingName := i.Name + "-rolebinding"
+	roleBindingNamespace := i.Namespace
+
+	existingRoleBinding := &rbacv1.RoleBinding{}
+	err = k8sClient.Get(
+		ctx,
+		client.ObjectKey{
+			Name:      roleBindingName,
+			Namespace: roleBindingNamespace,
+		},
+		existingRoleBinding,
+	)
+
+	desiredRoleBinding := &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:            i.Name + "-rolebinding",
+			Namespace:       i.Namespace,
+			OwnerReferences: []metav1.OwnerReference{i.GetOwnerReference()},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: rbacv1.SchemeGroupVersion.Group,
+			Kind:     "Role",
+			Name:     role.Name,
+		},
+		Subjects: roleSubjects,
+	}
+
+	if err == nil {
+		return desiredRoleBinding, k8sClient.Update(ctx, desiredRoleBinding)
+	} else {
+		return desiredRoleBinding, k8sClient.Create(ctx, desiredRoleBinding)
+	}
 }
