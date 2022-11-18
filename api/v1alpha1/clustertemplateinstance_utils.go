@@ -321,7 +321,7 @@ func (i *ClusterTemplateInstance) GetSubjectsWithClusterTemplateUserRole(ctx con
 }
 
 func (i *ClusterTemplateInstance) CreateDynamicRole(ctx context.Context, k8sClient client.Client, secretNames []string) (r *rbacv1.Role, err error) {
-	roleName := i.Name + "-role"
+	roleName := i.Name + "-role-managed"
 	roleNamespace := i.Namespace
 
 	existingRole := &rbacv1.Role{}
@@ -357,7 +357,7 @@ func (i *ClusterTemplateInstance) CreateDynamicRole(ctx context.Context, k8sClie
 }
 
 func (i *ClusterTemplateInstance) CreateDynamicRoleBinding(ctx context.Context, k8sClient client.Client, role *rbacv1.Role, roleSubjects []rbacv1.Subject) (rb *rbacv1.RoleBinding, err error) {
-	roleBindingName := i.Name + "-rolebinding"
+	roleBindingName := i.Name + "-rolebinding-managed"
 	roleBindingNamespace := i.Namespace
 
 	existingRoleBinding := &rbacv1.RoleBinding{}
@@ -372,8 +372,8 @@ func (i *ClusterTemplateInstance) CreateDynamicRoleBinding(ctx context.Context, 
 
 	desiredRoleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:            i.Name + "-rolebinding",
-			Namespace:       i.Namespace,
+			Name:            roleBindingName,
+			Namespace:       roleBindingNamespace,
 			OwnerReferences: []metav1.OwnerReference{i.GetOwnerReference()},
 		},
 		RoleRef: rbacv1.RoleRef{
