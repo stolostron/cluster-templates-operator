@@ -294,7 +294,8 @@ func (i *ClusterTemplateInstance) GetHelmParameters(
 	return params, nil
 }
 
-func (i *ClusterTemplateInstance) GetSubjectsWithClusterTemplateUserRole(ctx context.Context, k8sClient client.Client) ([]rbacv1.Subject, error) {
+func (i *ClusterTemplateInstance) GetSubjectsWithClusterTemplateUserRole(
+	ctx context.Context, k8sClient client.Client) ([]rbacv1.Subject, error) {
 	allRoleBindingsInNamespace := &rbacv1.RoleBindingList{}
 
 	if err := k8sClient.List(ctx, allRoleBindingsInNamespace, &client.ListOptions{
@@ -320,7 +321,8 @@ func (i *ClusterTemplateInstance) GetSubjectsWithClusterTemplateUserRole(ctx con
 	return result, nil
 }
 
-func (i *ClusterTemplateInstance) CreateDynamicRole(ctx context.Context, k8sClient client.Client) (*rbacv1.Role, error) {
+func (i *ClusterTemplateInstance) CreateDynamicRole(
+	ctx context.Context, k8sClient client.Client) (*rbacv1.Role, error) {
 	roleName := i.Name + "-role-managed"
 	roleNamespace := i.Namespace
 	secretNames := []string{i.GetKubeadminPassRef(), i.GetKubeconfigRef()}
@@ -359,7 +361,9 @@ func (i *ClusterTemplateInstance) CreateDynamicRole(ctx context.Context, k8sClie
 	}
 }
 
-func (i *ClusterTemplateInstance) CreateDynamicRoleBinding(ctx context.Context, k8sClient client.Client, role *rbacv1.Role, roleSubjects []rbacv1.Subject) (*rbacv1.RoleBinding, error) {
+func (i *ClusterTemplateInstance) CreateDynamicRoleBinding(
+	ctx context.Context, k8sClient client.Client,
+	role *rbacv1.Role, roleSubjects []rbacv1.Subject) (*rbacv1.RoleBinding, error) {
 	roleBindingName := i.Name + "-rolebinding-managed"
 	roleBindingNamespace := i.Namespace
 

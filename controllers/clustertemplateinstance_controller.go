@@ -455,7 +455,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCredentials(
 		Name: clusterTemplateInstance.GetKubeconfigRef(),
 	}
 
-	if err := r.reconcileDynamicRoles(ctx, r.Client, clusterTemplateInstance); err != nil {
+	if err := r.ReconcileDynamicRoles(ctx, r.Client, clusterTemplateInstance); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.CredentialsFailedPhase
 		errMsg := fmt.Sprintf("failed to reconcile role and role-bindings for users with cluster-templates-role - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
@@ -465,7 +465,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCredentials(
 	return nil
 }
 
-func (*ClusterTemplateInstanceReconciler) reconcileDynamicRoles(
+func (*ClusterTemplateInstanceReconciler) ReconcileDynamicRoles(
 	ctx context.Context,
 	k8sClient client.Client,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
