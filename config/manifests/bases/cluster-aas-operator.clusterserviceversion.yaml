@@ -7,6 +7,7 @@ metadata:
     containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-d6ce1f162f00effe5c3963629dc5fc39243b22f1
     description: Easily install fully configured clusters with guard-rails.
     repository: https://github.com/stolostron/cluster-templates-operator
+    createdAt: "2022-11-11T12:00:00+00:00"
   name: cluster-aas-operator.v0.0.0
   namespace: placeholder
 spec:
