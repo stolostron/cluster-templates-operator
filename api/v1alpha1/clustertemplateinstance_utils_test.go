@@ -7,7 +7,9 @@ import (
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -510,5 +512,102 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		Expect(apps.Items[0].Labels[CTINamespaceLabel]).To(Equal("default"))
 		Expect(apps.Items[0].Labels[CTISetupLabel]).To(Equal("foo-day2"))
 		Expect(apps.Items[0].Spec.Destination.Server).To(Equal("foo-server"))
+	})
+
+	It("GetSubjectsWithClusterTemplateUserRole, CreateDynamicRole and CreateDynamicRoleBinding", func() {
+		cti := ClusterTemplateInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				Parameters: []Parameter{
+					{
+						Name:         "fooParam",
+						Value:        "foo",
+						ClusterSetup: "foo-day2",
+					},
+				},
+			},
+		}
+
+		objs := []runtime.Object{
+			&rbacv1.RoleBinding{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-role-binding-1",
+					Namespace: cti.Namespace,
+				},
+				RoleRef: rbacv1.RoleRef{
+					APIGroup: rbacv1.SchemeGroupVersion.Group,
+					Kind:     "ClusterRole",
+					Name:     "cluster-templates-user",
+				},
+				Subjects: []rbacv1.Subject{
+					{
+						Kind: "User",
+						Name: "test-user-1",
+					},
+					{
+						Kind: "Group",
+						Name: "test-group-1",
+					},
+					{
+						Kind: "User",
+						Name: "test-user-2",
+					},
+				},
+			},
+
+			&rbacv1.RoleBinding{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "ignored-test-role-binding-2",
+					Namespace: cti.Namespace,
+				},
+				RoleRef: rbacv1.RoleRef{
+					APIGroup: rbacv1.SchemeGroupVersion.Group,
+					Kind:     "ClusterRole",
+					Name:     "non-cluster-templates-user",
+				},
+				Subjects: []rbacv1.Subject{
+					{
+						Kind: "User",
+						Name: "test-user-3",
+					},
+				},
+			},
+
+			&rbacv1.RoleBinding{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-role-binding-3",
+					Namespace: cti.Namespace,
+				},
+				RoleRef: rbacv1.RoleRef{
+					APIGroup: rbacv1.SchemeGroupVersion.Group,
+					Kind:     "ClusterRole",
+					Name:     "cluster-templates-user",
+				},
+				Subjects: []rbacv1.Subject{
+					{
+						Kind: "User",
+						Name: "test-user-4",
+					},
+				},
+			},
+		}
+
+		client := fake.NewFakeClientWithScheme(scheme.Scheme, objs...)
+
+		roleSubjects, err := cti.GetSubjectsWithClusterTemplateUserRole(ctx, client)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(roleSubjects).ShouldNot(BeNil())
+		Expect(len(roleSubjects)).Should(Equal(4))
+
+		role, err := cti.CreateDynamicRole(ctx, client)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(role).ShouldNot(BeNil())
+
+		rb, err := cti.CreateDynamicRoleBinding(ctx, client, role, roleSubjects)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(rb).ShouldNot(BeNil())
 	})
 })

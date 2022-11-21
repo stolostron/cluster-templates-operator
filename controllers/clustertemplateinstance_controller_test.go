@@ -13,9 +13,14 @@ import (
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
+
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 var _ = Describe("ClusterTemplateInstance controller", func() {
@@ -114,6 +119,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			Expect(app).ShouldNot(BeNil())
 		})
 	})
+
 	Context("Cluster status phase", func() {
 		cti := &v1alpha1.ClusterTemplateInstance{}
 		ctiLookupKey := types.NamespacedName{}
@@ -230,11 +236,68 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		})
 	})
 
-	/*
-		Context("Cluster setup chart phase", func() {
-			cti := &v1alpha1.ClusterTemplateInstance{}
-			ctiLookupKey := types.NamespacedName{}
+	Context("Cluster setup chart phase", func() {
+		cti := &v1alpha1.ClusterTemplateInstance{}
+		cti, _ = testutils.GetCTI()
 
+		It("Creates dynamic roles", func() {
+			// So far this is partial mocked test only.
+			// Once we run full-flow test including cluster creaton, this should be
+			// black-box tested the same way as performed at previous phases.
+
+			reconciler := &ClusterTemplateInstanceReconciler{}
+
+			objs := []runtime.Object{
+				&rbacv1.RoleBinding{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-role-binding-1",
+						Namespace: cti.Namespace,
+					},
+					RoleRef: rbacv1.RoleRef{
+						APIGroup: rbacv1.SchemeGroupVersion.Group,
+						Kind:     "ClusterRole",
+						Name:     "cluster-templates-user",
+					},
+					Subjects: []rbacv1.Subject{
+						{
+							Kind: "User",
+							Name: "test-user-1",
+						},
+						{
+							Kind: "Group",
+							Name: "test-group-1",
+						},
+						{
+							Kind: "User",
+							Name: "test-user-2",
+						},
+					},
+				},
+			}
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, objs...)
+			reconciler.ReconcileDynamicRoles(ctx, client, cti)
+
+			role := &rbacv1.Role{}
+			Expect(client.Get(
+				ctx,
+				types.NamespacedName{Name: cti.Name + "-role-managed", Namespace: cti.Namespace},
+				role,
+			)).Should(Succeed())
+			Expect(len(role.Rules)).Should(Equal(1))
+			Expect(len(role.Rules[0].ResourceNames)).Should(Equal(2))
+
+			roleBinding := &rbacv1.RoleBinding{}
+			Expect(client.Get(
+				ctx,
+				types.NamespacedName{Name: cti.Name + "-rolebinding-managed", Namespace: cti.Namespace},
+				roleBinding,
+			)).Should(Succeed())
+			Expect(roleBinding.RoleRef.Kind).Should(Equal("Role"))
+			Expect(roleBinding.RoleRef.Name).Should(Equal(role.Name))
+			Expect(len(roleBinding.Subjects)).Should(Equal(3))
+		})
+
+		/*
 			ct := &v1alpha1.ClusterTemplate{}
 			helmRepoCR := &openshiftAPI.HelmChartRepository{}
 			helRepoServer := &httptest.Server{}
@@ -349,7 +412,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				Expect(cti.Status.Kubeconfig.Name).Should(Equal(cti.Name + "-admin-kubeconfig"))
 
 			})
+		*/
+	})
 
-		})
-	*/
 })

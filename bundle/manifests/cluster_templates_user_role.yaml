@@ -13,12 +13,6 @@ rules:
     resources:
       - clustertemplatequotas
   - verbs:
-      - get
-    apiGroups:
-      - ''
-    resources:
-      - secrets
-  - verbs:
       - '*'
     apiGroups:
       - clustertemplate.openshift.io
