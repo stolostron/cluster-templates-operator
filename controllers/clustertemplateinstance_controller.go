@@ -478,8 +478,7 @@ func (*ClusterTemplateInstanceReconciler) reconcileDynamicRoles(
 		return fmt.Errorf(errMsg)
 	}
 
-	role, err := clusterTemplateInstance.CreateDynamicRole(ctx, k8sClient,
-		[]string{clusterTemplateInstance.GetKubeadminPassRef(), clusterTemplateInstance.GetKubeconfigRef()})
+	role, err := clusterTemplateInstance.CreateDynamicRole(ctx, k8sClient)
 
 	if err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.CredentialsFailedPhase

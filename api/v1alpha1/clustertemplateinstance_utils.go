@@ -294,7 +294,7 @@ func (i *ClusterTemplateInstance) GetHelmParameters(
 	return params, nil
 }
 
-func (i *ClusterTemplateInstance) GetSubjectsWithClusterTemplateUserRole(ctx context.Context, k8sClient client.Client) (subjects []rbacv1.Subject, err error) {
+func (i *ClusterTemplateInstance) GetSubjectsWithClusterTemplateUserRole(ctx context.Context, k8sClient client.Client) ([]rbacv1.Subject, error) {
 	allRoleBindingsInNamespace := &rbacv1.RoleBindingList{}
 
 	if err := k8sClient.List(ctx, allRoleBindingsInNamespace, &client.ListOptions{
@@ -320,12 +320,13 @@ func (i *ClusterTemplateInstance) GetSubjectsWithClusterTemplateUserRole(ctx con
 	return result, nil
 }
 
-func (i *ClusterTemplateInstance) CreateDynamicRole(ctx context.Context, k8sClient client.Client, secretNames []string) (r *rbacv1.Role, err error) {
+func (i *ClusterTemplateInstance) CreateDynamicRole(ctx context.Context, k8sClient client.Client) (*rbacv1.Role, error) {
 	roleName := i.Name + "-role-managed"
 	roleNamespace := i.Namespace
+	secretNames := []string{i.GetKubeadminPassRef(), i.GetKubeconfigRef()}
 
 	existingRole := &rbacv1.Role{}
-	err = k8sClient.Get(
+	err := k8sClient.Get(
 		ctx,
 		client.ObjectKey{
 			Name:      roleName,
@@ -342,7 +343,7 @@ func (i *ClusterTemplateInstance) CreateDynamicRole(ctx context.Context, k8sClie
 		},
 		Rules: []rbacv1.PolicyRule{{
 			APIGroups:     []string{""},
-			Verbs:         []string{"Get"},
+			Verbs:         []string{"get"},
 			Resources:     []string{"secrets"},
 			ResourceNames: secretNames,
 		}},
@@ -351,17 +352,19 @@ func (i *ClusterTemplateInstance) CreateDynamicRole(ctx context.Context, k8sClie
 	if err == nil {
 		// Results in no action if there is no difference in content
 		return desiredRole, k8sClient.Update(ctx, desiredRole)
-	} else {
+	} else if apierrors.IsNotFound(err) {
 		return desiredRole, k8sClient.Create(ctx, desiredRole)
+	} else {
+		return nil, err
 	}
 }
 
-func (i *ClusterTemplateInstance) CreateDynamicRoleBinding(ctx context.Context, k8sClient client.Client, role *rbacv1.Role, roleSubjects []rbacv1.Subject) (rb *rbacv1.RoleBinding, err error) {
+func (i *ClusterTemplateInstance) CreateDynamicRoleBinding(ctx context.Context, k8sClient client.Client, role *rbacv1.Role, roleSubjects []rbacv1.Subject) (*rbacv1.RoleBinding, error) {
 	roleBindingName := i.Name + "-rolebinding-managed"
 	roleBindingNamespace := i.Namespace
 
 	existingRoleBinding := &rbacv1.RoleBinding{}
-	err = k8sClient.Get(
+	err := k8sClient.Get(
 		ctx,
 		client.ObjectKey{
 			Name:      roleBindingName,
@@ -386,7 +389,9 @@ func (i *ClusterTemplateInstance) CreateDynamicRoleBinding(ctx context.Context, 
 
 	if err == nil {
 		return desiredRoleBinding, k8sClient.Update(ctx, desiredRoleBinding)
-	} else {
+	} else if apierrors.IsNotFound(err) {
 		return desiredRoleBinding, k8sClient.Create(ctx, desiredRoleBinding)
+	} else {
+		return nil, err
 	}
 }
