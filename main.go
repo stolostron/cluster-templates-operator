@@ -29,6 +29,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -108,16 +109,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	_, err = mgr.GetClient().RESTMapper().KindFor(schema.GroupVersionResource{
+	enableHypershift := isCRDAvailable(mgr.GetClient(), schema.GroupVersionResource{
 		Group:    "hypershift.openshift.io",
 		Resource: "HostedCluster",
 	})
-
-	enableHypershift := true
-	if err != nil {
-		setupLog.Info("Hypershift APIs not found")
-		enableHypershift = false
-	}
+	enableHive := isCRDAvailable(mgr.GetClient(), schema.GroupVersionResource{
+		Group:    "hive.openshift.io",
+		Resource: "ClusterDeployment",
+	})
 
 	if err = (&controllers.ClusterTemplateQuotaReconciler{
 		Client: mgr.GetClient(),
@@ -130,6 +129,7 @@ func main() {
 		Client:           mgr.GetClient(),
 		Scheme:           mgr.GetScheme(),
 		EnableHypershift: enableHypershift,
+		EnableHive:       enableHive,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplateInstance")
 		os.Exit(1)
@@ -144,7 +144,13 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	/*
+
+	enableHelmRepo := isCRDAvailable(mgr.GetClient(), schema.GroupVersionResource{
+		Group:    "helm.openshift.io",
+		Resource: "HelmChartRepository",
+	})
+
+	if enableHelmRepo {
 		if err = (&defaultresources.HelmRepoReconciler{
 			Client: mgr.GetClient(),
 			Scheme: mgr.GetScheme(),
@@ -152,7 +158,7 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "HelmRepo")
 			os.Exit(1)
 		}
-	*/
+	}
 
 	if err = (&v1alpha1.ClusterTemplateQuota{}).SetupWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "ClusterTemplateQuota")
@@ -179,4 +185,15 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func isCRDAvailable(client client.Client, gvk schema.GroupVersionResource) bool {
+	_, err := client.RESTMapper().KindFor(gvk)
+
+	found := err == nil
+	if !found {
+		setupLog.Info(gvk.Resource + "CRD not found")
+	}
+
+	return found
 }

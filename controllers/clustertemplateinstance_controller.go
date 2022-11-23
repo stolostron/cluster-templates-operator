@@ -53,6 +53,7 @@ type ClusterTemplateInstanceReconciler struct {
 	client.Client
 	Scheme           *runtime.Scheme
 	EnableHypershift bool
+	EnableHive       bool
 }
 
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=get;list;watch;create;update;patch;delete
@@ -778,13 +779,16 @@ func (r *ClusterTemplateInstanceReconciler) SetupWithManager(mgr ctrl.Manager) e
 		For(&v1alpha1.ClusterTemplateInstance{}).
 		Watches(
 			&source.Kind{Type: &argo.Application{}},
-			handler.EnqueueRequestsFromMapFunc(mapApplicationToInstance)).
-		Watches(
+			handler.EnqueueRequestsFromMapFunc(mapApplicationToInstance))
+
+	if r.EnableHive {
+		builder = builder.Watches(
 			&source.Kind{Type: &hivev1.ClusterClaim{}},
 			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
-		Watches(
-			&source.Kind{Type: &hivev1.ClusterDeployment{}},
-			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance))
+			Watches(
+				&source.Kind{Type: &hivev1.ClusterDeployment{}},
+				handler.EnqueueRequestsFromMapFunc(mapResourceToInstance))
+	}
 
 	if r.EnableHypershift {
 		builder = builder.Watches(
