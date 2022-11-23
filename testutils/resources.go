@@ -60,6 +60,7 @@ func GetCT(withProps bool, withSetup bool) *v1alpha1.ClusterTemplate {
 					Automated: &argo.SyncPolicyAutomated{},
 				},
 			},
+			ArgoCDNamespace: "argocd",
 		},
 	}
 	/*

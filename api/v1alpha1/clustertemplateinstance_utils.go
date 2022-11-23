@@ -18,6 +18,7 @@ package v1alpha1
 
 import (
 	"context"
+	"fmt"
 
 	"gopkg.in/yaml.v3"
 
@@ -79,9 +80,13 @@ func (i *ClusterTemplateInstance) GetDay1Application(
 	)
 	selector := labels.NewSelector().Add(*ctiNameLabelReq, *ctiNsLabelReq, *ctiSetupReq)
 
+	if i.Status.ClusterTemplateSpec == nil {
+		return nil, fmt.Errorf("ClusterTemplateSpec not defined")
+	}
+
 	if err := k8sClient.List(ctx, apps, &client.ListOptions{
 		LabelSelector: selector,
-		Namespace:     ArgoNamespace,
+		Namespace:     i.Status.ClusterTemplateSpec.ArgoCDNamespace,
 	}); err != nil {
 		return nil, err
 	}
@@ -91,7 +96,7 @@ func (i *ClusterTemplateInstance) GetDay1Application(
 		err := apierrors.NewNotFound(schema.GroupResource{
 			Group:    argo.ApplicationSchemaGroupVersionKind.Group,
 			Resource: argo.ApplicationSchemaGroupVersionKind.Kind,
-		}, i.Namespace+"/"+i.Name)
+		}, i.Status.ClusterTemplateSpec.ArgoCDNamespace+"/"+i.Name)
 		return nil, err
 	}
 	return &apps.Items[0], nil
@@ -100,7 +105,6 @@ func (i *ClusterTemplateInstance) GetDay1Application(
 func (i *ClusterTemplateInstance) CreateDay1Application(
 	ctx context.Context,
 	k8sClient client.Client,
-	clusterTemplate ClusterTemplate,
 ) error {
 	argoApp, err := i.GetDay1Application(ctx, k8sClient)
 	if err != nil {
@@ -112,13 +116,13 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 		return nil
 	}
 
-	params, err := i.GetHelmParameters(clusterTemplate, "")
+	params, err := i.GetHelmParameters("")
 
 	if err != nil {
 		return err
 	}
 
-	appSpec := clusterTemplate.Spec.ClusterDefinition
+	appSpec := i.Status.ClusterTemplateSpec.ClusterDefinition
 
 	if len(params) > 0 {
 		if appSpec.Source.Helm == nil {
@@ -134,7 +138,7 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 	argoApp = &argo.Application{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: i.Name + "-",
-			Namespace:    ArgoNamespace,
+			Namespace:    i.Status.ClusterTemplateSpec.ArgoCDNamespace,
 			Finalizers: []string{
 				argo.ResourcesFinalizerName,
 			},
@@ -176,7 +180,7 @@ func (i *ClusterTemplateInstance) GetDay2Applications(
 		applications,
 		&client.ListOptions{
 			LabelSelector: selector,
-			Namespace:     ArgoNamespace,
+			Namespace:     i.Status.ClusterTemplateSpec.ArgoCDNamespace,
 		},
 	)
 	return applications, err
@@ -185,7 +189,6 @@ func (i *ClusterTemplateInstance) GetDay2Applications(
 func (i *ClusterTemplateInstance) CreateDay2Applications(
 	ctx context.Context,
 	k8sClient client.Client,
-	clusterTemplate ClusterTemplate,
 ) error {
 	log := ctrl.LoggerFrom(ctx)
 	apps, err := i.GetDay2Applications(ctx, k8sClient)
@@ -214,7 +217,7 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 		return err
 	}
 
-	for _, clusterSetup := range clusterTemplate.Spec.ClusterSetup {
+	for _, clusterSetup := range i.Status.ClusterTemplateSpec.ClusterSetup {
 		setupAlreadyExists := false
 		for _, app := range apps.Items {
 			val := app.GetLabels()[CTISetupLabel]
@@ -223,7 +226,7 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 			}
 		}
 		if !setupAlreadyExists {
-			params, err := i.GetHelmParameters(clusterTemplate, clusterSetup.Name)
+			params, err := i.GetHelmParameters(clusterSetup.Name)
 
 			if err != nil {
 				return err
@@ -243,7 +246,7 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 			argoApp := argo.Application{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: i.Name + "-",
-					Namespace:    ArgoNamespace,
+					Namespace:    i.Status.ClusterTemplateSpec.ArgoCDNamespace,
 					Labels: map[string]string{
 						CTINameLabel:      i.Name,
 						CTINamespaceLabel: i.Namespace,
@@ -261,18 +264,19 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 }
 
 func (i *ClusterTemplateInstance) GetHelmParameters(
-	ct ClusterTemplate,
 	day2Name string,
 ) ([]argo.HelmParameter, error) {
 
 	params := []argo.HelmParameter{}
 
+	ctSpec := i.Status.ClusterTemplateSpec
+
 	if day2Name == "" {
-		if ct.Spec.ClusterDefinition.Source.Helm != nil {
-			params = ct.Spec.ClusterDefinition.Source.Helm.Parameters
+		if ctSpec.ClusterDefinition.Source.Helm != nil {
+			params = ctSpec.ClusterDefinition.Source.Helm.Parameters
 		}
 	} else {
-		for _, setup := range ct.Spec.ClusterSetup {
+		for _, setup := range ctSpec.ClusterSetup {
 			if setup.Name == day2Name && setup.Spec.Source.Helm != nil {
 				params = setup.Spec.Source.Helm.Parameters
 			}

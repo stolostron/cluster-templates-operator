@@ -38,6 +38,9 @@ var _ = Describe("Test cluster setup", func() {
 				Name:      "foo",
 				Namespace: "bar",
 			},
+			Status: v1alpha1.ClusterTemplateInstanceStatus{
+				ClusterTemplateSpec: &v1alpha1.ClusterTemplateSpec{},
+			},
 		}
 
 		kubeconfig := api.Config{
@@ -67,7 +70,7 @@ var _ = Describe("Test cluster setup", func() {
 		app := &argo.Application{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
-				Namespace: v1alpha1.ArgoNamespace,
+				Namespace: "argocd",
 				Labels: map[string]string{
 					v1alpha1.CTINameLabel:      cti.Name,
 					v1alpha1.CTINamespaceLabel: cti.Namespace,

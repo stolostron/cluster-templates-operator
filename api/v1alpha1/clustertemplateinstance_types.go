@@ -27,7 +27,6 @@ const (
 	CTINameLabel      = "clustertemplateinstance.openshift.io/name"
 	CTINamespaceLabel = "clustertemplateinstance.openshift.io/namespace"
 	CTISetupLabel     = "clustertemplate.openshift.io/cluster-setup"
-	ArgoNamespace     = "openshift-gitops" // TODO make configurable
 )
 
 type Parameter struct {
@@ -74,6 +73,7 @@ const (
 )
 
 type ClusterTemplateInstanceStatus struct {
+	ClusterTemplateSpec *ClusterTemplateSpec `json:"clusterTemplateSpec,omitempty"`
 	// A reference for secret which contains username and password under keys "username" and "password"
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	AdminPassword *corev1.LocalObjectReference `json:"adminPassword,omitempty"`
