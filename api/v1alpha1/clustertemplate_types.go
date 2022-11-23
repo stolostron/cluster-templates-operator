@@ -39,6 +39,8 @@ type ClusterTemplateSpec struct {
 	//+kubebuilder:validation:Minimum=0
 	// Cost of the cluster, used for quotas
 	Cost int `json:"cost"`
+
+	ArgoCDNamespace string `json:"argocdNamespace"`
 }
 
 // ClusterTemplateStatus defines the observed state of ClusterTemplate

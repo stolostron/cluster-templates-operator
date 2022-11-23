@@ -87,56 +87,59 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 			clusterTemplateInstance,
 			v1alpha1.CTIFinalizer,
 		) {
-			app, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client)
-			if err != nil {
-				if !apierrors.IsNotFound(err) {
-					return ctrl.Result{}, err
-				}
-			}
-
-			if app != nil {
-				if err = r.Client.Delete(ctx, app); err != nil {
-					return ctrl.Result{}, err
-				}
-			}
-
-			apps, err := clusterTemplateInstance.GetDay2Applications(ctx, r.Client)
-			if err != nil {
-				if !apierrors.IsNotFound(err) {
-					return ctrl.Result{}, err
-				}
-			}
-
-			if apps != nil {
-				for _, app := range apps.Items {
-					if err = r.Client.Delete(ctx, &app); err != nil {
+			if clusterTemplateInstance.Status.ClusterTemplateSpec != nil {
+				app, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client)
+				if err != nil {
+					if !apierrors.IsNotFound(err) {
 						return ctrl.Result{}, err
 					}
 				}
-			}
 
-			ctiNameLabelReq, _ := labels.NewRequirement(
-				v1alpha1.CTINameLabel,
-				selection.Equals,
-				[]string{clusterTemplateInstance.Name},
-			)
-			ctiNsLabelReq, _ := labels.NewRequirement(
-				v1alpha1.CTINamespaceLabel,
-				selection.Equals,
-				[]string{clusterTemplateInstance.Namespace},
-			)
-			selector := labels.NewSelector().Add(*ctiNameLabelReq, *ctiNsLabelReq)
-			secrets := &corev1.SecretList{}
-			if err := r.Client.List(ctx, secrets, &client.ListOptions{
-				LabelSelector: selector,
-				Namespace:     v1alpha1.ArgoNamespace,
-			}); err != nil {
-				return ctrl.Result{}, err
-			}
+				if app != nil {
+					if err = r.Client.Delete(ctx, app); err != nil {
+						return ctrl.Result{}, err
+					}
+				}
 
-			for _, secret := range secrets.Items {
-				if err := r.Client.Delete(ctx, &secret); err != nil {
+				apps, err := clusterTemplateInstance.GetDay2Applications(ctx, r.Client)
+				if err != nil {
+					if !apierrors.IsNotFound(err) {
+						return ctrl.Result{}, err
+					}
+				}
+
+				if apps != nil {
+					for _, app := range apps.Items {
+						if err = r.Client.Delete(ctx, &app); err != nil {
+							return ctrl.Result{}, err
+						}
+					}
+				}
+
+				// cleanup argocd secrets (ie new cluster)
+				ctiNameLabelReq, _ := labels.NewRequirement(
+					v1alpha1.CTINameLabel,
+					selection.Equals,
+					[]string{clusterTemplateInstance.Name},
+				)
+				ctiNsLabelReq, _ := labels.NewRequirement(
+					v1alpha1.CTINamespaceLabel,
+					selection.Equals,
+					[]string{clusterTemplateInstance.Namespace},
+				)
+				selector := labels.NewSelector().Add(*ctiNameLabelReq, *ctiNsLabelReq)
+				secrets := &corev1.SecretList{}
+				if err := r.Client.List(ctx, secrets, &client.ListOptions{
+					LabelSelector: selector,
+					Namespace:     clusterTemplateInstance.Status.ClusterTemplateSpec.ArgoCDNamespace,
+				}); err != nil {
 					return ctrl.Result{}, err
+				}
+
+				for _, secret := range secrets.Items {
+					if err := r.Client.Delete(ctx, &secret); err != nil {
+						return ctrl.Result{}, err
+					}
 				}
 			}
 			controllerutil.RemoveFinalizer(
@@ -166,6 +169,27 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 		clusterTemplateInstance.Status.Message = v1alpha1.PendingMessage
 	}
 
+	if clusterTemplateInstance.Status.ClusterTemplateSpec == nil {
+		clusterTemplate := v1alpha1.ClusterTemplate{}
+		if err := r.Client.Get(ctx, client.ObjectKey{Name: clusterTemplateInstance.Spec.ClusterTemplateRef}, &clusterTemplate); err != nil {
+			clusterTemplateInstance.Status.Phase = v1alpha1.FailedPhase
+			errMsg := fmt.Sprintf("failed to fetch ClusterTemplate - %q", err)
+			clusterTemplateInstance.Status.Message = errMsg
+			if updErr := r.Status().Update(ctx, clusterTemplateInstance); updErr != nil {
+				return ctrl.Result{}, fmt.Errorf(
+					"failed to update status of clustertemplateinstance %q: %w",
+					req.NamespacedName,
+					updErr,
+				)
+			}
+			return ctrl.Result{}, err
+		}
+		clusterTemplateInstance.Status.ClusterTemplateSpec = &clusterTemplate.Spec
+		if val, ok := clusterTemplate.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
+			clusterTemplateInstance.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation] = val
+		}
+	}
+
 	err := r.reconcile(ctx, clusterTemplateInstance)
 
 	if updErr := r.Status().Update(ctx, clusterTemplateInstance); updErr != nil {
@@ -183,15 +207,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 ) error {
-	clusterTemplate := v1alpha1.ClusterTemplate{}
-	if err := r.Client.Get(ctx, client.ObjectKey{Name: clusterTemplateInstance.Spec.ClusterTemplateRef}, &clusterTemplate); err != nil {
-		clusterTemplateInstance.Status.Phase = v1alpha1.FailedPhase
-		errMsg := fmt.Sprintf("failed to fetch ClusterTemplate - %q", err)
-		clusterTemplateInstance.Status.Message = errMsg
-		return fmt.Errorf(errMsg)
-	}
-
-	if err := r.reconcileClusterCreate(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
+	if err := r.reconcileClusterCreate(ctx, clusterTemplateInstance); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterDefinitionFailedPhase
 		errMsg := fmt.Sprintf("failed to create cluster definition - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
@@ -200,7 +216,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 	if err := r.reconcileClusterStatus(
 		ctx,
 		clusterTemplateInstance,
-		clusterTemplate,
 	); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
 		errMsg := fmt.Sprintf("failed to reconcile cluster status - %q", err)
@@ -208,21 +223,21 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 		return fmt.Errorf(errMsg)
 	}
 
-	if err := r.reconcileAddClusterToArgo(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
+	if err := r.reconcileAddClusterToArgo(ctx, clusterTemplateInstance); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ArgoClusterFailedPhase
 		errMsg := fmt.Sprintf("failed to add cluster to argo - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
 
-	if err := r.reconcileClusterSetupCreate(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
+	if err := r.reconcileClusterSetupCreate(ctx, clusterTemplateInstance); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupCreateFailedPhase
 		errMsg := fmt.Sprintf("failed to create cluster setup - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
 
-	if err := r.reconcileClusterSetup(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
+	if err := r.reconcileClusterSetup(ctx, clusterTemplateInstance); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupFailedPhase
 		errMsg := fmt.Sprintf("failed to reconcile cluster setup - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
@@ -289,7 +304,6 @@ func setPhase(clusterTemplateInstance *v1alpha1.ClusterTemplateInstance) {
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
-	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
 
 	clusterDefinitionCreatedCondition := meta.FindStatusCondition(
@@ -298,7 +312,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	)
 
 	if clusterDefinitionCreatedCondition.Status == metav1.ConditionFalse {
-		if err := clusterTemplateInstance.CreateDay1Application(ctx, r.Client, clusterTemplate); err != nil {
+		if err := clusterTemplateInstance.CreateDay1Application(ctx, r.Client); err != nil {
 			clusterTemplateInstance.SetClusterDefinitionCreatedCondition(
 				metav1.ConditionFalse,
 				v1alpha1.ClusterDefinitionFailed,
@@ -318,7 +332,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
-	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
 	log := ctrl.LoggerFrom(ctx)
 	log.Info(
@@ -334,7 +347,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 		return nil
 	}
 
-	if _, ok := clusterTemplate.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
+	if _, ok := clusterTemplateInstance.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
 		log.Info("Experimental provider specified", "name", clusterTemplateInstance.Name)
 		return nil
 	}
@@ -503,7 +516,6 @@ func (*ClusterTemplateInstanceReconciler) ReconcileDynamicRoles(
 func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
-	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
 	installSucceededCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
@@ -547,7 +559,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
-	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
 	log := ctrl.LoggerFrom(ctx)
 
@@ -560,7 +571,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 		return nil
 	}
 
-	if len(clusterTemplate.Spec.ClusterSetup) == 0 {
+	if len(clusterTemplateInstance.Status.ClusterTemplateSpec.ClusterSetup) == 0 {
 		clusterTemplateInstance.SetClusterSetupCreatedCondition(
 			metav1.ConditionTrue,
 			v1alpha1.ClusterSetupNotSpecified,
@@ -586,7 +597,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 	if err := clusterTemplateInstance.CreateDay2Applications(
 		ctx,
 		r.Client,
-		clusterTemplate,
 	); err != nil {
 		clusterTemplateInstance.SetClusterSetupCreatedCondition(
 			metav1.ConditionFalse,
@@ -606,7 +616,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
-	clusterTemplate v1alpha1.ClusterTemplate,
 ) error {
 	log := ctrl.LoggerFrom(ctx)
 
@@ -619,7 +628,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 		return nil
 	}
 
-	if len(clusterTemplate.Spec.ClusterSetup) == 0 {
+	if len(clusterTemplateInstance.Status.ClusterTemplateSpec.ClusterSetup) == 0 {
 		clusterTemplateInstance.SetClusterSetupSucceededCondition(
 			metav1.ConditionTrue,
 			v1alpha1.ClusterSetupNotDefined,
@@ -740,7 +749,6 @@ func (r *ClusterTemplateInstanceReconciler) SetupWithManager(mgr ctrl.Manager) e
 
 		if err := r.Client.List(context.TODO(), apps, &client.ListOptions{
 			LabelSelector: selector,
-			Namespace:     v1alpha1.ArgoNamespace,
 		}); err != nil {
 			return reply
 		}
