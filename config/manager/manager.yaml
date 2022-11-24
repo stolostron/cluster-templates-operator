@@ -38,7 +38,7 @@ spec:
         - /manager
         args:
         - --leader-elect
-        image: quay.io/stolostron/cluster-templates-operator:2.7.0-d6ce1f162f00effe5c3963629dc5fc39243b22f1
+        image: quay.io/stolostron/cluster-templates-operator:2.7.0-1af47e04b387f0e037fc74cb35b2c2a78fbd6776
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
