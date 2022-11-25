@@ -43,6 +43,8 @@ spec:
             type: object
           spec:
             properties:
+              argocdNamespace:
+                type: string
               clusterDefinition:
                 description: ArgoCD application spec which is used for installation
                   of the cluster
@@ -838,6 +840,7 @@ spec:
                 minimum: 0
                 type: integer
             required:
+            - argocdNamespace
             - clusterDefinition
             - cost
             type: object
