@@ -4,8 +4,8 @@ metadata:
   annotations:
     categories: Integration & Delivery,OpenShift Optional
     certified: "false"
-    containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-f05f4fad51f17131cdfbe9f9ed5b7876d3abf3eb
-    createdAt: "2022-11-24T12:00:00+00:00"
+    containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-01b066819809ae9446713ec7f403d4357f70954c
+    createdAt: "2022-11-25T12:00:00+00:00"
     description: Easily install fully configured clusters with guard-rails.
     repository: https://github.com/stolostron/cluster-templates-operator
   name: cluster-aas-operator.v0.0.0
