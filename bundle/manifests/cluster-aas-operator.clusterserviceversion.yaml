@@ -31,7 +31,7 @@ metadata:
       ]
     categories: Integration & Delivery,OpenShift Optional
     certified: "false"
-    containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-1af47e04b387f0e037fc74cb35b2c2a78fbd6776
+    containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-f05f4fad51f17131cdfbe9f9ed5b7876d3abf3eb
     createdAt: "2022-11-24T12:00:00+00:00"
     description: Easily install fully configured clusters with guard-rails.
     operators.operatorframework.io/builder: operator-sdk-v1.22.2
@@ -223,6 +223,18 @@ spec:
           - list
           - watch
         - apiGroups:
+          - rbac.authorization.k8s.io
+          resources:
+          - rolebindings
+          - roles
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
           - authentication.k8s.io
           resources:
           - tokenreviews
@@ -279,7 +291,7 @@ spec:
                 - --leader-elect
                 command:
                 - /manager
-                image: quay.io/stolostron/cluster-templates-operator:2.7.0-1af47e04b387f0e037fc74cb35b2c2a78fbd6776
+                image: quay.io/stolostron/cluster-templates-operator:2.7.0-f05f4fad51f17131cdfbe9f9ed5b7876d3abf3eb
                 livenessProbe:
                   httpGet:
                     path: /healthz
