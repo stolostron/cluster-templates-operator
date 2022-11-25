@@ -43,6 +43,7 @@ func getHypershiftTemplate() *v1alpha1.ClusterTemplate {
 					Automated: &argo.SyncPolicyAutomated{},
 				},
 			},
+			ArgoCDNamespace: "argocd",
 		},
 	}
 }
