@@ -9,4 +9,4 @@ Learn about CRDs
 
 Permissions & env setup
  - [ArgoCD](./argocd.md)
- - [Persmission for dev users](./dev-permissions.md)
+ - [Persmissions for dev users](./dev-permissions.md)

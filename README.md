@@ -20,10 +20,12 @@ The intended flows for admin and developer/devops engineer
 ## Prerequisities
 You’ll need:
 1. Kubernetes cluster to run against
-2. Hypershift[https://github.com/openshift/hypershift] or Hive[https://github.com/openshift/hive] operator for cluster installation.
+2. [Hypershift](https://github.com/openshift/hypershift) or [Hive](https://github.com/openshift/hive) operator for cluster installation.
 
 ## Operator installation
 Operator is available on Operator Hub as `Cluster as a service operator`. Once installed, it will pull in ArgoCD operator too (unless it is already available). 
+
+## Documentation
 
 [Getting started guide](./docs/quick-start.md)
 

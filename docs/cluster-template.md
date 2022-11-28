@@ -1,7 +1,7 @@
 # ClusterTemplate
 ClusterTemplate CR represents a template of a cluster. The template contains both cluster installation and post installation cluster setup.
 
-`cluster as a service` operator uses abilities of ArgoCD to deploy and manage cluster installation and cluster setup. Therefore it is important to understand `Application` CR which is best described in official [ArgoCD docs](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#applications)
+`Cluster as a service` operator uses abilities of ArgoCD to deploy and manage cluster installation and cluster setup. Therefore it is important to understand `Application` CR which is best described in official [ArgoCD docs](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#applications)
 
 ## Example ClusterTemplate
 ```yaml
@@ -20,7 +20,7 @@ spec:
       server: 'https://kubernetes.default.svc'
     project: ''
     source:
-      #source is Helm chart but it can be anything supported by ArgoCD Application
+      #source is Helm chart, but it can be anything supported by ArgoCD Application
       chart: hypershift-template
       repoURL: 'https://stolostron.github.io/cluster-templates-operator'
       targetRevision: 0.0.2
@@ -32,7 +32,7 @@ spec:
       spec:
         destination:
           #field will be set dynamically to match new cluster's API url
-          server: #{new_cluster}
+          server: ${new_cluster}
         project: '''
         source:
           #any source supported by ArgoCD
@@ -51,7 +51,7 @@ spec:
 Installation of a cluster is defined in `spec.clusterDefinition` field. The content of the field is `spec` of ArgoCD `Application` CR - see [ArgoCD docs](https://argo-cd.readthedocs.io/en/stable/operator-manual/declarative-setup/#applications).
 
 ### Application source
-Any application source can be used - we usually focus on Helm chart source as it allows for easy parameterization of cluster definition yamls, but if you do not need that, feel free to use any other Application source.
+Any Application source can be used - we usually focus on Helm chart source as it allows for easy parameterization of cluster definition yamls, but if you do not need that, feel free to use any other Application source.
 
 ### Application destination
 The operator supports deploying clusters to local (hub) cluster only - `destination.server` needs to be set to `https://kubernetes.default.svc`
