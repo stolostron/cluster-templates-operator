@@ -1,5 +1,5 @@
 # ArgoCD
-`cluster as a service` operator uses abilities of ArgoCD to deploy and manage cluster installation and cluster setup. Therefore it is necessary to properly setup ArgoCD.
+`Cluster as a service` operator uses abilities of ArgoCD to deploy and manage cluster installation and cluster setup. Therefore it is necessary to properly setup ArgoCD.
 
 ## ArgoCD Instance
 Every `ClusterTemplate` has `spec.argoCDNamespace` field. The field defines in which namespace an ArgoCD Application will be created. It is expected that the Application will be picked up by ArgoCD and acted upon. 

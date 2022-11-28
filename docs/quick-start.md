@@ -32,12 +32,12 @@ spec:
 
 To learn what each of the `spec` fields represent go to [ClusterTemplate CR docs](./cluster-template.md)
 
-In short:
+To sum up:
  - `spec.argocdNamespace` defines in which namespace ArgoCD Application will be created. ArgoCD instance has to be running in this namespace. Read more about the ArgoCD setup [here](./argocd.md).
  - `spec.clusterDefinition` defines how a new cluster should look like. In this case a cluster is backed by Helm chart. 
 
 ### Helm chart description
-Helm chart of `hypershift-cluster` can be found at [Helm chart repository](https://github.com/stolostron/cluster-templates-operator/tree/helm-repo/hypershift-template). It is a typical Helm chart which deploys one resource - `HostedCluster` (Hypershift). The helm chart has 4 properties defined by `values.yaml` and `values.schema.yaml`.
+Helm chart of `hypershift-cluster` can be found at [Helm chart repository](https://github.com/stolostron/cluster-templates-operator/tree/helm-repo/hypershift-template). The Helm chart deploys one resource - `HostedCluster` (Hypershift). The helm chart has 4 properties defined by `values.yaml` and `values.schema.yaml`.
 
 The `HostedCluster` of the Helm chart looks like:
 ```yaml
