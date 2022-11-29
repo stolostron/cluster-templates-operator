@@ -44,6 +44,7 @@ spec:
           spec:
             properties:
               argocdNamespace:
+                description: A namespace where ArgoCD Applications will be created
                 type: string
               clusterDefinition:
                 description: ArgoCD application spec which is used for installation
@@ -848,20 +849,28 @@ spec:
             description: ClusterTemplateStatus defines the observed state of ClusterTemplate
             properties:
               clusterDefinition:
+                description: Describes helm chart properties and their schema
                 properties:
                   schema:
+                    description: Content of helm chart values.schema.json
                     type: string
                   values:
+                    description: Content of helm chart values.yaml
                     type: string
                 type: object
               clusterSetup:
+                description: Describes helm chart properties and schema for every
+                  cluster setup step
                 items:
                   properties:
                     name:
+                      description: Name of the cluster setup step
                       type: string
                     schema:
+                      description: Content of helm chart values.schema.json
                       type: string
                     values:
+                      description: Content of helm chart values.yaml
                       type: string
                   required:
                   - name

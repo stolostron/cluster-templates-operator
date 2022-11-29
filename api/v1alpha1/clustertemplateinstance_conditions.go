@@ -29,6 +29,7 @@ type ClusterInstallReason string
 const (
 	ApplicationFetchFailed         ClusterInstallReason = "ApplicationFetchFailed"
 	ApplicationDegraded            ClusterInstallReason = "ApplicationDegraded"
+	ApplicationError               ClusterInstallReason = "ApplicationError"
 	ClusterDefinitionNotCreated    ClusterInstallReason = "ClusterDefinitionNotCreated"
 	ClusterProviderDetectionFailed ClusterInstallReason = "ClusterProviderDetectionFailed"
 	ClusterStatusFailed            ClusterInstallReason = "ClusterStatusFailed"
@@ -59,8 +60,10 @@ const (
 	ClusterSetupNotDefined   ClusterSetupSucceededReason = "ClusterSetupNotDefined"
 	ClusterSetupFetchFailed  ClusterSetupSucceededReason = "ClusterSetupFetchFailed"
 	ClusterSetupAppsNotFound ClusterSetupSucceededReason = "ClusterSetupAppsNotFound"
+	ClusterSetupRunning      ClusterSetupSucceededReason = "ClusterSetupRunning"
 	SetupSucceeded           ClusterSetupSucceededReason = "ClusterSetupSucceeded"
 	ClusterSetupDegraded     ClusterSetupSucceededReason = "ClusterSetupDegraded"
+	ClusterSetupError        ClusterSetupSucceededReason = "ClusterSetupError"
 	ClusterSetupNotCreated   ClusterSetupSucceededReason = "ClusterSetupNotCreated"
 )
 

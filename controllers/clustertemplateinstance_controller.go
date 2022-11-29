@@ -28,6 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
+	"github.com/stolostron/cluster-templates-operator/argocd"
 
 	"github.com/stolostron/cluster-templates-operator/clusterprovider"
 	"github.com/stolostron/cluster-templates-operator/clustersetup"
@@ -39,7 +40,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
-	argoHealth "github.com/argoproj/gitops-engine/pkg/health"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -252,56 +252,9 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 		return fmt.Errorf(errMsg)
 	}
 
-	setPhase(clusterTemplateInstance)
 	return nil
 }
 
-func setPhase(clusterTemplateInstance *v1alpha1.ClusterTemplateInstance) {
-	clusterDefinitionCreatedCondition := meta.FindStatusCondition(
-		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.ClusterDefinitionCreated),
-	)
-	if clusterDefinitionCreatedCondition.Status == metav1.ConditionTrue {
-		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallingPhase
-		clusterTemplateInstance.Status.Message = "Cluster is installing"
-	}
-
-	installSucceededCondition := meta.FindStatusCondition(
-		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.ClusterInstallSucceeded),
-	)
-	if installSucceededCondition.Status == metav1.ConditionTrue {
-		clusterTemplateInstance.Status.Phase = v1alpha1.AddingArgoClusterPhase
-		clusterTemplateInstance.Status.Message = "Adding cluster to argo"
-	}
-
-	argoClusterCreatedCondition := meta.FindStatusCondition(
-		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.ArgoClusterAdded),
-	)
-	if argoClusterCreatedCondition.Status == metav1.ConditionTrue {
-		clusterTemplateInstance.Status.Phase = v1alpha1.CreatingClusterSetupPhase
-		clusterTemplateInstance.Status.Message = "Creating cluster setup"
-	}
-
-	clusterSetupCreatedCondition := meta.FindStatusCondition(
-		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.ClusterSetupCreated),
-	)
-	if clusterSetupCreatedCondition.Status == metav1.ConditionTrue {
-		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupRunningPhase
-		clusterTemplateInstance.Status.Message = "Cluster setup is running"
-	}
-
-	clusterSetupSucceededCondition := meta.FindStatusCondition(
-		clusterTemplateInstance.Status.Conditions,
-		string(v1alpha1.ClusterSetupSucceeded),
-	)
-	if clusterSetupSucceededCondition.Status == metav1.ConditionTrue {
-		clusterTemplateInstance.Status.Phase = v1alpha1.ReadyPhase
-		clusterTemplateInstance.Status.Message = "Cluster is ready"
-	}
-}
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
@@ -348,11 +301,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 		return nil
 	}
 
-	if _, ok := clusterTemplateInstance.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
-		log.Info("Experimental provider specified", "name", clusterTemplateInstance.Name)
-		return nil
-	}
-
 	log.Info(
 		"Fetch day1 argo application",
 		"name",
@@ -361,41 +309,70 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	application, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client)
 
 	if err != nil {
+		failedMsg := fmt.Sprintf("Failed to fetch application - %q", err)
 		clusterTemplateInstance.SetClusterInstallCondition(
 			metav1.ConditionFalse,
 			v1alpha1.ApplicationFetchFailed,
-			fmt.Sprintf("Failed to fetch application - %q", err),
+			failedMsg,
 		)
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
+		clusterTemplateInstance.Status.Message = failedMsg
 		return err
 	}
 
-	if application.Status.Health.Status == argoHealth.HealthStatusDegraded {
-		clusterTemplateInstance.SetClusterInstallCondition(
-			metav1.ConditionFalse,
-			v1alpha1.ApplicationDegraded,
-			fmt.Sprintf("Failed to sync cluster - %s", application.Status.Health.Message),
-		)
-		return fmt.Errorf("application is degraded - %s", application.Status.Health.Message)
-	}
-
-	if application.Status.Health.Status != argoHealth.HealthStatusHealthy {
+	appHealth, msg := argocd.GetApplicationHealth(application)
+	if appHealth == argocd.ApplicationSyncRunning {
 		clusterTemplateInstance.SetClusterInstallCondition(
 			metav1.ConditionFalse,
 			v1alpha1.ClusterInstalling,
-			application.Status.Health.Message,
+			msg,
 		)
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallingPhase
+		clusterTemplateInstance.Status.Message = msg
+		return nil
+	}
+
+	if appHealth == argocd.ApplicationDegraded {
+		clusterTemplateInstance.SetClusterInstallCondition(
+			metav1.ConditionFalse,
+			v1alpha1.ApplicationDegraded,
+			msg,
+		)
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
+		clusterTemplateInstance.Status.Message = msg
+		return nil
+	}
+
+	if appHealth == argocd.ApplicationError {
+		clusterTemplateInstance.SetClusterInstallCondition(
+			metav1.ConditionFalse,
+			v1alpha1.ApplicationError,
+			msg,
+		)
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
+		clusterTemplateInstance.Status.Message = msg
+		return nil
+	}
+
+	clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallingPhase
+	clusterTemplateInstance.Status.Message = "Cluster is installing"
+	if _, ok := clusterTemplateInstance.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
+		log.Info("Experimental provider specified", "name", clusterTemplateInstance.Name)
 		return nil
 	}
 
 	provider := clusterprovider.GetClusterProvider(*application, log)
 
 	if provider == nil {
+		msg := "Unknown cluster provider - only Hive and Hypershift clusters are recognized"
 		clusterTemplateInstance.SetClusterInstallCondition(
 			metav1.ConditionFalse,
 			v1alpha1.ClusterProviderDetectionFailed,
-			"Failed to detect cluster provider",
+			msg,
 		)
-		return fmt.Errorf("failed to detect cluster provider")
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
+		clusterTemplateInstance.Status.Message = msg
+		return nil
 	}
 
 	ready, status, err := provider.GetClusterStatus(ctx, r.Client, *clusterTemplateInstance)
@@ -405,11 +382,14 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 		clusterTemplateInstance.Namespace+"/"+clusterTemplateInstance.Name,
 	)
 	if err != nil {
+		msg := fmt.Sprintf("Failed to detect cluster status - %q", err)
 		clusterTemplateInstance.SetClusterInstallCondition(
 			metav1.ConditionFalse,
 			v1alpha1.ClusterStatusFailed,
-			fmt.Sprintf("Failed to detect cluster status - %q", err),
+			msg,
 		)
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
+		clusterTemplateInstance.Status.Message = msg
 		return err
 	}
 
@@ -425,6 +405,8 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 			v1alpha1.ClusterInstalling,
 			status,
 		)
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallingPhase
+		clusterTemplateInstance.Status.Message = "Cluster is installing"
 	}
 
 	return nil
@@ -480,6 +462,9 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCredentials(
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
+
+	clusterTemplateInstance.Status.Phase = v1alpha1.ReadyPhase
+	clusterTemplateInstance.Status.Message = "Cluster is ready"
 
 	return nil
 }
@@ -639,6 +624,15 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 		return nil
 	}
 
+	clusterSetupSucceededCondition := meta.FindStatusCondition(
+		clusterTemplateInstance.Status.Conditions,
+		string(v1alpha1.ClusterSetupSucceeded),
+	)
+
+	if clusterSetupSucceededCondition.Status == metav1.ConditionTrue {
+		return nil
+	}
+
 	if len(clusterTemplateInstance.Status.ClusterTemplateSpec.ClusterSetup) == 0 {
 		clusterTemplateInstance.SetClusterSetupSucceededCondition(
 			metav1.ConditionTrue,
@@ -673,33 +667,36 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 		return fmt.Errorf("failed to find cluster setup apps")
 	}
 
+	clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupRunningPhase
+	clusterTemplateInstance.Status.Message = "Cluster setup is running"
 	clusterSetupStatus := []v1alpha1.ClusterSetupStatus{}
 	allSynced := true
+	errorSetups := []string{}
+	degradedSetups := []string{}
 	for _, app := range applications.Items {
 		setupName := app.Labels[v1alpha1.CTISetupLabel]
+		status, msg := argocd.GetApplicationHealth(&app)
+
 		clusterSetupStatus = append(clusterSetupStatus, v1alpha1.ClusterSetupStatus{
-			Name:   setupName,
-			Status: app.Status.Health,
+			Name:    setupName,
+			Status:  status,
+			Message: msg,
 		})
-		if app.Status.Health.Status != argoHealth.HealthStatusHealthy ||
-			app.Status.Sync.Status != argo.SyncStatusCodeSynced {
+
+		if status != argocd.ApplicationHealthy {
 			allSynced = false
 		}
 
-		if app.Status.Health.Status == argoHealth.HealthStatusDegraded {
-			healthMsg := app.Status.Health.Message
-			msg := fmt.Sprintf("Cluster setup %s degraded", setupName)
-			if healthMsg != "" {
-				msg = msg + " - " + healthMsg
-			}
-			clusterTemplateInstance.SetClusterSetupSucceededCondition(
-				metav1.ConditionFalse,
-				v1alpha1.ClusterSetupDegraded,
-				msg,
-			)
-			return nil
+		if status == argocd.ApplicationError {
+			errorSetups = append(errorSetups, setupName)
+		}
+
+		if status == argocd.ApplicationDegraded {
+			degradedSetups = append(degradedSetups, setupName)
 		}
 	}
+
+	clusterTemplateInstance.Status.ClusterSetup = &clusterSetupStatus
 
 	if allSynced {
 		clusterTemplateInstance.SetClusterSetupSucceededCondition(
@@ -707,9 +704,34 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 			v1alpha1.SetupSucceeded,
 			"Cluster setup succeeded",
 		)
+	} else if len(errorSetups) > 0 {
+		msg := fmt.Sprintf("Following cluster setups are in error state - %v", errorSetups)
+		clusterTemplateInstance.SetClusterSetupSucceededCondition(
+			metav1.ConditionFalse,
+			v1alpha1.ClusterSetupError,
+			msg,
+		)
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupErrorPhase
+		clusterTemplateInstance.Status.Message = msg
+	} else if len(degradedSetups) > 0 {
+		msg := fmt.Sprintf("Following cluster setups are in degraded state - %v", degradedSetups)
+		clusterTemplateInstance.SetClusterSetupSucceededCondition(
+			metav1.ConditionFalse,
+			v1alpha1.ClusterSetupDegraded,
+			msg,
+		)
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupDegradedPhase
+		clusterTemplateInstance.Status.Message = msg
+	} else {
+		clusterTemplateInstance.SetClusterSetupSucceededCondition(
+			metav1.ConditionFalse,
+			v1alpha1.ClusterSetupRunning,
+			"Cluster setup is running",
+		)
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupRunningPhase
+		clusterTemplateInstance.Status.Message = "Cluster setup is running"
 	}
 
-	clusterTemplateInstance.Status.ClusterSetup = &clusterSetupStatus
 	return nil
 }
 
@@ -772,7 +794,7 @@ func (r *ClusterTemplateInstanceReconciler) SetupWithManager(mgr ctrl.Manager) e
 					name = val
 				}
 				if key == v1alpha1.CTINamespaceLabel {
-					name = val
+					namespace = val
 				}
 			}
 			if name != "" && namespace != "" {

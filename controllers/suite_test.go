@@ -103,8 +103,9 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&ClusterTemplateInstanceReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
+		Client:           k8sManager.GetClient(),
+		Scheme:           k8sManager.GetScheme(),
+		EnableHypershift: true,
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 

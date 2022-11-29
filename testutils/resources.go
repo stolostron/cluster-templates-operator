@@ -9,7 +9,6 @@ import (
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
 const (
@@ -18,7 +17,7 @@ const (
 	ctName  = "mytemplate"
 )
 
-func GetCTI() (*v1alpha1.ClusterTemplateInstance, types.NamespacedName) {
+func GetCTI() *v1alpha1.ClusterTemplateInstance {
 	cti := &v1alpha1.ClusterTemplateInstance{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.APIVersion,
@@ -32,10 +31,10 @@ func GetCTI() (*v1alpha1.ClusterTemplateInstance, types.NamespacedName) {
 			ClusterTemplateRef: ctName,
 		},
 	}
-	return cti, types.NamespacedName{Name: cti.Name, Namespace: cti.Namespace}
+	return cti
 }
 
-func GetCT(withProps bool, withSetup bool) *v1alpha1.ClusterTemplate {
+func GetCT(withSetup bool) *v1alpha1.ClusterTemplate {
 	ct := &v1alpha1.ClusterTemplate{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.GroupVersion.Identifier(),
@@ -60,19 +59,31 @@ func GetCT(withProps bool, withSetup bool) *v1alpha1.ClusterTemplate {
 					Automated: &argo.SyncPolicyAutomated{},
 				},
 			},
-			ArgoCDNamespace: "argocd",
+			ArgoCDNamespace: "default",
 		},
 	}
-	/*
-		if withSetup {
-			ct.Spec.ClusterSetup = &v1alpha1.ClusterSetup{
-				Pipeline: v1alpha1.ResourceRef{
-					Name:      pipelineName,
-					Namespace: pipelineNs,
+	if withSetup {
+		ct.Spec.ClusterSetup = []v1alpha1.ClusterSetup{
+			{
+				Name: "day2",
+				Spec: argo.ApplicationSpec{
+					Source: argo.ApplicationSource{
+						RepoURL:        "http://foo.com",
+						TargetRevision: "0.1.0",
+						Chart:          "day2-template",
+					},
+					Destination: argo.ApplicationDestination{
+						Server:    "${new_cluster}",
+						Namespace: "default",
+					},
+					Project: "",
+					SyncPolicy: &argo.SyncPolicy{
+						Automated: &argo.SyncPolicyAutomated{},
+					},
 				},
-			}
+			},
 		}
-	*/
+	}
 	return ct
 }
 

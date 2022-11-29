@@ -109,22 +109,17 @@ spec:
                 description: Status of each cluster setup
                 items:
                   properties:
+                    message:
+                      description: Description of the cluster setup status
+                      type: string
                     name:
                       description: Name of the cluster setup
                       type: string
                     status:
                       description: Status of the cluster setup
-                      properties:
-                        message:
-                          description: Message is a human-readable informational message
-                            describing the health status
-                          type: string
-                        status:
-                          description: Status holds the status code of the application
-                            or resource
-                          type: string
-                      type: object
+                      type: string
                   required:
+                  - message
                   - name
                   - status
                   type: object
@@ -132,6 +127,7 @@ spec:
               clusterTemplateSpec:
                 properties:
                   argocdNamespace:
+                    description: A namespace where ArgoCD Applications will be created
                     type: string
                   clusterDefinition:
                     description: ArgoCD application spec which is used for installation
