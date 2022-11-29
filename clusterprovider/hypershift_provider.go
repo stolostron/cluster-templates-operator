@@ -31,97 +31,106 @@ func (hc HostedClusterProvider) GetClusterStatus(
 		return false, "", err
 	}
 
+	availableCondition := metav1.Condition{}
+
 	for _, condition := range hostedCluster.Status.Conditions {
 		if condition.Type == string(hypershiftv1alpha1.HostedClusterAvailable) {
-			if condition.Status == metav1.ConditionTrue {
-				hypershiftPass := getKubeAdminRef(*hostedCluster)
-				hypershiftKubeConfig := getKubeConfigRef(*hostedCluster)
-
-				if hypershiftPass == "" || hypershiftKubeConfig == "" {
-					return false, "Waiting for pass/kubeconfig secrets", nil
-				}
-
-				hypershiftKubeconfigSecret := corev1.Secret{}
-				if err := k8sClient.Get(
-					ctx,
-					client.ObjectKey{
-						Name:      hypershiftKubeConfig,
-						Namespace: hostedCluster.Namespace,
-					},
-					&hypershiftKubeconfigSecret,
-				); err != nil {
-					return false, "", err
-				}
-
-				kubeconfigBytes, ok := hypershiftKubeconfigSecret.Data["kubeconfig"]
-
-				if !ok {
-					return false, "", errors.New("unexpected kubeconfig format")
-				}
-
-				hypershiftKubeadminSecret := corev1.Secret{}
-				if err := k8sClient.Get(
-					ctx,
-					client.ObjectKey{Name: hypershiftPass, Namespace: hostedCluster.Namespace},
-					&hypershiftKubeadminSecret,
-				); err != nil {
-					return false, "", err
-				}
-
-				kubeadminPass, ok := hypershiftKubeadminSecret.Data["password"]
-
-				if !ok {
-					return false, "", errors.New("unexpected kubeadmin password format")
-				}
-
-				if err := CreateClusterSecrets(
-					ctx,
-					k8sClient,
-					kubeconfigBytes,
-					[]byte("kubeadmin"),
-					kubeadminPass,
-					templateInstance,
-				); err != nil {
-					return false, "", err
-				}
-
-				if len(hc.NodePoolNames) > 0 {
-					nodePools := &hypershiftv1alpha1.NodePoolList{}
-					if err := k8sClient.List(ctx, nodePools, &client.ListOptions{Namespace: hc.HostedClusterNamespace}); err != nil {
-						return false, "", err
-					}
-
-					allReady := true
-					for _, nodePool := range nodePools.Items {
-						if nodePool.Spec.ClusterName == hc.HostedClusterName {
-							conditionFound := false
-							for _, condition := range nodePool.Status.Conditions {
-								if condition.Type == string(
-									hypershiftv1alpha1.NodePoolReadyConditionType,
-								) {
-									conditionFound = true
-									if condition.Status == corev1.ConditionFalse {
-										allReady = false
-									}
-								}
-							}
-							if !conditionFound {
-								allReady = false
-							}
-						}
-					}
-					if !allReady {
-						return false, "Not available, waiting for nodepools", nil
-					}
-				}
-				return true, "Available", nil
-			} else {
-				return false, "Not available - " + condition.Reason, nil
-			}
+			availableCondition = condition
 		}
 	}
 
-	return false, "Not available", nil
+	if availableCondition.Status != metav1.ConditionTrue {
+		msg := availableCondition.Message
+		if msg == "" {
+			msg = availableCondition.Reason
+		}
+		if msg == "" {
+			return false, "Not available", nil
+		}
+		return false, "Not available - " + msg, nil
+	}
+
+	hypershiftPass := getKubeAdminRef(*hostedCluster)
+	hypershiftKubeConfig := getKubeConfigRef(*hostedCluster)
+
+	if hypershiftPass == "" || hypershiftKubeConfig == "" {
+		return false, "Waiting for pass/kubeconfig secrets", nil
+	}
+
+	hypershiftKubeconfigSecret := corev1.Secret{}
+	if err := k8sClient.Get(
+		ctx,
+		client.ObjectKey{
+			Name:      hypershiftKubeConfig,
+			Namespace: hostedCluster.Namespace,
+		},
+		&hypershiftKubeconfigSecret,
+	); err != nil {
+		return false, "", err
+	}
+
+	kubeconfigBytes, ok := hypershiftKubeconfigSecret.Data["kubeconfig"]
+
+	if !ok {
+		return false, "", errors.New("unexpected kubeconfig format")
+	}
+
+	hypershiftKubeadminSecret := corev1.Secret{}
+	if err := k8sClient.Get(
+		ctx,
+		client.ObjectKey{Name: hypershiftPass, Namespace: hostedCluster.Namespace},
+		&hypershiftKubeadminSecret,
+	); err != nil {
+		return false, "", err
+	}
+
+	kubeadminPass, ok := hypershiftKubeadminSecret.Data["password"]
+
+	if !ok {
+		return false, "", errors.New("unexpected kubeadmin password format")
+	}
+
+	if err := CreateClusterSecrets(
+		ctx,
+		k8sClient,
+		kubeconfigBytes,
+		[]byte("kubeadmin"),
+		kubeadminPass,
+		templateInstance,
+	); err != nil {
+		return false, "", err
+	}
+
+	if len(hc.NodePoolNames) > 0 {
+		nodePools := &hypershiftv1alpha1.NodePoolList{}
+		if err := k8sClient.List(ctx, nodePools, &client.ListOptions{Namespace: hc.HostedClusterNamespace}); err != nil {
+			return false, "", err
+		}
+
+		allReady := true
+		for _, nodePool := range nodePools.Items {
+			if nodePool.Spec.ClusterName == hc.HostedClusterName {
+				conditionFound := false
+				for _, condition := range nodePool.Status.Conditions {
+					if condition.Type == string(
+						hypershiftv1alpha1.NodePoolReadyConditionType,
+					) {
+						conditionFound = true
+						if condition.Status == corev1.ConditionFalse {
+							allReady = false
+						}
+					}
+				}
+				if !conditionFound {
+					allReady = false
+				}
+			}
+		}
+		if !allReady {
+			return false, "Not available, waiting for nodepools", nil
+		}
+	}
+	return true, "Available", nil
 }
 
 func getKubeAdminRef(hostedCluster hypershiftv1alpha1.HostedCluster) string {

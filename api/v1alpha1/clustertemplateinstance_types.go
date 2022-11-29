@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	"github.com/stolostron/cluster-templates-operator/argocd"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -50,7 +50,9 @@ type ClusterSetupStatus struct {
 	// Name of the cluster setup
 	Name string `json:"name"`
 	// Status of the cluster setup
-	Status argo.HealthStatus `json:"status"`
+	Status argocd.ApplicationStatus `json:"status"`
+	// Description of the cluster setup status
+	Message string `json:"message"`
 }
 
 type Phase string
@@ -65,6 +67,8 @@ const (
 	AddingArgoClusterPhase        Phase  = "AddingArgoCluster"
 	ClusterSetupCreateFailedPhase Phase  = "ClusterSetupCreateFailedPhase"
 	CreatingClusterSetupPhase     Phase  = "CreatingClusterSetup"
+	ClusterSetupDegradedPhase     Phase  = "ClusterSetupDegradedPhase"
+	ClusterSetupErrorPhase        Phase  = "ClusterSetupErrorPhase"
 	ClusterSetupFailedPhase       Phase  = "ClusterSetupFailedPhase"
 	ClusterSetupRunningPhase      Phase  = "ClusterSetupRunning"
 	ReadyPhase                    Phase  = "Ready"

@@ -101,6 +101,14 @@ spec:
       - kind: Pod
         name: ""
         version: v1
+      statusDescriptors:
+      - description: Describes helm chart properties and their schema
+        displayName: Cluster Definition
+        path: clusterDefinition
+      - description: Describes helm chart properties and schema for every cluster
+          setup step
+        displayName: Cluster Setup
+        path: clusterSetup
       version: v1alpha1
   description: |
     **Self-service clusters with guardrails!**
