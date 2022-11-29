@@ -60,7 +60,8 @@ var _ = Describe("ClusterTemplate controller", func() {
 				return false
 			}
 
-			return len(foundCT.Status.ClusterDefinition.Values) == 0 && len(foundCT.Status.ClusterDefinition.Schema) == 0
+			return len(foundCT.Status.ClusterDefinition.Values) == 0 &&
+				len(foundCT.Status.ClusterDefinition.Schema) == 0
 		}, timeout, interval).Should(BeTrue())
 	})
 
@@ -77,7 +78,8 @@ var _ = Describe("ClusterTemplate controller", func() {
 				return false
 			}
 
-			return len(foundCT.Status.ClusterDefinition.Values) > 0 && len(foundCT.Status.ClusterDefinition.Schema) == 0
+			return len(foundCT.Status.ClusterDefinition.Values) > 0 &&
+				len(foundCT.Status.ClusterDefinition.Schema) == 0
 		}, timeout, interval).Should(BeTrue())
 	})
 
@@ -94,7 +96,8 @@ var _ = Describe("ClusterTemplate controller", func() {
 				return false
 			}
 
-			return len(foundCT.Status.ClusterDefinition.Values) == 0 && len(foundCT.Status.ClusterDefinition.Schema) > 0
+			return len(foundCT.Status.ClusterDefinition.Values) == 0 &&
+				len(foundCT.Status.ClusterDefinition.Schema) > 0
 		}, timeout, interval).Should(BeTrue())
 	})
 
@@ -111,7 +114,8 @@ var _ = Describe("ClusterTemplate controller", func() {
 				return false
 			}
 
-			return len(foundCT.Status.ClusterDefinition.Values) > 0 && len(foundCT.Status.ClusterDefinition.Schema) > 0
+			return len(foundCT.Status.ClusterDefinition.Values) > 0 &&
+				len(foundCT.Status.ClusterDefinition.Schema) > 0
 		}, timeout, interval).Should(BeTrue())
 	})
 

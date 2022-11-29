@@ -88,5 +88,11 @@ func CreateHelmClient(k8sManager manager.Manager, config *rest.Config) *HelmClie
 	}
 	caDataFileName := caDataFile.Name()
 
-	return NewHelmClient(config, k8sManager.GetClient(), &certDataFileName, &keyDataFileName, &caDataFileName)
+	return NewHelmClient(
+		config,
+		k8sManager.GetClient(),
+		&certDataFileName,
+		&keyDataFileName,
+		&caDataFileName,
+	)
 }

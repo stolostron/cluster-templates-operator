@@ -26,7 +26,11 @@ const (
 func DeleteResource(obj client.Object) {
 	Expect(k8sClient.Delete(ctx, obj)).Should(Succeed())
 	Eventually(func() bool {
-		err := k8sClient.Get(ctx, types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()}, obj)
+		err := k8sClient.Get(
+			ctx,
+			types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()},
+			obj,
+		)
 		return apierrors.IsNotFound(err)
 	}, timeout, interval).Should(BeTrue())
 }

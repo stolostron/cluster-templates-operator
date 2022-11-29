@@ -473,7 +473,10 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCredentials(
 
 	if err := r.ReconcileDynamicRoles(ctx, r.Client, clusterTemplateInstance); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.CredentialsFailedPhase
-		errMsg := fmt.Sprintf("failed to reconcile role and role-bindings for users with cluster-templates-role - %q", err)
+		errMsg := fmt.Sprintf(
+			"failed to reconcile role and role-bindings for users with cluster-templates-role - %q",
+			err,
+		)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
@@ -486,7 +489,10 @@ func (*ClusterTemplateInstanceReconciler) ReconcileDynamicRoles(
 	k8sClient client.Client,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 ) error {
-	roleSubjects, err := clusterTemplateInstance.GetSubjectsWithClusterTemplateUserRole(ctx, k8sClient)
+	roleSubjects, err := clusterTemplateInstance.GetSubjectsWithClusterTemplateUserRole(
+		ctx,
+		k8sClient,
+	)
 	if err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.CredentialsFailedPhase
 		errMsg := fmt.Sprintf("failed to get list of users - %q", err)
@@ -506,7 +512,11 @@ func (*ClusterTemplateInstanceReconciler) ReconcileDynamicRoles(
 	_, err = clusterTemplateInstance.CreateDynamicRoleBinding(ctx, k8sClient, role, roleSubjects)
 	if err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.CredentialsFailedPhase
-		errMsg := fmt.Sprintf("failed to create RoleBinding for %d subjects - %q", len(roleSubjects), err)
+		errMsg := fmt.Sprintf(
+			"failed to create RoleBinding for %d subjects - %q",
+			len(roleSubjects),
+			err,
+		)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
