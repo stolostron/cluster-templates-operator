@@ -17,7 +17,13 @@ var _ = Describe("Helm client", func() {
 		certDataFileName := "foo"
 		keyDataFileName := "bar"
 		caDataFileName := "baz"
-		helmClient = NewHelmClient(cfg, k8sClient, &certDataFileName, &keyDataFileName, &caDataFileName)
+		helmClient = NewHelmClient(
+			cfg,
+			k8sClient,
+			&certDataFileName,
+			&keyDataFileName,
+			&caDataFileName,
+		)
 		Expect(helmClient).ShouldNot(BeNil())
 		Expect(helmClient.config).Should(Equal(cfg))
 		Expect(*helmClient.ConfigFlags.APIServer).Should(Equal(cfg.Host))

@@ -25,7 +25,13 @@ type HelmClient struct {
 	k8sClient    client.Client
 }
 
-func NewHelmClient(config *rest.Config, k8sClient client.Client, certDataFileName *string, keyDataFileName *string, caDataFileName *string) *HelmClient {
+func NewHelmClient(
+	config *rest.Config,
+	k8sClient client.Client,
+	certDataFileName *string,
+	keyDataFileName *string,
+	caDataFileName *string,
+) *HelmClient {
 	initSettings()
 	ns := "default"
 

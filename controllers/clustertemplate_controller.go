@@ -69,7 +69,10 @@ func (r *ClusterTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *ClusterTemplateReconciler) getValuesAndSchema(ctx context.Context, appSpec argo.ApplicationSpec) (string, string, error) {
+func (r *ClusterTemplateReconciler) getValuesAndSchema(
+	ctx context.Context,
+	appSpec argo.ApplicationSpec,
+) (string, string, error) {
 	values := ""
 	schema := ""
 	if appSpec.Source.Chart != "" {
