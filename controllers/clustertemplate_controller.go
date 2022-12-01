@@ -50,11 +50,13 @@ func (r *ClusterTemplateReconciler) Reconcile(
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		clusterSetupStatus = append(clusterSetupStatus, v1alpha1.ClusterSetupSchema{
-			Name:   setup.Name,
-			Values: values,
-			Schema: schema,
-		})
+		if values != "" || schema != "" {
+			clusterSetupStatus = append(clusterSetupStatus, v1alpha1.ClusterSetupSchema{
+				Name:   setup.Name,
+				Values: values,
+				Schema: schema,
+			})
+		}
 	}
 	clusterTemplate.Status.ClusterSetup = clusterSetupStatus
 
