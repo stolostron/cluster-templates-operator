@@ -1,11 +1,14 @@
 package v1alpha1
 
 import (
+	"context"
+
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/kubernetes-client/go-base/config/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"gopkg.in/yaml.v3"
+	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,7 +17,23 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
+var ctx context.Context
+var cancel context.CancelFunc
+
 var _ = Describe("ClusterTemplateInstance utils", func() {
+	BeforeSuite(func() {
+		ctx, cancel = context.WithCancel(context.TODO())
+		err := AddToScheme(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
+		err = argo.AddToScheme(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
+
+		err = admissionv1beta1.AddToScheme(scheme.Scheme)
+		Expect(err).NotTo(HaveOccurred())
+	})
+	AfterSuite(func() {
+		cancel()
+	})
 	It("GetKubeadminPassRef", func() {
 		cti := ClusterTemplateInstance{
 			ObjectMeta: metav1.ObjectMeta{

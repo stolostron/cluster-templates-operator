@@ -187,6 +187,9 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 		}
 		clusterTemplateInstance.Status.ClusterTemplateSpec = &clusterTemplate.Spec
 		if val, ok := clusterTemplate.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
+			if clusterTemplateInstance.Annotations == nil {
+				clusterTemplateInstance.Annotations = map[string]string{}
+			}
 			clusterTemplateInstance.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation] = val
 		}
 	}

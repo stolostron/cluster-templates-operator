@@ -77,6 +77,14 @@ rules:
   - update
   - watch
 - apiGroups:
+  - clustertemplate.openshift.io
+  resources:
+  - clustertemplates/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - helm.openshift.io
   resources:
   - helmchartrepositories
