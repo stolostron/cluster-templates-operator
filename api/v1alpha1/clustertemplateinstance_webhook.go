@@ -78,14 +78,19 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 	opts := []client.ListOption{
 		client.InNamespace(r.Namespace),
 	}
-	err := instanceControllerClient.List(context.TODO(), &quotas, opts...)
-	if err != nil || len(quotas.Items) == 0 {
-		return fmt.Errorf("could not find quota for namespace")
+	if err := instanceControllerClient.List(context.TODO(), &quotas, opts...); err != nil {
+		return fmt.Errorf("could not list cluster template quotas - %q", err)
+	}
+
+	if len(quotas.Items) == 0 {
+		return fmt.Errorf(
+			"failed quota: no cluster template quota specified for the '%s' namespace",
+			r.Namespace,
+		)
 	}
 
 	templates := ClusterTemplateList{}
-	err = instanceControllerClient.List(context.TODO(), &templates)
-	if err != nil {
+	if err := instanceControllerClient.List(context.TODO(), &templates); err != nil {
 		return fmt.Errorf("could not list cluster templates - %q", err)
 	}
 
@@ -98,14 +103,16 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 	}
 
 	if templateIdx == -1 {
-		return fmt.Errorf("could not find cluster template")
+		return fmt.Errorf("cluster template does not exist")
 	}
 
 	templateAllowed := false
 	for _, quota := range quotas.Items {
 		if quota.Spec.Budget > 0 &&
 			quota.Spec.Budget < quota.Status.BudgetSpent+templates.Items[templateIdx].Spec.Cost {
-			return fmt.Errorf("cost is too much")
+			return fmt.Errorf(
+				"failed quota: cluster instance not allowed - cluster cost would exceed budget",
+			)
 		}
 
 		maxAllowed := 0
@@ -120,7 +127,9 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 			for _, tempInstance := range quota.Status.TemplateInstances {
 				if tempInstance.Name == r.Spec.ClusterTemplateRef {
 					if tempInstance.Count >= maxAllowed {
-						return fmt.Errorf("not enough quota")
+						return fmt.Errorf(
+							"failed quota: cluster instance not allowed - maximum cluster instances reached",
+						)
 					}
 				}
 			}
@@ -128,7 +137,10 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 	}
 
 	if !templateAllowed {
-		return fmt.Errorf("template not allowed")
+		return fmt.Errorf(
+			"failed quota: quota does not allow '%s' cluster template",
+			r.Spec.ClusterTemplateRef,
+		)
 	}
 	return nil
 }
