@@ -124,6 +124,12 @@ docker-build: test ## Build docker image with the manager.
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
 
+##@ Build CLI
+
+.PHONY: build-cli
+build-cli: ## Build kubectl CLI plugin.
+	go build cli/kubectl-cluster.go && go build -ldflags="-X 'github.com/stolostron/cluster-templates-operator/cli/cmd.ocLogin=true'" -o=oc-cluster.go cli/kubectl-cluster.go
+
 ##@ Deployment
 
 ifndef ignore-not-found
