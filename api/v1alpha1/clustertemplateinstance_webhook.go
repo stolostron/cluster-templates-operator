@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -171,8 +172,14 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *ClusterTemplateInstance) ValidateUpdate(old runtime.Object) error {
 	clustertemplateinstancelog.Info("validate update", "name", r.Name)
+	oldCti := old.(*ClusterTemplateInstance)
 
-	// TODO(user): fill in your validation logic upon object update.
+	if oldCti.Labels[CTIRequesterLabel] != r.Labels[CTIRequesterLabel] {
+		return fmt.Errorf("cluster requester cannot be changed")
+	}
+	if !equality.Semantic.DeepEqual(r.Spec, oldCti.Spec) {
+		return fmt.Errorf("spec is immutable")
+	}
 	return nil
 }
 
