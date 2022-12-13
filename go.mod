@@ -3,6 +3,7 @@ module github.com/stolostron/cluster-templates-operator
 go 1.18
 
 require (
+	github.com/MichaelMure/go-term-markdown v0.1.4
 	github.com/argoproj/applicationset v0.4.1
 	github.com/argoproj/argo-cd/v2 v2.4.8
 	github.com/argoproj/gitops-engine v0.7.1-0.20221004132320-98ccd3d43fd9
@@ -14,6 +15,8 @@ require (
 	github.com/openshift/api v0.0.0-20220819133013-d8b9c3791a1a
 	github.com/openshift/hive/apis v0.0.0-20220921183516-849ebe80fa61
 	github.com/openshift/hypershift v0.0.0-20220816152932-bf26914684cb
+	github.com/spf13/cobra v1.6.1
+	github.com/spf13/pflag v1.0.5
 	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.9.2
 	k8s.io/api v0.24.2
@@ -21,7 +24,7 @@ require (
 	k8s.io/cli-runtime v0.24.2
 	k8s.io/client-go v0.24.2
 	k8s.io/klog v1.0.0
-	sigs.k8s.io/controller-runtime v0.12.2
+	sigs.k8s.io/controller-runtime v0.12.3
 )
 
 replace (
@@ -69,7 +72,6 @@ require (
 	github.com/Masterminds/semver/v3 v3.1.1 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.2 // indirect
 	github.com/Masterminds/squirrel v1.5.3 // indirect
-	github.com/MichaelMure/go-term-markdown v0.1.4 // indirect
 	github.com/MichaelMure/go-term-text v0.3.1 // indirect
 	github.com/Microsoft/go-winio v0.5.1 // indirect
 	github.com/ProtonMail/go-crypto v0.0.0-20210428141323-04723f9f07d7 // indirect
@@ -190,8 +192,6 @@ require (
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.8.1 // indirect
 	github.com/spf13/cast v1.4.1 // indirect
-	github.com/spf13/cobra v1.6.1 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	github.com/vmihailenco/go-tinylfu v0.2.1 // indirect

@@ -26,6 +26,9 @@ func GetCTI() *v1alpha1.ClusterTemplateInstance {
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ctiName,
 			Namespace: ctiNs,
+			Finalizers: []string{
+				v1alpha1.CTIFinalizer,
+			},
 		},
 		Spec: v1alpha1.ClusterTemplateInstanceSpec{
 			ClusterTemplateRef: ctName,

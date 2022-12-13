@@ -154,16 +154,6 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 
 	}
 
-	if !controllerutil.ContainsFinalizer(
-		clusterTemplateInstance,
-		v1alpha1.CTIFinalizer,
-	) {
-		controllerutil.AddFinalizer(clusterTemplateInstance, v1alpha1.CTIFinalizer)
-		if err := r.Update(ctx, clusterTemplateInstance); err != nil {
-			return ctrl.Result{}, err
-		}
-	}
-
 	if len(clusterTemplateInstance.Status.Conditions) == 0 {
 		SetDefaultConditions(clusterTemplateInstance)
 		clusterTemplateInstance.Status.Phase = v1alpha1.PendingPhase

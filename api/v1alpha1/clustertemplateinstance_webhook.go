@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 var clustertemplateinstancelog = logf.Log.WithName("clustertemplateinstance-resource")
@@ -35,7 +36,29 @@ func (r *ClusterTemplateInstance) SetupWebhookWithManager(mgr ctrl.Manager) erro
 	instanceControllerClient = mgr.GetClient()
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(r).
+		WithDefaulter(ctiWebhook).
 		Complete()
+}
+
+//+kubebuilder:webhook:path=/mutate-clustertemplate-openshift-io-v1alpha1-clustertemplateinstance,mutating=true,failurePolicy=fail,sideEffects=None,groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=create;update,versions=v1alpha1,name=mclustertemplateinstance.kb.io,admissionReviewVersions=v1
+
+var ctiWebhook webhook.CustomDefaulter = &ClusterTemplateInstance{}
+
+// Default implements webhook.Defaulter so a webhook will be registered for the type
+func (r *ClusterTemplateInstance) Default(ctx context.Context, obj runtime.Object) error {
+	cti := obj.(*ClusterTemplateInstance)
+	clustertemplateinstancelog.Info("default", "name", cti.Name)
+
+	req, err := admission.RequestFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	if cti.Labels == nil {
+		cti.Labels = map[string]string{}
+	}
+	cti.Labels[CTIRequesterLabel] = req.UserInfo.Username
+	cti.Finalizers = append(cti.Finalizers, CTIFinalizer)
+	return nil
 }
 
 //+kubebuilder:webhook:path=/validate-clustertemplate-openshift-io-v1alpha1-clustertemplateinstance,mutating=false,failurePolicy=fail,sideEffects=None,groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=create;update,versions=v1alpha1,name=vclustertemplateinstance.kb.io,admissionReviewVersions=v1
