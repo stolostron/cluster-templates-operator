@@ -1,16 +1,21 @@
 package v1alpha1
 
 import (
+	"context"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	admissionv1 "k8s.io/api/admission/v1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
-var _ = Describe("ClusterTemplateInstance webhook", func() {
+var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 	It("Fails ctq list", func() {
 		instanceControllerClient = fake.NewFakeClientWithScheme(&runtime.Scheme{})
 		cti := ClusterTemplateInstance{
@@ -190,5 +195,28 @@ var _ = Describe("ClusterTemplateInstance webhook", func() {
 		}
 		err = cti.ValidateCreate()
 		Expect(err).ShouldNot(HaveOccurred())
+	})
+})
+
+var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
+	It("Adds finalizer", func() {
+		instanceControllerClient = fake.NewFakeClientWithScheme(&runtime.Scheme{})
+		cti := &ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: "foo",
+			},
+		}
+		ctx := context.TODO()
+		webhookCtx := admission.NewContextWithRequest(ctx, admission.Request{
+			AdmissionRequest: admissionv1.AdmissionRequest{
+				UserInfo: authenticationv1.UserInfo{
+					Username: "foo",
+				},
+			},
+		})
+		err := cti.Default(webhookCtx, cti)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(controllerutil.ContainsFinalizer(cti, CTIFinalizer)).Should(BeTrue())
+		Expect(cti.Labels[CTIRequesterLabel]).Should(Equal("foo"))
 	})
 })

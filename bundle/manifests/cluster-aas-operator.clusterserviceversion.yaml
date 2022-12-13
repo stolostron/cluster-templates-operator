@@ -418,6 +418,26 @@ spec:
     containerPort: 443
     deploymentName: cluster-aas-operator-controller-manager
     failurePolicy: Fail
+    generateName: mclustertemplateinstance.kb.io
+    rules:
+    - apiGroups:
+      - clustertemplate.openshift.io
+      apiVersions:
+      - v1alpha1
+      operations:
+      - CREATE
+      - UPDATE
+      resources:
+      - clustertemplateinstances
+    sideEffects: None
+    targetPort: 9443
+    type: MutatingAdmissionWebhook
+    webhookPath: /mutate-clustertemplate-openshift-io-v1alpha1-clustertemplateinstance
+  - admissionReviewVersions:
+    - v1
+    containerPort: 443
+    deploymentName: cluster-aas-operator-controller-manager
+    failurePolicy: Fail
     generateName: vclustertemplateinstance.kb.io
     rules:
     - apiGroups:

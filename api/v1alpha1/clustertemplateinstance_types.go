@@ -24,6 +24,7 @@ import (
 
 const (
 	CTIFinalizer      = "clustertemplateinstance.openshift.io/finalizer"
+	CTIRequesterLabel = "clustertemplates.openshift.io/requester"
 	CTINameLabel      = "clustertemplateinstance.openshift.io/name"
 	CTINamespaceLabel = "clustertemplateinstance.openshift.io/namespace"
 	CTISetupLabel     = "clustertemplate.openshift.io/cluster-setup"
