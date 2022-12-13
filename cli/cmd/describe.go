@@ -82,8 +82,8 @@ func (td *TemplateDescribeOptions) run(k8sClient client.Client, args []string) e
 
 func templateToDescription(ct v1alpha1.ClusterTemplate) string {
 	description := "No description provided"
-	if ct.Annotations != nil && ct.Annotations["clustertemplates.openshift.io/description"] != "" {
-		description = ct.Annotations["clustertemplates.openshift.io/description"]
+	if ct.Annotations != nil && ct.Annotations[v1alpha1.CTDescriptionLabel] != "" {
+		description = ct.Annotations[v1alpha1.CTDescriptionLabel]
 	}
 	descriptionResult := markdown.Render(description, 80, 6)
 
@@ -98,7 +98,7 @@ func templateToDescription(ct v1alpha1.ClusterTemplate) string {
 			properties = properties + fmt.Sprintf("\t\tValues:\n\t\t\t%s\n", strings.ReplaceAll(cdValues, "\n", "\n\t\t\t"))
 		}
 		if cdSchema != "" {
-			properties = properties + fmt.Sprintf("\t\tSchema:\n\t\t\t%s\n", cdSchema)
+			properties = properties + fmt.Sprintf("\t\tSchema:\n\t\t\t%s\n", strings.ReplaceAll(cdSchema, "\n", "\n\t\t\t"))
 		}
 	}
 	if len(ct.Status.ClusterSetup) > 0 {

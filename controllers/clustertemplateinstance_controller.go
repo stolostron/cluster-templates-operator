@@ -147,11 +147,10 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 				clusterTemplateInstance,
 				v1alpha1.CTIFinalizer,
 			)
-			if err := r.Update(ctx, clusterTemplateInstance); err != nil {
-				return ctrl.Result{}, err
-			}
+			err := r.Update(ctx, clusterTemplateInstance)
+			return ctrl.Result{}, err
 		}
-
+		return ctrl.Result{}, nil
 	}
 
 	if len(clusterTemplateInstance.Status.Conditions) == 0 {

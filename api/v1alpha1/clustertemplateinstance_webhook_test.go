@@ -196,6 +196,105 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 		err = cti.ValidateCreate()
 		Expect(err).ShouldNot(HaveOccurred())
 	})
+
+	It("Fails when updating requester", func() {
+		cti := ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "foo-instance",
+				Namespace: "foo",
+				Labels: map[string]string{
+					CTIRequesterLabel: "foo",
+				},
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef: "foo-tmp",
+			},
+		}
+
+		newCti := &ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "foo-instance",
+				Namespace: "foo",
+				Labels: map[string]string{
+					CTIRequesterLabel: "bar",
+				},
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef: "foo-tmp",
+			},
+		}
+
+		err := cti.ValidateUpdate(newCti)
+		Expect(err).Should(HaveOccurred())
+		Expect(
+			err.Error(),
+		).Should(Equal("cluster requester cannot be changed"))
+	})
+
+	It("Fails when updating requester", func() {
+		cti := ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "foo-instance",
+				Namespace: "foo",
+				Labels: map[string]string{
+					CTIRequesterLabel: "foo",
+				},
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef: "foo-tmp",
+			},
+		}
+
+		newCti := &ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "foo-instance",
+				Namespace: "foo",
+				Labels: map[string]string{
+					CTIRequesterLabel: "foo",
+				},
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef: "foo-bar",
+			},
+		}
+
+		err := cti.ValidateUpdate(newCti)
+		Expect(err).Should(HaveOccurred())
+		Expect(
+			err.Error(),
+		).Should(Equal("spec is immutable"))
+	})
+	It("Succeeds when updating labels", func() {
+		cti := ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "foo-instance",
+				Namespace: "foo",
+				Labels: map[string]string{
+					CTIRequesterLabel: "foo",
+				},
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef: "foo-tmp",
+			},
+		}
+
+		newCti := &ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "foo-instance",
+				Namespace: "foo",
+				Labels: map[string]string{
+					CTIRequesterLabel: "foo",
+					"foo":             "bar",
+				},
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef: "foo-tmp",
+			},
+		}
+
+		err := cti.ValidateUpdate(newCti)
+		Expect(err).ShouldNot(HaveOccurred())
+	})
 })
 
 var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
