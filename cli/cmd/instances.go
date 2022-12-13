@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"text/tabwriter"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
+	"k8s.io/apimachinery/pkg/util/duration"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -50,11 +52,24 @@ func (sv *InstancesOptions) run(k8sClient client.Client, args []string) error {
 	}
 
 	w := tabwriter.NewWriter(sv.Out, 10, 1, 5, ' ', 0)
-	fsHeader := "%s\t%s\n"
-	fs := "%s\t%s\n"
-	fmt.Fprintf(w, fsHeader, "NAME", "TEMPLATE")
+	fs := "%s\t%s\t%s\t%s\n"
+	fmt.Fprintf(w, fs, "NAME", "REQUESTER", "TEMPLATE", "AGE")
 	for _, cti := range ctis.Items {
-		fmt.Fprintf(w, fs, cti.Name, cti.Spec.ClusterTemplateRef)
+		requester := "-"
+		if cti.Labels != nil {
+			req, ok := cti.Labels[v1alpha1.CTIRequesterLabel]
+			if ok {
+				requester = req
+			}
+		}
+
+		age := "<unknown>"
+		timestamp := cti.CreationTimestamp
+		if !timestamp.IsZero() {
+			age = duration.HumanDuration(time.Since(timestamp.Time))
+		}
+
+		fmt.Fprintf(w, fs, cti.Name, requester, cti.Spec.ClusterTemplateRef, age)
 	}
 
 	return w.Flush()
