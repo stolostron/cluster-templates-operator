@@ -41,7 +41,7 @@ func (r *ClusterTemplateInstance) SetupWebhookWithManager(mgr ctrl.Manager) erro
 		Complete()
 }
 
-//+kubebuilder:webhook:path=/mutate-clustertemplate-openshift-io-v1alpha1-clustertemplateinstance,mutating=true,failurePolicy=fail,sideEffects=None,groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=create;update,versions=v1alpha1,name=mclustertemplateinstance.kb.io,admissionReviewVersions=v1
+//+kubebuilder:webhook:path=/mutate-clustertemplate-openshift-io-v1alpha1-clustertemplateinstance,mutating=true,failurePolicy=fail,sideEffects=None,groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=create,versions=v1alpha1,name=mclustertemplateinstance.kb.io,admissionReviewVersions=v1
 
 var ctiWebhook webhook.CustomDefaulter = &ClusterTemplateInstance{}
 
@@ -54,10 +54,10 @@ func (r *ClusterTemplateInstance) Default(ctx context.Context, obj runtime.Objec
 	if err != nil {
 		return err
 	}
-	if cti.Labels == nil {
-		cti.Labels = map[string]string{}
+	if cti.Annotations == nil {
+		cti.Annotations = map[string]string{}
 	}
-	cti.Labels[CTIRequesterLabel] = req.UserInfo.Username
+	cti.Annotations[CTIRequesterAnnotation] = req.UserInfo.Username
 	cti.Finalizers = append(cti.Finalizers, CTIFinalizer)
 	return nil
 }
@@ -174,7 +174,7 @@ func (r *ClusterTemplateInstance) ValidateUpdate(old runtime.Object) error {
 	clustertemplateinstancelog.Info("validate update", "name", r.Name)
 	oldCti := old.(*ClusterTemplateInstance)
 
-	if oldCti.Labels[CTIRequesterLabel] != r.Labels[CTIRequesterLabel] {
+	if oldCti.Annotations[CTIRequesterAnnotation] != r.Annotations[CTIRequesterAnnotation] {
 		return fmt.Errorf("cluster requester cannot be changed")
 	}
 	if !equality.Semantic.DeepEqual(r.Spec, oldCti.Spec) {

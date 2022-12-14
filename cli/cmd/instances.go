@@ -56,8 +56,8 @@ func (sv *InstancesOptions) run(k8sClient client.Client, args []string) error {
 	fmt.Fprintf(w, fs, "NAME", "REQUESTER", "TEMPLATE", "AGE")
 	for _, cti := range ctis.Items {
 		requester := "-"
-		if cti.Labels != nil {
-			req, ok := cti.Labels[v1alpha1.CTIRequesterLabel]
+		if cti.Annotations != nil {
+			req, ok := cti.Annotations[v1alpha1.CTIRequesterAnnotation]
 			if ok {
 				requester = req
 			}
