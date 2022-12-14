@@ -202,8 +202,8 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
 				Namespace: "foo",
-				Labels: map[string]string{
-					CTIRequesterLabel: "foo",
+				Annotations: map[string]string{
+					CTIRequesterAnnotation: "foo",
 				},
 			},
 			Spec: ClusterTemplateInstanceSpec{
@@ -215,8 +215,8 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
 				Namespace: "foo",
-				Labels: map[string]string{
-					CTIRequesterLabel: "bar",
+				Annotations: map[string]string{
+					CTIRequesterAnnotation: "bar",
 				},
 			},
 			Spec: ClusterTemplateInstanceSpec{
@@ -236,8 +236,8 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
 				Namespace: "foo",
-				Labels: map[string]string{
-					CTIRequesterLabel: "foo",
+				Annotations: map[string]string{
+					CTIRequesterAnnotation: "foo",
 				},
 			},
 			Spec: ClusterTemplateInstanceSpec{
@@ -249,8 +249,8 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
 				Namespace: "foo",
-				Labels: map[string]string{
-					CTIRequesterLabel: "foo",
+				Annotations: map[string]string{
+					CTIRequesterAnnotation: "foo",
 				},
 			},
 			Spec: ClusterTemplateInstanceSpec{
@@ -264,13 +264,13 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			err.Error(),
 		).Should(Equal("spec is immutable"))
 	})
-	It("Succeeds when updating labels", func() {
+	It("Succeeds when updating annotations", func() {
 		cti := ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
 				Namespace: "foo",
-				Labels: map[string]string{
-					CTIRequesterLabel: "foo",
+				Annotations: map[string]string{
+					CTIRequesterAnnotation: "foo",
 				},
 			},
 			Spec: ClusterTemplateInstanceSpec{
@@ -282,9 +282,9 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
 				Namespace: "foo",
-				Labels: map[string]string{
-					CTIRequesterLabel: "foo",
-					"foo":             "bar",
+				Annotations: map[string]string{
+					CTIRequesterAnnotation: "foo",
+					"foo":                  "bar",
 				},
 			},
 			Spec: ClusterTemplateInstanceSpec{
@@ -316,6 +316,6 @@ var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
 		err := cti.Default(webhookCtx, cti)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(controllerutil.ContainsFinalizer(cti, CTIFinalizer)).Should(BeTrue())
-		Expect(cti.Labels[CTIRequesterLabel]).Should(Equal("foo"))
+		Expect(cti.Annotations[CTIRequesterAnnotation]).Should(Equal("foo"))
 	})
 })
