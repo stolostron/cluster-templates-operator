@@ -35,4 +35,34 @@ var (
 
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
+
+	HostedClusterGVK = schema.GroupVersionResource{
+		Group:    "hypershift.openshift.io",
+		Resource: "HostedCluster",
+		Version:  "v1alpha1",
+	}
+
+	NodePoolGVK = schema.GroupVersionResource{
+		Group:    "hypershift.openshift.io",
+		Resource: "NodePool",
+		Version:  "v1alpha1",
+	}
+
+	ClusterDeploymentGVK = schema.GroupVersionResource{
+		Group:    "hive.openshift.io",
+		Resource: "ClusterDeployment",
+		Version:  "v1",
+	}
+
+	ClusterClaimGVK = schema.GroupVersionResource{
+		Group:    "hive.openshift.io",
+		Resource: "ClusterClaim",
+		Version:  "v1",
+	}
+
+	HelmRepoGVK = schema.GroupVersionResource{
+		Group:    "helm.openshift.io",
+		Resource: "HelmChartRepository",
+		Version:  "v1beta1",
+	}
 )

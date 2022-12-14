@@ -27,42 +27,48 @@ type ClusterProvider interface {
 func GetClusterProvider(application argo.Application, log logr.Logger) ClusterProvider {
 	for _, obj := range application.Status.Resources {
 		switch obj.Kind {
-		case "HostedCluster":
-			log.Info("Cluster provider: HostedCluster")
-			if obj.Version != "v1alpha1" {
-				log.Info("Unknown version: ", obj.Version)
-				return nil
-			}
-			nodePools := []string{}
-			for _, obj := range application.Status.Resources {
-				if obj.Kind == "NodePool" {
-					nodePools = append(nodePools, obj.Name)
+		case v1alpha1.HostedClusterGVK.Resource:
+			if obj.Group == v1alpha1.HostedClusterGVK.Group {
+				log.Info("Cluster provider: HostedCluster")
+				if obj.Version != v1alpha1.HostedClusterGVK.Version {
+					log.Info("Unknown version: ", obj.Version)
+					return nil
+				}
+				nodePools := []string{}
+				for _, obj := range application.Status.Resources {
+					if obj.Kind == "NodePool" {
+						nodePools = append(nodePools, obj.Name)
+					}
+				}
+				return HostedClusterProvider{
+					HostedClusterName:      obj.Name,
+					HostedClusterNamespace: obj.Namespace,
+					NodePoolNames:          nodePools,
 				}
 			}
-			return HostedClusterProvider{
-				HostedClusterName:      obj.Name,
-				HostedClusterNamespace: obj.Namespace,
-				NodePoolNames:          nodePools,
+		case v1alpha1.ClusterDeploymentGVK.Resource:
+			if obj.Group == v1alpha1.ClusterDeploymentGVK.Group {
+				log.Info("Cluster provider: ClusterDeployment")
+				if obj.Version != v1alpha1.ClusterDeploymentGVK.Version {
+					log.Info("Unknown version: ", obj.Version)
+					return nil
+				}
+				return ClusterDeploymentProvider{
+					ClusterDeploymentName:      obj.Name,
+					ClusterDeploymentNamespace: obj.Namespace,
+				}
 			}
-		case "ClusterDeployment":
-			log.Info("Cluster provider: ClusterDeployment")
-			if obj.Version != "v1" {
-				log.Info("Unknown version: ", obj.Version)
-				return nil
-			}
-			return ClusterDeploymentProvider{
-				ClusterDeploymentName:      obj.Name,
-				ClusterDeploymentNamespace: obj.Namespace,
-			}
-		case "ClusterClaim":
-			log.Info("Cluster provider: ClusterClaim")
-			if obj.Version != "v1" {
-				log.Info("Unknown version: ", obj.Version)
-				return nil
-			}
-			return ClusterClaimProvider{
-				ClusterClaimName:      obj.Name,
-				ClusterClaimNamespace: obj.Namespace,
+		case v1alpha1.ClusterClaimGVK.Resource:
+			if obj.Group == v1alpha1.ClusterClaimGVK.Group {
+				log.Info("Cluster provider: ClusterClaim")
+				if obj.Version != v1alpha1.ClusterClaimGVK.Version {
+					log.Info("Unknown version: ", obj.Version)
+					return nil
+				}
+				return ClusterClaimProvider{
+					ClusterClaimName:      obj.Name,
+					ClusterClaimNamespace: obj.Namespace,
+				}
 			}
 		}
 	}

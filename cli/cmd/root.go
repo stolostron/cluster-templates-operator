@@ -39,7 +39,10 @@ func CreateK8sClient() (client.Client, string) {
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
+	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
+		loadingRules,
+		configOverrides,
+	)
 
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {

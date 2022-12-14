@@ -79,6 +79,7 @@ var _ = Describe("Test cluster providers", func() {
 					{
 						Kind:      "HostedCluster",
 						Version:   "v1alpha1",
+						Group:     "hypershift.openshift.io",
 						Name:      "foo",
 						Namespace: "bar",
 					},
@@ -99,6 +100,7 @@ var _ = Describe("Test cluster providers", func() {
 					{
 						Kind:      "HostedCluster",
 						Version:   "v1alpha2",
+						Group:     "hypershift.openshift.io",
 						Name:      "foo",
 						Namespace: "bar",
 					},
@@ -114,12 +116,14 @@ var _ = Describe("Test cluster providers", func() {
 					{
 						Kind:      "HostedCluster",
 						Version:   "v1alpha1",
+						Group:     "hypershift.openshift.io",
 						Name:      "foo",
 						Namespace: "bar",
 					},
 					{
 						Kind:      "NodePool",
 						Version:   "v1alpha1",
+						Group:     "hypershift.openshift.io",
 						Name:      "np-foo",
 						Namespace: "bar",
 					},
@@ -139,6 +143,7 @@ var _ = Describe("Test cluster providers", func() {
 					{
 						Kind:      "ClusterDeployment",
 						Version:   "v1",
+						Group:     "hive.openshift.io",
 						Name:      "foo",
 						Namespace: "bar",
 					},
@@ -157,6 +162,7 @@ var _ = Describe("Test cluster providers", func() {
 					{
 						Kind:      "ClusterDeployment",
 						Version:   "v1alpha1",
+						Group:     "hive.openshift.io",
 						Name:      "foo",
 						Namespace: "bar",
 					},
@@ -172,6 +178,7 @@ var _ = Describe("Test cluster providers", func() {
 					{
 						Kind:      "ClusterClaim",
 						Version:   "v1",
+						Group:     "hive.openshift.io",
 						Name:      "foo",
 						Namespace: "bar",
 					},
@@ -190,6 +197,7 @@ var _ = Describe("Test cluster providers", func() {
 					{
 						Kind:      "ClusterClaim",
 						Version:   "v1alpha1",
+						Group:     "hive.openshift.io",
 						Name:      "foo",
 						Namespace: "bar",
 					},

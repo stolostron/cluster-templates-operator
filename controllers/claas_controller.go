@@ -1,0 +1,176 @@
+/*
+Copyright 2022.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package controllers
+
+import (
+	"context"
+	"os"
+
+	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+
+	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+
+	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
+	"github.com/stolostron/cluster-templates-operator/controllers/defaultresources"
+)
+
+var (
+	log                 = logf.Log.WithName("claas-controller")
+	ctiControllerCancel context.CancelFunc
+)
+
+type CLaaSReconciler struct {
+	Manager ctrl.Manager
+	client.Client
+	enableHypershift bool
+	enableHive       bool
+	enableHelmRepo   bool
+}
+
+// +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
+
+func (r *CLaaSReconciler) Reconcile(
+	ctx context.Context,
+	req ctrl.Request,
+) (ctrl.Result, error) {
+	log := ctrl.LoggerFrom(ctx)
+
+	crd := &apiextensions.CustomResourceDefinition{}
+	if err := r.Get(ctx, req.NamespacedName, crd); err != nil {
+		if apierrors.IsNotFound(err) {
+			log.Info("crd not found", "name", req.NamespacedName)
+			return ctrl.Result{}, nil
+		}
+		return ctrl.Result{}, err
+	}
+
+	//restart controller if needed
+
+	if !r.enableHypershift && isCRDSupported(crd, v1alpha1.HostedClusterGVK) {
+		r.enableHypershift = true
+		ctiControllerCancel()
+		ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
+
+		if err := (&defaultresources.HypershiftTemplateReconciler{
+			Client: r.Manager.GetClient(),
+			Scheme: r.Manager.GetScheme(),
+		}).SetupWithManager(r.Manager); err != nil {
+			log.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
+			os.Exit(1)
+		}
+	}
+
+	if !r.enableHive && isCRDSupported(crd, v1alpha1.ClusterDeploymentGVK) {
+		r.enableHive = true
+		ctiControllerCancel()
+		ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
+	}
+
+	if !r.enableHelmRepo && isCRDSupported(crd, v1alpha1.HelmRepoGVK) {
+		r.enableHelmRepo = true
+		if err := (&defaultresources.HelmRepoReconciler{
+			Client: r.Manager.GetClient(),
+			Scheme: r.Manager.GetScheme(),
+		}).SetupWithManager(r.Manager); err != nil {
+			log.Error(err, "unable to create controller", "controller", "HelmRepo")
+			os.Exit(1)
+		}
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *CLaaSReconciler) SetupWithManager() error {
+	r.enableHypershift = isCRDAvailable(r.Manager.GetClient(), v1alpha1.HostedClusterGVK)
+	r.enableHive = isCRDAvailable(r.Manager.GetClient(), v1alpha1.ClusterDeploymentGVK)
+	r.enableHelmRepo = isCRDAvailable(r.Manager.GetClient(), v1alpha1.HelmRepoGVK)
+
+	ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
+
+	if r.enableHypershift {
+		if err := (&defaultresources.HypershiftTemplateReconciler{
+			Client: r.Manager.GetClient(),
+			Scheme: r.Manager.GetScheme(),
+		}).SetupWithManager(r.Manager); err != nil {
+			log.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
+			os.Exit(1)
+		}
+	}
+
+	if r.enableHelmRepo {
+		if err := (&defaultresources.HelmRepoReconciler{
+			Client: r.Manager.GetClient(),
+			Scheme: r.Manager.GetScheme(),
+		}).SetupWithManager(r.Manager); err != nil {
+			log.Error(err, "unable to create controller", "controller", "HelmRepo")
+			os.Exit(1)
+		}
+	}
+
+	return ctrl.NewControllerManagedBy(r.Manager).
+		For(&apiextensions.CustomResourceDefinition{}).
+		WithEventFilter(
+			predicate.Funcs{
+				DeleteFunc: func(e event.DeleteEvent) bool {
+					return false
+				},
+				CreateFunc: func(e event.CreateEvent) bool {
+					return true
+				},
+				UpdateFunc: func(e event.UpdateEvent) bool {
+					return false
+				},
+				GenericFunc: func(e event.GenericEvent) bool {
+					return false
+				},
+			},
+		).
+		Complete(r)
+}
+
+func isCRDAvailable(client client.Client, gvk schema.GroupVersionResource) bool {
+	_, err := client.RESTMapper().KindFor(gvk)
+
+	found := err == nil
+	if !found {
+		log.Info(gvk.Resource + "CRD not found")
+	}
+
+	return found
+}
+
+func isCRDSupported(
+	crd *apiextensions.CustomResourceDefinition,
+	gvk schema.GroupVersionResource,
+) bool {
+	if crd.Spec.Group == gvk.Group && crd.Spec.Names.Kind == gvk.Resource {
+		for _, version := range crd.Spec.Versions {
+			if version.Name == gvk.Version {
+				return true
+			}
+		}
+	}
+	return false
+}

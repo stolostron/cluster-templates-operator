@@ -19,7 +19,10 @@ type CredentialsOptions struct {
 	Namespace string
 }
 
-func NewCredentialsOptions(namespace string, streams genericclioptions.IOStreams) *CredentialsOptions {
+func NewCredentialsOptions(
+	namespace string,
+	streams genericclioptions.IOStreams,
+) *CredentialsOptions {
 	return &CredentialsOptions{
 		configFlags: genericclioptions.NewConfigFlags(true),
 		IOStreams:   streams,
@@ -27,7 +30,11 @@ func NewCredentialsOptions(namespace string, streams genericclioptions.IOStreams
 	}
 }
 
-func NewCmdCredentials(k8sClient client.Client, namespace string, streams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdCredentials(
+	k8sClient client.Client,
+	namespace string,
+	streams genericclioptions.IOStreams,
+) *cobra.Command {
 	o := NewCredentialsOptions(namespace, streams)
 	cmd := &cobra.Command{
 		Use:          "credentials [cluster-name]",

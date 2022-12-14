@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/kubernetes-client/go-base/config/api"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -43,7 +44,9 @@ import (
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -727,9 +730,48 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 	return nil
 }
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *ClusterTemplateInstanceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func StartCTIController(
+	mgr ctrl.Manager,
+	enableHypershift bool,
+	enableHive bool,
+) context.CancelFunc {
+	ctiReconciller := &ClusterTemplateInstanceReconciler{
+		Client:           mgr.GetClient(),
+		Scheme:           mgr.GetScheme(),
+		EnableHypershift: enableHypershift,
+		EnableHive:       enableHive,
+	}
+	ctiController, err := controller.NewUnmanaged("cti-controller", mgr, controller.Options{
+		Reconciler: ctiReconciller,
+	})
 
+	if err != nil {
+		log.Error(err, "unable to create cti-controller")
+		os.Exit(1)
+	}
+
+	ctiReconciller.SetupWatches(ctiController)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	// Start our controller in a goroutine so that we do not block.
+	go func() {
+		// Block until our controller manager is elected leader. We presume our
+		// entire process will terminate if we lose leadership, so we don't need
+		// to handle that.
+		<-mgr.Elected()
+
+		// Start our controller. This will block until the context is
+		// closed, or the controller returns an error.
+		if err := ctiController.Start(ctx); err != nil {
+			log.Error(err, "cannot run cti-controller")
+		}
+	}()
+
+	return cancel
+}
+
+func (r *ClusterTemplateInstanceReconciler) SetupWatches(ctrl controller.Controller) {
 	mapApplicationToInstance := func(app client.Object) []reconcile.Request {
 		reply := []reconcile.Request{}
 		name := ""
@@ -751,87 +793,98 @@ func (r *ClusterTemplateInstanceReconciler) SetupWithManager(mgr ctrl.Manager) e
 		return reply
 	}
 
-	mapResourceToInstance := func(res client.Object) []reconcile.Request {
-		reply := []reconcile.Request{}
-		apps := &argo.ApplicationList{}
+	mapResourceToInstance := func(resourceGVK schema.GroupVersionResource) func(res client.Object) []reconcile.Request {
+		return func(res client.Object) []reconcile.Request {
+			reply := []reconcile.Request{}
+			apps := &argo.ApplicationList{}
 
-		ctiNameLabelReq, _ := labels.NewRequirement(
-			v1alpha1.CTINameLabel,
-			selection.Exists,
-			[]string{},
-		)
-		ctiNsLabelReq, _ := labels.NewRequirement(
-			v1alpha1.CTINamespaceLabel,
-			selection.Exists,
-			[]string{},
-		)
-		ctiSetupReq, _ := labels.NewRequirement(
-			v1alpha1.CTISetupLabel,
-			selection.DoesNotExist,
-			[]string{},
-		)
-		selector := labels.NewSelector().Add(*ctiNameLabelReq, *ctiNsLabelReq, *ctiSetupReq)
+			ctiNameLabelReq, _ := labels.NewRequirement(
+				v1alpha1.CTINameLabel,
+				selection.Exists,
+				[]string{},
+			)
+			ctiNsLabelReq, _ := labels.NewRequirement(
+				v1alpha1.CTINamespaceLabel,
+				selection.Exists,
+				[]string{},
+			)
+			ctiSetupReq, _ := labels.NewRequirement(
+				v1alpha1.CTISetupLabel,
+				selection.DoesNotExist,
+				[]string{},
+			)
+			selector := labels.NewSelector().Add(*ctiNameLabelReq, *ctiNsLabelReq, *ctiSetupReq)
 
-		if err := r.Client.List(context.TODO(), apps, &client.ListOptions{
-			LabelSelector: selector,
-		}); err != nil {
-			return reply
-		}
-
-		for _, app := range apps.Items {
-			name := ""
-			namespace := ""
-			for key, val := range app.GetLabels() {
-				if key == v1alpha1.CTINameLabel {
-					name = val
-				}
-				if key == v1alpha1.CTINamespaceLabel {
-					namespace = val
-				}
+			if err := r.Client.List(context.TODO(), apps, &client.ListOptions{
+				LabelSelector: selector,
+			}); err != nil {
+				return reply
 			}
-			if name != "" && namespace != "" {
-				for _, argoRes := range app.Status.Resources {
-					if res.GetObjectKind().GroupVersionKind().Kind == argoRes.Kind &&
-						res.GetNamespace() == argoRes.Namespace &&
-						res.GetName() == argoRes.Name {
-						reply = append(
-							reply,
-							reconcile.Request{NamespacedName: types.NamespacedName{
-								Namespace: namespace,
-								Name:      name,
-							}},
-						)
+
+			for _, app := range apps.Items {
+				name := ""
+				namespace := ""
+				for key, val := range app.GetLabels() {
+					if key == v1alpha1.CTINameLabel {
+						name = val
+					}
+					if key == v1alpha1.CTINamespaceLabel {
+						namespace = val
+					}
+				}
+				if name != "" && namespace != "" {
+					for _, argoRes := range app.Status.Resources {
+						if resourceGVK.Resource == argoRes.Kind &&
+							resourceGVK.Group == argoRes.Group &&
+							resourceGVK.Version == argoRes.Version &&
+							res.GetNamespace() == argoRes.Namespace &&
+							res.GetName() == argoRes.Name {
+							reply = append(
+								reply,
+								reconcile.Request{NamespacedName: types.NamespacedName{
+									Namespace: namespace,
+									Name:      name,
+								}},
+							)
+						}
 					}
 				}
 			}
+			return reply
 		}
-		return reply
 	}
 
-	builder := ctrl.NewControllerManagedBy(mgr).
-		For(&v1alpha1.ClusterTemplateInstance{}).
-		Watches(
-			&source.Kind{Type: &argo.Application{}},
-			handler.EnqueueRequestsFromMapFunc(mapApplicationToInstance))
+	ctrl.Watch(
+		&source.Kind{Type: &v1alpha1.ClusterTemplateInstance{}},
+		&handler.EnqueueRequestForObject{},
+	)
+	ctrl.Watch(
+		&source.Kind{Type: &argo.Application{}},
+		handler.EnqueueRequestsFromMapFunc(mapApplicationToInstance),
+	)
 
 	if r.EnableHive {
-		builder = builder.Watches(
+		ctrl.Watch(
 			&source.Kind{Type: &hivev1.ClusterClaim{}},
-			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
-			Watches(
-				&source.Kind{Type: &hivev1.ClusterDeployment{}},
-				handler.EnqueueRequestsFromMapFunc(mapResourceToInstance))
+			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance(v1alpha1.ClusterClaimGVK)),
+		)
+
+		ctrl.Watch(
+			&source.Kind{Type: &hivev1.ClusterDeployment{}},
+			handler.EnqueueRequestsFromMapFunc(
+				mapResourceToInstance(v1alpha1.ClusterDeploymentGVK),
+			),
+		)
 	}
 
 	if r.EnableHypershift {
-		builder = builder.Watches(
+		ctrl.Watch(
 			&source.Kind{Type: &hypershiftv1alpha1.HostedCluster{}},
-			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance)).
-			Watches(
-				&source.Kind{Type: &hypershiftv1alpha1.NodePool{}},
-				handler.EnqueueRequestsFromMapFunc(mapResourceToInstance))
+			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance(v1alpha1.HostedClusterGVK)))
+		ctrl.Watch(
+			&source.Kind{Type: &hypershiftv1alpha1.NodePool{}},
+			handler.EnqueueRequestsFromMapFunc(mapResourceToInstance(v1alpha1.NodePoolGVK)))
 	}
-	return builder.Complete(r)
 }
 
 func SetDefaultConditions(clusterInstance *v1alpha1.ClusterTemplateInstance) {

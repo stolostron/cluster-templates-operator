@@ -23,11 +23,14 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	ctrl "sigs.k8s.io/controller-runtime"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -53,6 +56,7 @@ var k8sClient client.Client
 var testEnv *envtest.Environment
 var ctx context.Context
 var cancel context.CancelFunc
+var controllerCancel context.CancelFunc
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -71,7 +75,10 @@ var _ = BeforeSuite(func() {
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths: []string{
 			filepath.Join("..", "config", "crd", "bases"),
-			filepath.Join("..", "testutils", "testcrds"),
+			filepath.Join("..", "testutils", "testcrds", "required"),
+			filepath.Join("..", "testutils", "testcrds", "optional", "hypershift"),
+			filepath.Join("..", "testutils", "testcrds", "optional", "hive"),
+			filepath.Join("..", "testutils", "testcrds", "optional", "helm"),
 		},
 		ErrorIfCRDPathMissing: true,
 	}
@@ -102,12 +109,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&ClusterTemplateInstanceReconciler{
-		Client:           k8sManager.GetClient(),
-		Scheme:           k8sManager.GetScheme(),
-		EnableHypershift: true,
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
+	controllerCancel = StartCTIController(k8sManager, true, false)
 
 	err = (&ClusterTemplateQuotaReconciler{
 		Client: k8sManager.GetClient(),
@@ -135,6 +137,7 @@ var keyDataFileName string
 var caDataFileName string
 
 var _ = AfterSuite(func() {
+	controllerCancel()
 	cancel()
 	defer os.Remove(certDataFileName)
 	defer os.Remove(keyDataFileName)
@@ -197,4 +200,26 @@ func CreateHelmClient(k8sManager manager.Manager, config *rest.Config) *helm.Hel
 		&keyDataFileName,
 		&caDataFileName,
 	)
+}
+
+const (
+	timeout  = time.Second * 10
+	duration = time.Second * 10
+	interval = time.Millisecond * 250
+)
+
+func EnsureResourceDoesNotExist(obj client.Object) {
+	Eventually(func() bool {
+		err := k8sClient.Get(
+			ctx,
+			types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()},
+			obj,
+		)
+		return apierrors.IsNotFound(err)
+	}, timeout, interval).Should(BeTrue())
+}
+
+func DeleteResource(obj client.Object) {
+	Expect(k8sClient.Delete(ctx, obj)).Should(Succeed())
+	EnsureResourceDoesNotExist(obj)
 }

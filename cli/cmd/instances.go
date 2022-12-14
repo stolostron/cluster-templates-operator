@@ -28,7 +28,11 @@ func NewInstancesOptions(namespace string, streams genericclioptions.IOStreams) 
 	}
 }
 
-func NewCmdListInstances(k8sClient client.Client, namespace string, streams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdListInstances(
+	k8sClient client.Client,
+	namespace string,
+	streams genericclioptions.IOStreams,
+) *cobra.Command {
 	o := NewInstancesOptions(namespace, streams)
 	cmd := &cobra.Command{
 		Use:          "list",

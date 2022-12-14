@@ -1,8 +1,6 @@
 package controllers
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -16,7 +14,6 @@ import (
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -28,28 +25,6 @@ import (
 	"github.com/kubernetes-client/go-base/config/api"
 	"gopkg.in/yaml.v3"
 )
-
-const (
-	timeout  = time.Second * 10
-	duration = time.Second * 10
-	interval = time.Millisecond * 250
-)
-
-func EnsureResourceDoesNotExist(obj client.Object) {
-	Eventually(func() bool {
-		err := k8sClient.Get(
-			ctx,
-			types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()},
-			obj,
-		)
-		return apierrors.IsNotFound(err)
-	}, timeout, interval).Should(BeTrue())
-}
-
-func DeleteResource(obj client.Object) {
-	Expect(k8sClient.Delete(ctx, obj)).Should(Succeed())
-	EnsureResourceDoesNotExist(obj)
-}
 
 var _ = Describe("ClusterTemplateInstance controller", func() {
 	Context("Initial ClusterTemplateInstance Status", func() {
