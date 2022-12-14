@@ -25,7 +25,10 @@ func NewTemplateDescribeOptions(streams genericclioptions.IOStreams) *TemplateDe
 	}
 }
 
-func NewCmdTemplateDescribe(k8sClient client.Client, streams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdTemplateDescribe(
+	k8sClient client.Client,
+	streams genericclioptions.IOStreams,
+) *cobra.Command {
 	o := NewTemplateDescribeOptions(streams)
 	cmd := &cobra.Command{
 		Use:          "template [template-name(s)]",
@@ -87,7 +90,12 @@ func templateToDescription(ct v1alpha1.ClusterTemplate) string {
 	}
 	descriptionResult := markdown.Render(description, 80, 6)
 
-	result := fmt.Sprintf("Name: %s\nDescription:\n\n%s\nCost: %d\n", ct.Name, string(descriptionResult), ct.Spec.Cost)
+	result := fmt.Sprintf(
+		"Name: %s\nDescription:\n\n%s\nCost: %d\n",
+		ct.Name,
+		string(descriptionResult),
+		ct.Spec.Cost,
+	)
 
 	properties := "Properties:"
 	cdValues := ct.Status.ClusterDefinition.Values
@@ -95,10 +103,16 @@ func templateToDescription(ct v1alpha1.ClusterTemplate) string {
 	if cdValues != "" || cdSchema != "" {
 		properties = properties + "\n\tClusterDefinition:\n"
 		if cdValues != "" {
-			properties = properties + fmt.Sprintf("\t\tValues:\n\t\t\t%s\n", strings.ReplaceAll(cdValues, "\n", "\n\t\t\t"))
+			properties = properties + fmt.Sprintf(
+				"\t\tValues:\n\t\t\t%s\n",
+				strings.ReplaceAll(cdValues, "\n", "\n\t\t\t"),
+			)
 		}
 		if cdSchema != "" {
-			properties = properties + fmt.Sprintf("\t\tSchema:\n\t\t\t%s\n", strings.ReplaceAll(cdSchema, "\n", "\n\t\t\t"))
+			properties = properties + fmt.Sprintf(
+				"\t\tSchema:\n\t\t\t%s\n",
+				strings.ReplaceAll(cdSchema, "\n", "\n\t\t\t"),
+			)
 		}
 	}
 	if len(ct.Status.ClusterSetup) > 0 {
@@ -107,10 +121,16 @@ func templateToDescription(ct v1alpha1.ClusterTemplate) string {
 			values := clusterSetup.Values
 			schema := clusterSetup.Values
 			if values != "" {
-				properties = properties + fmt.Sprintf("\t\tValues:\n\t\t\t%s\n", strings.ReplaceAll(values, "\n", "\n\t\t\t"))
+				properties = properties + fmt.Sprintf(
+					"\t\tValues:\n\t\t\t%s\n",
+					strings.ReplaceAll(values, "\n", "\n\t\t\t"),
+				)
 			}
 			if schema != "" {
-				properties = properties + fmt.Sprintf("\t\tSchema:\n\t\t\t%s\n", strings.ReplaceAll(schema, "\n", "\n\t\t\t"))
+				properties = properties + fmt.Sprintf(
+					"\t\tSchema:\n\t\t\t%s\n",
+					strings.ReplaceAll(schema, "\n", "\n\t\t\t"),
+				)
 			}
 		}
 	}

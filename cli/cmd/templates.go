@@ -26,7 +26,11 @@ func NewTemplatesOptions(namespace string, streams genericclioptions.IOStreams) 
 	}
 }
 
-func NewCmdTemplates(k8sClient client.Client, namespace string, streams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdTemplates(
+	k8sClient client.Client,
+	namespace string,
+	streams genericclioptions.IOStreams,
+) *cobra.Command {
 	o := NewTemplatesOptions(namespace, streams)
 	cmd := &cobra.Command{
 		Use:          "templates",

@@ -17,7 +17,10 @@ type KubeconfigOptions struct {
 	Namespace string
 }
 
-func NewKubeconfigOptions(namespace string, streams genericclioptions.IOStreams) *KubeconfigOptions {
+func NewKubeconfigOptions(
+	namespace string,
+	streams genericclioptions.IOStreams,
+) *KubeconfigOptions {
 	return &KubeconfigOptions{
 		configFlags: genericclioptions.NewConfigFlags(true),
 		IOStreams:   streams,
@@ -25,7 +28,11 @@ func NewKubeconfigOptions(namespace string, streams genericclioptions.IOStreams)
 	}
 }
 
-func NewCmdKubeconfig(k8sClient client.Client, namespace string, streams genericclioptions.IOStreams) *cobra.Command {
+func NewCmdKubeconfig(
+	k8sClient client.Client,
+	namespace string,
+	streams genericclioptions.IOStreams,
+) *cobra.Command {
 	o := NewKubeconfigOptions(namespace, streams)
 	cmd := &cobra.Command{
 		Use:          "kubeconfig [cluster-name]",
