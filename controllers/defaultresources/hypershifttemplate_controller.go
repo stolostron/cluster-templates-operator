@@ -21,8 +21,8 @@ import (
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 )
 
-func getHypershiftTemplate() *v1alpha1.ClusterTemplate {
-	return &v1alpha1.ClusterTemplate{
+var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
+	"hypershift-cluster": {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "hypershift-cluster",
 		},
@@ -45,7 +45,31 @@ func getHypershiftTemplate() *v1alpha1.ClusterTemplate {
 			},
 			ArgoCDNamespace: "argocd",
 		},
-	}
+	},
+	"hypershift-kubevirt-cluster": {
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "hypershift-kubevirt-cluster",
+		},
+		Spec: v1alpha1.ClusterTemplateSpec{
+			Cost: 1,
+			ClusterDefinition: argo.ApplicationSpec{
+				Destination: argo.ApplicationDestination{
+					Namespace: "clusters",
+					Server:    "https://kubernetes.default.svc",
+				},
+				Project: "default",
+				Source: argo.ApplicationSource{
+					RepoURL:        "https://stolostron.github.io/cluster-templates-operator",
+					TargetRevision: "0.0.1",
+					Chart:          "hypershift-kubevirt-template",
+				},
+				SyncPolicy: &argo.SyncPolicy{
+					Automated: &argo.SyncPolicyAutomated{},
+				},
+			},
+			ArgoCDNamespace: "argocd",
+		},
+	},
 }
 
 type HypershiftTemplateReconciler struct {
@@ -55,7 +79,6 @@ type HypershiftTemplateReconciler struct {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HypershiftTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	defaultTemplate := getHypershiftTemplate()
 	// A channel is used to generate an initial sync event.
 	// Afterwards, the controller syncs on the Hypershift ClusterTemplate.
 	initialSync := make(chan event.GenericEvent)
@@ -66,7 +89,9 @@ func (r *HypershiftTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error 
 		return fmt.Errorf("failed to construct controller: %w", err)
 	}
 	go func() {
-		initialSync <- event.GenericEvent{Object: defaultTemplate}
+		for template := range defaultTemplates {
+			initialSync <- event.GenericEvent{Object: defaultTemplates[template]}
+		}
 	}()
 	return nil
 }
@@ -77,7 +102,7 @@ func (r *HypershiftTemplateReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
-	defaultTemplate := getHypershiftTemplate()
+	defaultTemplate := defaultTemplates[req.NamespacedName.Name]
 	template := &v1alpha1.ClusterTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultTemplate.Name,
@@ -93,6 +118,6 @@ func (r *HypershiftTemplateReconciler) Reconcile(
 }
 
 func (r *HypershiftTemplateReconciler) selectHypershiftTemplate(obj client.Object) bool {
-	defaultTemplate := getHypershiftTemplate()
-	return obj.GetName() == defaultTemplate.Name
+	_, found := defaultTemplates[obj.GetName()]
+	return found
 }
