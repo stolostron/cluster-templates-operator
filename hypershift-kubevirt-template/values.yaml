@@ -1,0 +1,15 @@
+# Default values for demo-template.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+#An OCP version to deploy
+ocpVersion: 4.11.9
+
+#An OCP arch to deploy
+ocpArch: x86_64
+
+#API publishing stategy that should be used
+APIPublishingStrategy: LoadBalancer
+
+#Base DNS domain of the cluster
+baseDnsDomain: sampletemplateinstance.com

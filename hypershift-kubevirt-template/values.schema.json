@@ -1,0 +1,24 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "type": "object",
+    "required": [
+      "ocpVersion",
+      "ocpArch",
+      "APIPublishingStrategy",
+      "baseDnsDomain"
+    ],
+    "properties": {
+      "baseDnsDomain": {
+        "type": "string"
+      },
+      "APIPublishingStrategy": {
+        "type": "string"
+      },
+      "ocpArch": {
+        "type": "string"
+      },
+      "ocpVersion": {
+        "type": "string"
+      }
+    }
+  }
