@@ -1,0 +1,7 @@
+apiVersion: v2
+name: hypershift-kubevirt-template
+description: A Helm chart which installs Hypershift cluster using KubeVirt platform
+annotations:
+  cluster-template: true
+type: application
+version: 0.0.1
