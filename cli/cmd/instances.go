@@ -56,8 +56,8 @@ func (sv *InstancesOptions) run(k8sClient client.Client, args []string) error {
 	}
 
 	w := tabwriter.NewWriter(sv.Out, 10, 1, 5, ' ', 0)
-	fs := "%s\t%s\t%s\t%s\n"
-	fmt.Fprintf(w, fs, "NAME", "REQUESTER", "TEMPLATE", "AGE")
+	fs := "%s\t%s\t%s\t%s\t%s\n"
+	fmt.Fprintf(w, fs, "NAME", "PHASE", "REQUESTER", "TEMPLATE", "AGE")
 	for _, cti := range ctis.Items {
 		requester := "-"
 		if cti.Annotations != nil {
@@ -73,7 +73,7 @@ func (sv *InstancesOptions) run(k8sClient client.Client, args []string) error {
 			age = duration.HumanDuration(time.Since(timestamp.Time))
 		}
 
-		fmt.Fprintf(w, fs, cti.Name, requester, cti.Spec.ClusterTemplateRef, age)
+		fmt.Fprintf(w, fs, cti.Name, cti.Status.Phase, requester, cti.Spec.ClusterTemplateRef, age)
 	}
 
 	return w.Flush()

@@ -25,6 +25,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -58,7 +59,9 @@ func (r *ClusterTemplateInstance) Default(ctx context.Context, obj runtime.Objec
 		cti.Annotations = map[string]string{}
 	}
 	cti.Annotations[CTIRequesterAnnotation] = req.UserInfo.Username
-	cti.Finalizers = append(cti.Finalizers, CTIFinalizer)
+	if !controllerutil.ContainsFinalizer(cti, CTIFinalizer) {
+		cti.Finalizers = append(cti.Finalizers, CTIFinalizer)
+	}
 	return nil
 }
 

@@ -59,7 +59,7 @@ func (cd *CredentialsOptions) run(k8sClient client.Client, args []string) error 
 	}
 
 	secret := &corev1.Secret{}
-	if err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: cti.Status.AdminPassword.Name, Namespace: "devuserns"}, secret); err != nil {
+	if err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: cti.Status.AdminPassword.Name, Namespace: cd.Namespace}, secret); err != nil {
 		return err
 	}
 
