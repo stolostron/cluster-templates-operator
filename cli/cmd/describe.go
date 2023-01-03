@@ -135,7 +135,7 @@ func templateToDescription(ct v1alpha1.ClusterTemplate) string {
 		}
 	}
 	if properties == "Properties:" {
-		return ""
+		return result
 	}
 	return result + properties
 }

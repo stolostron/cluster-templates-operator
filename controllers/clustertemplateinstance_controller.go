@@ -87,7 +87,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 	}
 
 	if clusterTemplateInstance.GetDeletionTimestamp() != nil {
-		if controllerutil.ContainsFinalizer(
+		if len(clusterTemplateInstance.Finalizers) == 1 && controllerutil.ContainsFinalizer(
 			clusterTemplateInstance,
 			v1alpha1.CTIFinalizer,
 		) {

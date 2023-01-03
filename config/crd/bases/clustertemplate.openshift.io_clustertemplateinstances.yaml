@@ -405,8 +405,8 @@ spec:
                               and is only valid for applications sourced from Git.
                             type: string
                           plugin:
-                            description: ConfigManagementPlugin holds config management
-                              plugin specific options
+                            description: Plugin holds config management plugin specific
+                              options
                             properties:
                               env:
                                 description: Env is a list of environment variable
@@ -818,8 +818,8 @@ spec:
                                     sourced from Git.
                                   type: string
                                 plugin:
-                                  description: ConfigManagementPlugin holds config
-                                    management plugin specific options
+                                  description: Plugin holds config management plugin
+                                    specific options
                                   properties:
                                     env:
                                       description: Env is a list of environment variable
