@@ -1,7 +1,6 @@
 package helm
 
 import (
-	"crypto/tls"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -11,13 +10,8 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-func getIndexFile(tlsConfig *tls.Config, indexURL string) (*repo.IndexFile, error) {
+func getIndexFile(httpClient *http.Client, indexURL string) (*repo.IndexFile, error) {
 	indexFile := &repo.IndexFile{}
-	tr := &http.Transport{
-		Proxy:           http.ProxyFromEnvironment,
-		TLSClientConfig: tlsConfig,
-	}
-	httpClient := &http.Client{Transport: tr}
 
 	if !strings.HasSuffix(indexURL, "/index.yaml") {
 		indexURL += "/index.yaml"
@@ -44,12 +38,12 @@ func getIndexFile(tlsConfig *tls.Config, indexURL string) (*repo.IndexFile, erro
 }
 
 func getChartURL(
-	tlsConfig *tls.Config,
+	httpClient *http.Client,
 	indexURL string,
 	chartName string,
 	chartVersion string,
 ) (string, error) {
-	indexFile, err := getIndexFile(tlsConfig, indexURL)
+	indexFile, err := getIndexFile(httpClient, indexURL)
 	if err != nil {
 		return "", err
 	}
