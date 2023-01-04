@@ -40,7 +40,7 @@ func (r *ClusterTemplateReconciler) Reconcile(
 		return ctrl.Result{}, err
 	}
 
-	cdValues, cdSchema, err := r.getValuesAndSchema(ctx, clusterTemplate.Spec.ClusterDefinition)
+	cdValues, cdSchema, err := r.getValuesAndSchema(ctx, clusterTemplate.Spec.ClusterDefinition, clusterTemplate.Spec.ArgoCDNamespace)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -49,7 +49,7 @@ func (r *ClusterTemplateReconciler) Reconcile(
 
 	clusterSetupStatus := []v1alpha1.ClusterSetupSchema{}
 	for _, setup := range clusterTemplate.Spec.ClusterSetup {
-		values, schema, err := r.getValuesAndSchema(ctx, setup.Spec)
+		values, schema, err := r.getValuesAndSchema(ctx, setup.Spec, clusterTemplate.Spec.ArgoCDNamespace)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
@@ -77,6 +77,7 @@ func (r *ClusterTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *ClusterTemplateReconciler) getValuesAndSchema(
 	ctx context.Context,
 	appSpec argo.ApplicationSpec,
+	argoCDNamespace string,
 ) (string, string, error) {
 	values := ""
 	schema := ""
@@ -84,7 +85,7 @@ func (r *ClusterTemplateReconciler) getValuesAndSchema(
 		repoURL := appSpec.Source.RepoURL
 		chartName := appSpec.Source.Chart
 		chartVersion := appSpec.Source.TargetRevision
-		chart, err := r.HelmClient.GetChart(ctx, repoURL, chartName, chartVersion)
+		chart, err := r.HelmClient.GetChart(ctx, r.Client, repoURL, chartName, chartVersion, argoCDNamespace)
 		if err != nil {
 			return values, schema, err
 		}
