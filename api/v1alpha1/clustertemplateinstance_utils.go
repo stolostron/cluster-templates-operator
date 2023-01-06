@@ -60,6 +60,7 @@ func (i *ClusterTemplateInstance) GetOwnerReference() metav1.OwnerReference {
 func (i *ClusterTemplateInstance) GetDay1Application(
 	ctx context.Context,
 	k8sClient client.Client,
+	argoCDNamespace string,
 ) (*argo.Application, error) {
 	apps := &argo.ApplicationList{}
 
@@ -86,7 +87,7 @@ func (i *ClusterTemplateInstance) GetDay1Application(
 
 	if err := k8sClient.List(ctx, apps, &client.ListOptions{
 		LabelSelector: selector,
-		Namespace:     i.Status.ClusterTemplateSpec.ArgoCDNamespace,
+		Namespace:     argoCDNamespace,
 	}); err != nil {
 		return nil, err
 	}
@@ -96,7 +97,7 @@ func (i *ClusterTemplateInstance) GetDay1Application(
 		err := apierrors.NewNotFound(schema.GroupResource{
 			Group:    argo.ApplicationSchemaGroupVersionKind.Group,
 			Resource: argo.ApplicationSchemaGroupVersionKind.Kind,
-		}, i.Status.ClusterTemplateSpec.ArgoCDNamespace+"/"+i.Name)
+		}, argoCDNamespace+"/"+i.Name)
 		return nil, err
 	}
 	return &apps.Items[0], nil
@@ -105,8 +106,9 @@ func (i *ClusterTemplateInstance) GetDay1Application(
 func (i *ClusterTemplateInstance) CreateDay1Application(
 	ctx context.Context,
 	k8sClient client.Client,
+	argoCDNamespace string,
 ) error {
-	argoApp, err := i.GetDay1Application(ctx, k8sClient)
+	argoApp, err := i.GetDay1Application(ctx, k8sClient, argoCDNamespace)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
 			return err
@@ -138,7 +140,7 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 	argoApp = &argo.Application{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: i.Name + "-",
-			Namespace:    i.Status.ClusterTemplateSpec.ArgoCDNamespace,
+			Namespace:    argoCDNamespace,
 			Finalizers: []string{
 				argo.ResourcesFinalizerName,
 			},
@@ -155,6 +157,7 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 func (i *ClusterTemplateInstance) GetDay2Applications(
 	ctx context.Context,
 	k8sClient client.Client,
+	argoCDNamespace string,
 ) (*argo.ApplicationList, error) {
 	applications := &argo.ApplicationList{}
 
@@ -180,7 +183,7 @@ func (i *ClusterTemplateInstance) GetDay2Applications(
 		applications,
 		&client.ListOptions{
 			LabelSelector: selector,
-			Namespace:     i.Status.ClusterTemplateSpec.ArgoCDNamespace,
+			Namespace:     argoCDNamespace,
 		},
 	)
 	return applications, err
@@ -189,9 +192,10 @@ func (i *ClusterTemplateInstance) GetDay2Applications(
 func (i *ClusterTemplateInstance) CreateDay2Applications(
 	ctx context.Context,
 	k8sClient client.Client,
+	argoCDNamespace string,
 ) error {
 	log := ctrl.LoggerFrom(ctx)
-	apps, err := i.GetDay2Applications(ctx, k8sClient)
+	apps, err := i.GetDay2Applications(ctx, k8sClient, argoCDNamespace)
 
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
@@ -246,7 +250,7 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 			argoApp := argo.Application{
 				ObjectMeta: metav1.ObjectMeta{
 					GenerateName: i.Name + "-",
-					Namespace:    i.Status.ClusterTemplateSpec.ArgoCDNamespace,
+					Namespace:    argoCDNamespace,
 					Labels: map[string]string{
 						CTINameLabel:      i.Name,
 						CTINamespaceLabel: i.Namespace,

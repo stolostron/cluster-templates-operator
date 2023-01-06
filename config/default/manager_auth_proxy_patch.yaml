@@ -38,3 +38,5 @@ spec:
         - "--health-probe-bind-address=:8081"
         - "--metrics-bind-address=127.0.0.1:8080"
         - "--leader-elect"
+        - --tls-cert-file=/etc/certs/tls/tls.crt
+        - --tls-private-key-file=/etc/certs/tls/tls.key

@@ -79,7 +79,7 @@ var _ = Describe("Test cluster setup", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, app)
-		err = AddClusterToArgo(ctx, client, cti, GetNewClient)
+		err = AddClusterToArgo(ctx, client, cti, GetNewClient, "argocd")
 		Expect(err).Should(BeNil())
 
 		argoClusterSecret := &corev1.Secret{}

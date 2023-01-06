@@ -33,6 +33,7 @@ func AddClusterToArgo(
 	k8sClient client.Client,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 	getNewClusterClient func(configBytes []byte) (client.Client, error),
+	argoCDNamespace string,
 ) error {
 	kubeconfigSecret := corev1.Secret{}
 
@@ -146,7 +147,7 @@ func AddClusterToArgo(
 		return err
 	}
 
-	app, err := clusterTemplateInstance.GetDay1Application(ctx, k8sClient)
+	app, err := clusterTemplateInstance.GetDay1Application(ctx, k8sClient, argoCDNamespace)
 	if err != nil {
 		return err
 	}

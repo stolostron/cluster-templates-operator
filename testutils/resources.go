@@ -62,7 +62,6 @@ func GetCT(withSetup bool) *v1alpha1.ClusterTemplate {
 					Automated: &argo.SyncPolicyAutomated{},
 				},
 			},
-			ArgoCDNamespace: "default",
 		},
 	}
 	if withSetup {

@@ -38,7 +38,9 @@ spec:
         - /manager
         args:
         - --leader-elect
-        image: quay.io/stolostron/cluster-templates-operator:2.7.0-8a5d0ce2db589cdbee3c4b0fa86051b3daa2ee74
+        - --tls-cert-file=/etc/certs/tls/tls.crt
+        - --tls-private-key-file=/etc/certs/tls/tls.key
+        image: controller
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
@@ -67,5 +69,13 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
+        volumeMounts:
+          - mountPath: /etc/certs/tls
+            name: tls-cert
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+      volumes:
+        - name: tls-cert
+          secret:
+            defaultMode: 420
+            secretName: cluster-aas-operator-certs

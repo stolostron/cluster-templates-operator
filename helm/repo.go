@@ -10,7 +10,7 @@ import (
 	"helm.sh/helm/v3/pkg/repo"
 )
 
-func getIndexFile(httpClient *http.Client, indexURL string) (*repo.IndexFile, error) {
+func GetIndexFile(httpClient *http.Client, indexURL string) (*repo.IndexFile, error) {
 	indexFile := &repo.IndexFile{}
 
 	if !strings.HasSuffix(indexURL, "/index.yaml") {
@@ -43,7 +43,7 @@ func getChartURL(
 	chartName string,
 	chartVersion string,
 ) (string, error) {
-	indexFile, err := getIndexFile(httpClient, indexURL)
+	indexFile, err := GetIndexFile(httpClient, indexURL)
 	if err != nil {
 		return "", err
 	}

@@ -357,14 +357,14 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, argoApp)
 
-		app, err := cti.GetDay1Application(ctx, client)
+		app, err := cti.GetDay1Application(ctx, client, "argocd")
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(app).ShouldNot(BeNil())
 
 		clientWithoutApps := fake.NewFakeClientWithScheme(scheme.Scheme)
 
-		app, err = cti.GetDay1Application(ctx, clientWithoutApps)
+		app, err = cti.GetDay1Application(ctx, clientWithoutApps, "argocd")
 
 		Expect(err).Should(HaveOccurred())
 		Expect(app).Should(BeNil())
@@ -396,7 +396,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme)
-		err := cti.CreateDay1Application(ctx, client)
+		err := cti.CreateDay1Application(ctx, client, "argocd")
 
 		Expect(err).ShouldNot(HaveOccurred())
 
@@ -418,7 +418,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 
 		client = fake.NewFakeClientWithScheme(scheme.Scheme)
-		err = cti.CreateDay1Application(ctx, client)
+		err = cti.CreateDay1Application(ctx, client, "argocd")
 
 		Expect(err).ShouldNot(HaveOccurred())
 
@@ -487,7 +487,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret)
-		err = cti.CreateDay2Applications(ctx, client)
+		err = cti.CreateDay2Applications(ctx, client, "argocd")
 		Expect(err).ShouldNot(HaveOccurred())
 
 		apps := argo.ApplicationList{}
@@ -516,7 +516,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 
 		client = fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret)
-		err = cti.CreateDay2Applications(ctx, client)
+		err = cti.CreateDay2Applications(ctx, client, "argocd")
 		Expect(err).ShouldNot(HaveOccurred())
 
 		apps = argo.ApplicationList{}

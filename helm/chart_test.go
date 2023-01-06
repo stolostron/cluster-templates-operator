@@ -46,7 +46,14 @@ var _ = Describe("Helm client", func() {
 		Expect(chart).Should(BeNil())
 		Expect(err).ShouldNot(BeNil())
 
-		chart, err = helmClient.GetChart(context.TODO(), k8sClient, server.URL, "hypershift-template", "0.0.2", "argocd")
+		chart, err = helmClient.GetChart(
+			context.TODO(),
+			k8sClient,
+			server.URL,
+			"hypershift-template",
+			"0.0.2",
+			"argocd",
+		)
 		Expect(chart).ShouldNot(BeNil())
 		Expect(err).Should(BeNil())
 	})
@@ -67,7 +74,14 @@ var _ = Describe("Helm client", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
-		chart, err := helmClient.GetChart(context.TODO(), client, server.URL, "hypershift-template", "0.0.2", "argocd")
+		chart, err := helmClient.GetChart(
+			context.TODO(),
+			client,
+			server.URL,
+			"hypershift-template",
+			"0.0.2",
+			"argocd",
+		)
 		Expect(chart).ShouldNot(BeNil())
 		Expect(err).Should(BeNil())
 	})
@@ -89,7 +103,14 @@ var _ = Describe("Helm client", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
-		chart, err := helmClient.GetChart(context.TODO(), client, httpsServer.URL, "hypershift-template", "0.0.2", "argocd")
+		chart, err := helmClient.GetChart(
+			context.TODO(),
+			client,
+			httpsServer.URL,
+			"hypershift-template",
+			"0.0.2",
+			"argocd",
+		)
 		Expect(chart).ShouldNot(BeNil())
 		Expect(err).Should(BeNil())
 	})
@@ -129,7 +150,14 @@ var _ = Describe("Helm client", func() {
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret, cm)
 
-		chart, err := helmClient.GetChart(context.TODO(), client, httpsServer.URL, "hypershift-template", "0.0.2", "argocd")
+		chart, err := helmClient.GetChart(
+			context.TODO(),
+			client,
+			httpsServer.URL,
+			"hypershift-template",
+			"0.0.2",
+			"argocd",
+		)
 		Expect(chart).ShouldNot(BeNil())
 		Expect(err).Should(BeNil())
 	})
