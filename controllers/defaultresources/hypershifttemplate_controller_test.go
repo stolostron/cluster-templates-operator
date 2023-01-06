@@ -25,7 +25,7 @@ var _ = Describe("HypershiftTemplate controller", func() {
 			ct := &v1alpha1.ClusterTemplate{}
 			err := k8sClient.Get(ctx, types.NamespacedName{Name: template}, ct)
 			Expect(err).Should(BeNil())
-			ct.Spec.ArgoCDNamespace = "foo"
+			ct.Spec.Cost = 500
 			err = k8sClient.Update(ctx, ct)
 			Expect(err).Should(BeNil())
 			Eventually(func() bool {
@@ -35,7 +35,7 @@ var _ = Describe("HypershiftTemplate controller", func() {
 					ct,
 				)
 				Expect(err).Should(BeNil())
-				return ct.Spec.ArgoCDNamespace == "argocd"
+				return ct.Spec.Cost == 1
 			}, timeout, interval).Should(BeTrue())
 		}
 	})

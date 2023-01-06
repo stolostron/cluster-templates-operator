@@ -43,7 +43,6 @@ var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 					Automated: &argo.SyncPolicyAutomated{},
 				},
 			},
-			ArgoCDNamespace: "argocd",
 		},
 	},
 	"hypershift-kubevirt-cluster": {
@@ -67,7 +66,6 @@ var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 					Automated: &argo.SyncPolicyAutomated{},
 				},
 			},
-			ArgoCDNamespace: "argocd",
 		},
 	},
 }

@@ -117,7 +117,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				return clusterDefinitionCondition.Status == metav1.ConditionTrue
 			}, timeout, interval).Should(BeTrue())
 			Expect(cti.Status.Phase).Should(Equal(v1alpha1.ClusterInstallingPhase))
-			app, err := cti.GetDay1Application(ctx, k8sClient)
+			app, err := cti.GetDay1Application(ctx, k8sClient, "argocd")
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(app).ShouldNot(BeNil())
 		})
@@ -142,7 +142,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				return cti.Status.ClusterTemplateSpec != nil
 			}, timeout, interval).Should(BeTrue())
 			var err error
-			app, err = cti.GetDay1Application(ctx, k8sClient)
+			app, err = cti.GetDay1Application(ctx, k8sClient, "argocd")
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(app).ShouldNot(BeNil())
 			resourcesToDelete = []client.Object{}
@@ -554,7 +554,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			}
 			err = reconciler.reconcileClusterSetupCreate(ctx, cti)
 			Expect(err).Should(BeNil())
-			apps, err := cti.GetDay2Applications(ctx, client)
+			apps, err := cti.GetDay2Applications(ctx, client, "argocd")
 			Expect(err).Should(BeNil())
 			Expect(len(apps.Items)).Should(Equal(1))
 			Expect(apps.Items[0].Spec.Destination.Server).Should(Equal("foo-server"))
@@ -612,7 +612,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			}
 
 			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret)
-			err = cti.CreateDay2Applications(ctx, client)
+			err = cti.CreateDay2Applications(ctx, client, "argocd")
 			Expect(err).Should(BeNil())
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client: client,

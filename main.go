@@ -36,6 +36,7 @@ import (
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
+	"github.com/stolostron/cluster-templates-operator/bridge"
 	"github.com/stolostron/cluster-templates-operator/controllers"
 	"github.com/stolostron/cluster-templates-operator/helm"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -61,6 +62,8 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var tlsCertFile string
+	var tlsKeyFile string
 	var probeAddr string
 	flag.StringVar(
 		&metricsAddr,
@@ -77,6 +80,8 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&tlsCertFile, "tls-cert-file", "", "TLS certificate for repo proxy")
+	flag.StringVar(&tlsKeyFile, "tls-private-key-file", "", "TLS private key for repo proxy")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -159,6 +164,11 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+
+	go func() {
+		setupLog.Info("starting helm repo bridge server")
+		bridge.RunServer(mgr.GetClient(), mgr.GetConfig(), tlsCertFile, tlsKeyFile)
+	}()
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

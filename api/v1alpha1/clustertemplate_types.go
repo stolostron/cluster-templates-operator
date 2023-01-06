@@ -43,9 +43,6 @@ type ClusterTemplateSpec struct {
 	//+kubebuilder:validation:Minimum=0
 	// Cost of the cluster, used for quotas
 	Cost int `json:"cost"`
-
-	// A namespace where ArgoCD Applications will be created
-	ArgoCDNamespace string `json:"argocdNamespace"`
 }
 
 type ClusterDefinitionSchema struct {

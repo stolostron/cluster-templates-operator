@@ -92,7 +92,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 			v1alpha1.CTIFinalizer,
 		) {
 			if clusterTemplateInstance.Status.ClusterTemplateSpec != nil {
-				app, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client)
+				app, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client, ArgoCDNamespace)
 				if err != nil {
 					if !apierrors.IsNotFound(err) {
 						return ctrl.Result{}, err
@@ -105,7 +105,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 					}
 				}
 
-				apps, err := clusterTemplateInstance.GetDay2Applications(ctx, r.Client)
+				apps, err := clusterTemplateInstance.GetDay2Applications(ctx, r.Client, ArgoCDNamespace)
 				if err != nil {
 					if !apierrors.IsNotFound(err) {
 						return ctrl.Result{}, err
@@ -135,7 +135,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 				secrets := &corev1.SecretList{}
 				if err := r.Client.List(ctx, secrets, &client.ListOptions{
 					LabelSelector: selector,
-					Namespace:     clusterTemplateInstance.Status.ClusterTemplateSpec.ArgoCDNamespace,
+					Namespace:     ArgoCDNamespace,
 				}); err != nil {
 					return ctrl.Result{}, err
 				}
@@ -261,7 +261,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	)
 
 	if clusterDefinitionCreatedCondition.Status == metav1.ConditionFalse {
-		if err := clusterTemplateInstance.CreateDay1Application(ctx, r.Client); err != nil {
+		if err := clusterTemplateInstance.CreateDay1Application(ctx, r.Client, ArgoCDNamespace); err != nil {
 			clusterTemplateInstance.SetClusterDefinitionCreatedCondition(
 				metav1.ConditionFalse,
 				v1alpha1.ClusterDefinitionFailed,
@@ -301,7 +301,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 		"name",
 		clusterTemplateInstance.Namespace+"/"+clusterTemplateInstance.Name,
 	)
-	application, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client)
+	application, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client, ArgoCDNamespace)
 
 	if err != nil {
 		failedMsg := fmt.Sprintf("Failed to fetch application - %q", err)
@@ -531,6 +531,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 		r.Client,
 		clusterTemplateInstance,
 		clustersetup.GetClientForCluster,
+		ArgoCDNamespace,
 	); err != nil {
 		clusterTemplateInstance.SetArgoClusterAddedCondition(
 			metav1.ConditionFalse,
@@ -588,6 +589,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 	if err := clusterTemplateInstance.CreateDay2Applications(
 		ctx,
 		r.Client,
+		ArgoCDNamespace,
 	); err != nil {
 		clusterTemplateInstance.SetClusterSetupCreatedCondition(
 			metav1.ConditionFalse,
@@ -642,7 +644,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 		"name",
 		clusterTemplateInstance.Name,
 	)
-	applications, err := clusterTemplateInstance.GetDay2Applications(ctx, r.Client)
+	applications, err := clusterTemplateInstance.GetDay2Applications(ctx, r.Client, ArgoCDNamespace)
 
 	if err != nil {
 		clusterTemplateInstance.SetClusterSetupSucceededCondition(
