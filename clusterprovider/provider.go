@@ -4,12 +4,16 @@ import (
 	"context"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
-	"github.com/go-logr/logr"
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+)
+
+var (
+	providerLog = logf.Log.WithName("cluster-provider")
 )
 
 const (
@@ -24,14 +28,14 @@ type ClusterProvider interface {
 	) (bool, string, error)
 }
 
-func GetClusterProvider(application argo.Application, log logr.Logger) ClusterProvider {
+func GetClusterProvider(application argo.Application) ClusterProvider {
 	for _, obj := range application.Status.Resources {
 		switch obj.Kind {
 		case v1alpha1.HostedClusterGVK.Resource:
 			if obj.Group == v1alpha1.HostedClusterGVK.Group {
-				log.Info("Cluster provider: HostedCluster")
+				providerLog.Info("Cluster provider: HostedCluster")
 				if obj.Version != v1alpha1.HostedClusterGVK.Version {
-					log.Info("Unknown version: ", obj.Version)
+					providerLog.Info("Unknown version: ", obj.Version)
 					return nil
 				}
 				nodePools := []string{}
@@ -48,9 +52,9 @@ func GetClusterProvider(application argo.Application, log logr.Logger) ClusterPr
 			}
 		case v1alpha1.ClusterDeploymentGVK.Resource:
 			if obj.Group == v1alpha1.ClusterDeploymentGVK.Group {
-				log.Info("Cluster provider: ClusterDeployment")
+				providerLog.Info("Cluster provider: ClusterDeployment")
 				if obj.Version != v1alpha1.ClusterDeploymentGVK.Version {
-					log.Info("Unknown version: ", obj.Version)
+					providerLog.Info("Unknown version: ", obj.Version)
 					return nil
 				}
 				return ClusterDeploymentProvider{
@@ -60,9 +64,9 @@ func GetClusterProvider(application argo.Application, log logr.Logger) ClusterPr
 			}
 		case v1alpha1.ClusterClaimGVK.Resource:
 			if obj.Group == v1alpha1.ClusterClaimGVK.Group {
-				log.Info("Cluster provider: ClusterClaim")
+				providerLog.Info("Cluster provider: ClusterClaim")
 				if obj.Version != v1alpha1.ClusterClaimGVK.Version {
-					log.Info("Unknown version: ", obj.Version)
+					providerLog.Info("Unknown version: ", obj.Version)
 					return nil
 				}
 				return ClusterClaimProvider{
@@ -72,7 +76,7 @@ func GetClusterProvider(application argo.Application, log logr.Logger) ClusterPr
 			}
 		}
 	}
-	log.Info("Cluster provider: Unknown")
+	providerLog.Info("Cluster provider: Unknown")
 	return nil
 }
 

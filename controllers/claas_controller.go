@@ -36,7 +36,7 @@ import (
 )
 
 var (
-	log                 = logf.Log.WithName("claas-controller")
+	CLaaSlog            = logf.Log.WithName("claas-controller")
 	ctiControllerCancel context.CancelFunc
 )
 
@@ -54,12 +54,10 @@ func (r *CLaaSReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
-	log := ctrl.LoggerFrom(ctx)
-
 	crd := &apiextensions.CustomResourceDefinition{}
 	if err := r.Get(ctx, req.NamespacedName, crd); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("crd not found", "name", req.NamespacedName)
+			CLaaSlog.Info("crd not found", "name", req.NamespacedName)
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
@@ -76,7 +74,7 @@ func (r *CLaaSReconciler) Reconcile(
 			Client: r.Manager.GetClient(),
 			Scheme: r.Manager.GetScheme(),
 		}).SetupWithManager(r.Manager); err != nil {
-			log.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
+			CLaaSlog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
 			os.Exit(1)
 		}
 	}
@@ -93,7 +91,7 @@ func (r *CLaaSReconciler) Reconcile(
 			Client: r.Manager.GetClient(),
 			Scheme: r.Manager.GetScheme(),
 		}).SetupWithManager(r.Manager); err != nil {
-			log.Error(err, "unable to create controller", "controller", "HelmRepo")
+			CLaaSlog.Error(err, "unable to create controller", "controller", "HelmRepo")
 			os.Exit(1)
 		}
 	}
@@ -114,7 +112,7 @@ func (r *CLaaSReconciler) SetupWithManager() error {
 			Client: r.Manager.GetClient(),
 			Scheme: r.Manager.GetScheme(),
 		}).SetupWithManager(r.Manager); err != nil {
-			log.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
+			CLaaSlog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
 			os.Exit(1)
 		}
 	}
@@ -124,7 +122,7 @@ func (r *CLaaSReconciler) SetupWithManager() error {
 			Client: r.Manager.GetClient(),
 			Scheme: r.Manager.GetScheme(),
 		}).SetupWithManager(r.Manager); err != nil {
-			log.Error(err, "unable to create controller", "controller", "HelmRepo")
+			CLaaSlog.Error(err, "unable to create controller", "controller", "HelmRepo")
 			os.Exit(1)
 		}
 	}
@@ -155,7 +153,7 @@ func isCRDAvailable(client client.Client, gvk schema.GroupVersionResource) bool 
 
 	found := err == nil
 	if !found {
-		log.Info(gvk.Resource + "CRD not found")
+		CLaaSlog.Info(gvk.Resource + "CRD not found")
 	}
 
 	return found

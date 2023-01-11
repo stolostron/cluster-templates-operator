@@ -165,10 +165,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	go func() {
-		setupLog.Info("starting helm repo bridge server")
-		bridge.RunServer(mgr.GetClient(), mgr.GetConfig(), tlsCertFile, tlsKeyFile)
-	}()
+	setupLog.Info("starting helm repo bridge server")
+	bridge.RunServer(mgr.GetConfig(), tlsCertFile, tlsKeyFile)
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

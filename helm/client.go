@@ -22,6 +22,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+const (
+	HelmSecretTLSClientKey  = "tlsClientCertKey"
+	HelmSecretTLSClientCert = "tlsClientCertData"
+	HelmSecretTLSInsecure   = "insecure"
+)
+
 func initSettings() *cli.EnvSettings {
 	conf := cli.New()
 	conf.RepositoryCache = "/tmp"
@@ -87,7 +93,7 @@ func GetRepoCM(
 	argoCDNamespace string,
 ) (*corev1.ConfigMap, error) {
 	cm := &corev1.ConfigMap{}
-	if err := k8sClient.Get(ctx, client.ObjectKey{Name: "argocd-tls-certs-cm", Namespace: argoCDNamespace}, cm); err != nil {
+	if err := k8sClient.Get(ctx, client.ObjectKey{Name: RepoCMName, Namespace: argoCDNamespace}, cm); err != nil {
 		if !apierrors.IsNotFound(err) {
 			return nil, err
 		}
@@ -145,15 +151,15 @@ func GetRepoHTTPClient(
 	tlsClientCertKey := []byte{}
 	insecure := false
 	if repoSecret != nil {
-		certData, certDataOk := repoSecret.Data["tlsClientCertData"]
+		certData, certDataOk := repoSecret.Data[HelmSecretTLSClientCert]
 		if certDataOk {
 			tlsClientCertData = certData
 		}
-		certKey, certKeyOk := repoSecret.Data["tlsClientCertKey"]
+		certKey, certKeyOk := repoSecret.Data[HelmSecretTLSClientKey]
 		if certKeyOk {
 			tlsClientCertKey = certKey
 		}
-		insecureStr, insecureOk := repoSecret.Data["insecure"]
+		insecureStr, insecureOk := repoSecret.Data[HelmSecretTLSInsecure]
 		if insecureOk && string(insecureStr) == "true" {
 			insecure = true
 		}
@@ -166,7 +172,7 @@ func GetRepoHTTPClient(
 	var rootCAs *x509.CertPool
 	if tlsCM != nil {
 		for key, cert := range tlsCM.Data {
-			if parsedUrl.Host == key {
+			if parsedUrl.Hostname() == key {
 				rootCAs = x509.NewCertPool()
 				rootCAs.AppendCertsFromPEM([]byte(cert))
 				break

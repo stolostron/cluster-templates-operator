@@ -39,8 +39,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		})
 
 		AfterEach(func() {
-			DeleteResource(cti)
-			DeleteResource(ct)
+			testutils.DeleteResource(ctx, cti, k8sClient)
+			testutils.DeleteResource(ctx, ct, k8sClient)
 		})
 
 		It("Should create default conditions", func() {
@@ -63,7 +63,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		})
 
 		AfterEach(func() {
-			DeleteResource(cti)
+			testutils.DeleteResource(ctx, cti, k8sClient)
 		})
 		It("Should have failed phase when ct does not exist", func() {
 			Eventually(func() bool {
@@ -96,8 +96,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		})
 
 		AfterEach(func() {
-			DeleteResource(cti)
-			DeleteResource(ct)
+			testutils.DeleteResource(ctx, cti, k8sClient)
+			testutils.DeleteResource(ctx, ct, k8sClient)
 		})
 
 		It("Should create cluster definition argo app", func() {
@@ -149,14 +149,14 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		})
 
 		AfterEach(func() {
-			DeleteResource(cti)
-			DeleteResource(ct)
+			testutils.DeleteResource(ctx, cti, k8sClient)
+			testutils.DeleteResource(ctx, ct, k8sClient)
 			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(app), app)).Should(Succeed())
 			app.Finalizers = []string{}
 			Expect(k8sClient.Update(ctx, app)).Should(Succeed())
-			EnsureResourceDoesNotExist(app)
+			testutils.EnsureResourceDoesNotExist(ctx, app, k8sClient)
 			for _, obj := range resourcesToDelete {
-				DeleteResource(obj)
+				testutils.DeleteResource(ctx, obj, k8sClient)
 			}
 		})
 

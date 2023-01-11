@@ -10,6 +10,7 @@ import (
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	testutils "github.com/stolostron/cluster-templates-operator/testutils"
 	helmserver "github.com/stolostron/cluster-templates-operator/testutils/helm"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -38,7 +39,7 @@ var _ = Describe("ClusterTemplate controller", func() {
 	})
 
 	AfterEach(func() {
-		DeleteResource(ct)
+		testutils.DeleteResource(ctx, ct, k8sClient)
 		server.Close()
 	})
 

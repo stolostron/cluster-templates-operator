@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	ctrl "sigs.k8s.io/controller-runtime"
 	kubeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -66,11 +65,10 @@ var _ = Describe("Test cluster providers", func() {
 	})
 
 	Context("Detect cluster provider", func() {
-		log := ctrl.LoggerFrom(ctx)
 		app := argo.Application{
 			Status: argo.ApplicationStatus{},
 		}
-		provider := GetClusterProvider(app, log)
+		provider := GetClusterProvider(app)
 		Expect(provider).Should(BeNil())
 
 		app = argo.Application{
@@ -86,7 +84,7 @@ var _ = Describe("Test cluster providers", func() {
 				},
 			},
 		}
-		provider = GetClusterProvider(app, log)
+		provider = GetClusterProvider(app)
 		expectedProvider := HostedClusterProvider{
 			HostedClusterName:      "foo",
 			HostedClusterNamespace: "bar",
@@ -107,7 +105,7 @@ var _ = Describe("Test cluster providers", func() {
 				},
 			},
 		}
-		provider = GetClusterProvider(app, log)
+		provider = GetClusterProvider(app)
 		Expect(provider).Should(BeNil())
 
 		app = argo.Application{
@@ -130,7 +128,7 @@ var _ = Describe("Test cluster providers", func() {
 				},
 			},
 		}
-		provider = GetClusterProvider(app, log)
+		provider = GetClusterProvider(app)
 		Expect(provider).Should(Equal(HostedClusterProvider{
 			HostedClusterName:      "foo",
 			HostedClusterNamespace: "bar",
@@ -150,7 +148,7 @@ var _ = Describe("Test cluster providers", func() {
 				},
 			},
 		}
-		provider = GetClusterProvider(app, log)
+		provider = GetClusterProvider(app)
 		Expect(provider).Should(Equal(ClusterDeploymentProvider{
 			ClusterDeploymentName:      "foo",
 			ClusterDeploymentNamespace: "bar",
@@ -169,7 +167,7 @@ var _ = Describe("Test cluster providers", func() {
 				},
 			},
 		}
-		provider = GetClusterProvider(app, log)
+		provider = GetClusterProvider(app)
 		Expect(provider).Should(BeNil())
 
 		app = argo.Application{
@@ -185,7 +183,7 @@ var _ = Describe("Test cluster providers", func() {
 				},
 			},
 		}
-		provider = GetClusterProvider(app, log)
+		provider = GetClusterProvider(app)
 		Expect(provider).Should(Equal(ClusterClaimProvider{
 			ClusterClaimName:      "foo",
 			ClusterClaimNamespace: "bar",
@@ -204,7 +202,7 @@ var _ = Describe("Test cluster providers", func() {
 				},
 			},
 		}
-		provider = GetClusterProvider(app, log)
+		provider = GetClusterProvider(app)
 		Expect(provider).Should(BeNil())
 	})
 
