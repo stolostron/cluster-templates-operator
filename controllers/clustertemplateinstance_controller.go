@@ -27,6 +27,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/argocd"
@@ -52,6 +53,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
+var (
+	CTIlog = logf.Log.WithName("cti-controller")
+)
+
 type ClusterTemplateInstanceReconciler struct {
 	client.Client
 	Scheme           *runtime.Scheme
@@ -72,11 +77,10 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
-	log := ctrl.LoggerFrom(ctx)
 	clusterTemplateInstance := &v1alpha1.ClusterTemplateInstance{}
 	if err := r.Get(ctx, req.NamespacedName, clusterTemplateInstance); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info(
+			CTIlog.Info(
 				"clustertemplateinstance not found, aborting reconcile",
 				"name",
 				req.NamespacedName,
@@ -92,7 +96,11 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 			v1alpha1.CTIFinalizer,
 		) {
 			if clusterTemplateInstance.Status.ClusterTemplateSpec != nil {
-				app, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client, ArgoCDNamespace)
+				app, err := clusterTemplateInstance.GetDay1Application(
+					ctx,
+					r.Client,
+					ArgoCDNamespace,
+				)
 				if err != nil {
 					if !apierrors.IsNotFound(err) {
 						return ctrl.Result{}, err
@@ -105,7 +113,11 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 					}
 				}
 
-				apps, err := clusterTemplateInstance.GetDay2Applications(ctx, r.Client, ArgoCDNamespace)
+				apps, err := clusterTemplateInstance.GetDay2Applications(
+					ctx,
+					r.Client,
+					ArgoCDNamespace,
+				)
 				if err != nil {
 					if !apierrors.IsNotFound(err) {
 						return ctrl.Result{}, err
@@ -282,8 +294,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 ) error {
-	log := ctrl.LoggerFrom(ctx)
-	log.Info(
+	CTIlog.Info(
 		"Reconcile instance status",
 		"name",
 		clusterTemplateInstance.Namespace+"/"+clusterTemplateInstance.Name,
@@ -296,7 +307,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 		return nil
 	}
 
-	log.Info(
+	CTIlog.Info(
 		"Fetch day1 argo application",
 		"name",
 		clusterTemplateInstance.Namespace+"/"+clusterTemplateInstance.Name,
@@ -352,11 +363,11 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallingPhase
 	clusterTemplateInstance.Status.Message = "Cluster is installing"
 	if _, ok := clusterTemplateInstance.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
-		log.Info("Experimental provider specified", "name", clusterTemplateInstance.Name)
+		CTIlog.Info("Experimental provider specified", "name", clusterTemplateInstance.Name)
 		return nil
 	}
 
-	provider := clusterprovider.GetClusterProvider(*application, log)
+	provider := clusterprovider.GetClusterProvider(*application)
 
 	if provider == nil {
 		msg := "Unknown cluster provider - only Hive and Hypershift clusters are recognized"
@@ -371,7 +382,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	}
 
 	ready, status, err := provider.GetClusterStatus(ctx, r.Client, *clusterTemplateInstance)
-	log.Info(
+	CTIlog.Info(
 		"Instance status - "+status,
 		"name",
 		clusterTemplateInstance.Namespace+"/"+clusterTemplateInstance.Name,
@@ -552,7 +563,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 ) error {
-	log := ctrl.LoggerFrom(ctx)
 
 	argoClusterAddedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
@@ -581,7 +591,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 		return nil
 	}
 
-	log.Info(
+	CTIlog.Info(
 		"Create cluster setup for clustertemplateinstance",
 		"name",
 		clusterTemplateInstance.Name,
@@ -610,7 +620,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 ) error {
-	log := ctrl.LoggerFrom(ctx)
 
 	clusterSetupCreatedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
@@ -639,7 +648,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 		return nil
 	}
 
-	log.Info(
+	CTIlog.Info(
 		"reconcile cluster setup for clustertemplateinstance",
 		"name",
 		clusterTemplateInstance.Name,
@@ -748,7 +757,7 @@ func StartCTIController(
 	})
 
 	if err != nil {
-		log.Error(err, "unable to create cti-controller")
+		CTIlog.Error(err, "unable to create cti-controller")
 		os.Exit(1)
 	}
 
@@ -766,7 +775,7 @@ func StartCTIController(
 		// Start our controller. This will block until the context is
 		// closed, or the controller returns an error.
 		if err := ctiController.Start(ctx); err != nil {
-			log.Error(err, "cannot run cti-controller")
+			CTIlog.Error(err, "cannot run cti-controller")
 		}
 	}()
 

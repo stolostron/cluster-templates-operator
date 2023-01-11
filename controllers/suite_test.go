@@ -29,8 +29,6 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -207,19 +205,3 @@ const (
 	duration = time.Second * 10
 	interval = time.Millisecond * 250
 )
-
-func EnsureResourceDoesNotExist(obj client.Object) {
-	Eventually(func() bool {
-		err := k8sClient.Get(
-			ctx,
-			types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()},
-			obj,
-		)
-		return apierrors.IsNotFound(err)
-	}, timeout, interval).Should(BeTrue())
-}
-
-func DeleteResource(obj client.Object) {
-	Expect(k8sClient.Delete(ctx, obj)).Should(Succeed())
-	EnsureResourceDoesNotExist(obj)
-}

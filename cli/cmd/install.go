@@ -14,6 +14,7 @@ import (
 	res "github.com/stolostron/cluster-templates-operator/cli/installresources"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	addonapi "open-cluster-management.io/api/addon/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -263,6 +264,20 @@ func (i *InstallOperatorOptions) createMCEcr(ctx context.Context) error {
 }
 
 func (i *InstallOperatorOptions) createHypershiftAddon(ctx context.Context) error {
+	// wait for local-cluster ns
+	// TODO add spinner
+	for {
+		ns := &corev1.Namespace{
+			ObjectMeta: v1.ObjectMeta{
+				Name: res.MceHypershiftAddon.Namespace,
+			},
+		}
+		if err := i.K8sClient.Get(ctx, client.ObjectKeyFromObject(ns), ns); err == nil {
+			break
+		}
+		time.Sleep(5 * time.Second)
+	}
+
 	if err := i.createResource(ctx, res.MceHypershiftAddon); err != nil {
 		return err
 	}

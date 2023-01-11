@@ -2,7 +2,9 @@ package helm
 
 import (
 	"crypto/tls"
+	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -43,13 +45,38 @@ func StartHelmRepoServer() *httptest.Server {
 	return server
 }
 
-func StartHttpsHelmRepoServer() *httptest.Server {
+func StartTLSHelmRepoServer() *httptest.Server {
 	server := httptest.NewUnstartedServer(http.HandlerFunc(handlerFunc))
 	cert, err := tls.LoadX509KeyPair("../testutils/helm/server.crt", "../testutils/helm/server.key")
 	if err != nil {
 		Fail(err.Error())
 	}
 	server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+	server.StartTLS()
+	return server
+}
+
+func StartMTLSHelmRepoServer() *httptest.Server {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(handlerFunc))
+	serverCert, err := tls.LoadX509KeyPair(
+		"../testutils/helm/server.crt",
+		"../testutils/helm/server.key",
+	)
+	if err != nil {
+		Fail(err.Error())
+	}
+	caCert, err := ioutil.ReadFile("../testutils/helm/ca.crt")
+	if err != nil {
+		Fail(err.Error())
+	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+
+	server.TLS = &tls.Config{
+		Certificates: []tls.Certificate{serverCert},
+		ClientAuth:   tls.RequireAndVerifyClientCert,
+		ClientCAs:    caCertPool,
+	}
 	server.StartTLS()
 	return server
 }

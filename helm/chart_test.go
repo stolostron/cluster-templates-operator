@@ -29,7 +29,7 @@ var _ = Describe("Helm client", func() {
 	var httpsServer *httptest.Server
 	BeforeEach(func() {
 		server = helmserver.StartHelmRepoServer()
-		httpsServer = helmserver.StartHttpsHelmRepoServer()
+		httpsServer = helmserver.StartTLSHelmRepoServer()
 	})
 	AfterEach(func() {
 		server.Close()
@@ -134,17 +134,17 @@ var _ = Describe("Helm client", func() {
 			Fail(err.Error())
 		}
 
-		data, err := os.ReadFile("../testutils/helm/server.crt")
+		data, err := os.ReadFile("../testutils/helm/ca.crt")
 		if err != nil {
 			Fail(err.Error())
 		}
 		cm := &corev1.ConfigMap{
 			ObjectMeta: v1.ObjectMeta{
-				Name:      "argocd-tls-certs-cm",
+				Name:      RepoCMName,
 				Namespace: "argocd",
 			},
 			Data: map[string]string{
-				parsedUrl.Host: string(data),
+				parsedUrl.Hostname(): string(data),
 			},
 		}
 

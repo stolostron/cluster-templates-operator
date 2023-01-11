@@ -1,20 +1,29 @@
 package testutils
 
 import (
+	"context"
 	"encoding/json"
 	"io/ioutil"
+	"time"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	. "github.com/onsi/gomega"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	ctiName = "mycluster"
-	ctiNs   = "default"
-	ctName  = "mytemplate"
+	ctiName  = "mycluster"
+	ctiNs    = "default"
+	ctName   = "mytemplate"
+	timeout  = time.Second * 10
+	duration = time.Second * 10
+	interval = time.Millisecond * 250
 )
 
 func GetCTI() *v1alpha1.ClusterTemplateInstance {
@@ -157,4 +166,20 @@ func SetHostedClusterReady(
 		"foo": "bar",
 	}
 	return hostedCluster
+}
+
+func EnsureResourceDoesNotExist(ctx context.Context, obj client.Object, k8sClient client.Client) {
+	Eventually(func() bool {
+		err := k8sClient.Get(
+			ctx,
+			types.NamespacedName{Name: obj.GetName(), Namespace: obj.GetNamespace()},
+			obj,
+		)
+		return apierrors.IsNotFound(err)
+	}, timeout, interval).Should(BeTrue())
+}
+
+func DeleteResource(ctx context.Context, obj client.Object, k8sClient client.Client) {
+	Expect(k8sClient.Delete(ctx, obj)).Should(Succeed())
+	EnsureResourceDoesNotExist(ctx, obj, k8sClient)
 }
