@@ -43,9 +43,9 @@ var (
 type CLaaSReconciler struct {
 	Manager ctrl.Manager
 	client.Client
-	enableHypershift bool
-	enableHive       bool
-	enableHelmRepo   bool
+	enableHypershift    bool
+	enableHive          bool
+	enableConsolePlugin bool
 }
 
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
@@ -85,15 +85,23 @@ func (r *CLaaSReconciler) Reconcile(
 		ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
 	}
 
-	if !r.enableHelmRepo && isCRDSupported(crd, v1alpha1.HelmRepoGVK) {
-		r.enableHelmRepo = true
-		if err := (&defaultresources.HelmRepoReconciler{
-			Client: r.Manager.GetClient(),
-			Scheme: r.Manager.GetScheme(),
-		}).SetupWithManager(r.Manager); err != nil {
-			CLaaSlog.Error(err, "unable to create controller", "controller", "HelmRepo")
-			os.Exit(1)
-		}
+	if !r.enableHive && isCRDSupported(crd, v1alpha1.ClusterDeploymentGVK) {
+		r.enableHive = true
+		ctiControllerCancel()
+		ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
+	}
+
+	if !r.enableConsolePlugin && isCRDSupported(crd, v1alpha1.ConsolePluginGVK) {
+		r.enableConsolePlugin = true
+		/*
+			if err := (&ConsolePluginReconciler{
+				Client: r.Manager.GetClient(),
+				Scheme: r.Manager.GetScheme(),
+			}).SetupWithManager(r.Manager); err != nil {
+				CLaaSlog.Error(err, "unable to create controller", "controller", "ConsolePlugin")
+				os.Exit(1)
+			}
+		*/
 	}
 
 	return ctrl.Result{}, nil
@@ -101,31 +109,35 @@ func (r *CLaaSReconciler) Reconcile(
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *CLaaSReconciler) SetupWithManager() error {
-	r.enableHypershift = isCRDAvailable(r.Manager.GetClient(), v1alpha1.HostedClusterGVK)
-	r.enableHive = isCRDAvailable(r.Manager.GetClient(), v1alpha1.ClusterDeploymentGVK)
-	r.enableHelmRepo = isCRDAvailable(r.Manager.GetClient(), v1alpha1.HelmRepoGVK)
+	client := r.Manager.GetClient()
+	scheme := r.Manager.GetScheme()
+	r.enableHypershift = isCRDAvailable(client, v1alpha1.HostedClusterGVK)
+	r.enableHive = isCRDAvailable(client, v1alpha1.ClusterDeploymentGVK)
+	r.enableConsolePlugin = isCRDAvailable(client, v1alpha1.ConsolePluginGVK)
 
 	ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
 
 	if r.enableHypershift {
 		if err := (&defaultresources.HypershiftTemplateReconciler{
-			Client: r.Manager.GetClient(),
-			Scheme: r.Manager.GetScheme(),
+			Client: client,
+			Scheme: scheme,
 		}).SetupWithManager(r.Manager); err != nil {
 			CLaaSlog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
 			os.Exit(1)
 		}
 	}
 
-	if r.enableHelmRepo {
-		if err := (&defaultresources.HelmRepoReconciler{
-			Client: r.Manager.GetClient(),
-			Scheme: r.Manager.GetScheme(),
-		}).SetupWithManager(r.Manager); err != nil {
-			CLaaSlog.Error(err, "unable to create controller", "controller", "HelmRepo")
-			os.Exit(1)
+	/*
+		if r.enableConsolePlugin {
+			if err := (&ConsolePluginReconciler{
+				Client: client,
+				Scheme: scheme,
+			}).SetupWithManager(r.Manager); err != nil {
+				CLaaSlog.Error(err, "unable to create controller", "controller", "ConsolePlugin")
+				os.Exit(1)
+			}
 		}
-	}
+	*/
 
 	return ctrl.NewControllerManagedBy(r.Manager).
 		For(&apiextensions.CustomResourceDefinition{}).

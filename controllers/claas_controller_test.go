@@ -36,7 +36,7 @@ var _ = Describe("CLaaS controller", func() {
 		startTestEnv([]string{})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
-		Expect(claasReconciler.enableHelmRepo).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
 	It("CLaaS reconciler start - detects hive", func() {
@@ -45,7 +45,7 @@ var _ = Describe("CLaaS controller", func() {
 		})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeTrue())
-		Expect(claasReconciler.enableHelmRepo).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
 	It("CLaaS reconciler start - detects hypershift", func() {
@@ -54,23 +54,23 @@ var _ = Describe("CLaaS controller", func() {
 		})
 		Expect(claasReconciler.enableHypershift).Should(BeTrue())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
-		Expect(claasReconciler.enableHelmRepo).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
-	It("CLaaS reconciler start - detects helm", func() {
+	It("CLaaS reconciler start - detects console plugin", func() {
 		startTestEnv([]string{
-			filepath.Join("..", "testutils", "testcrds", "optional", "helm"),
+			filepath.Join("..", "testutils", "testcrds", "optional", "console"),
 		})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
-		Expect(claasReconciler.enableHelmRepo).Should(BeTrue())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeTrue())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
 	It("enables hypershift dynamically", func() {
 		startTestEnv([]string{})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
-		Expect(claasReconciler.enableHelmRepo).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 
 		err := claasK8sClient.Create(claasCtx, &apiextensions.CustomResourceDefinition{
@@ -103,13 +103,13 @@ var _ = Describe("CLaaS controller", func() {
 			return claasReconciler.enableHypershift
 		}, timeout, interval).Should(BeTrue())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
-		Expect(claasReconciler.enableHelmRepo).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 	})
 	It("enables hive dynamically", func() {
 		startTestEnv([]string{})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
-		Expect(claasReconciler.enableHelmRepo).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 
 		err := claasK8sClient.Create(claasCtx, &apiextensions.CustomResourceDefinition{
@@ -142,24 +142,24 @@ var _ = Describe("CLaaS controller", func() {
 			return claasReconciler.enableHive
 		}, timeout, interval).Should(BeTrue())
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
-		Expect(claasReconciler.enableHelmRepo).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 	})
-	It("enables helm dynamically", func() {
+	It("enables console plugin dynamically", func() {
 		startTestEnv([]string{})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
-		Expect(claasReconciler.enableHelmRepo).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 
 		err := claasK8sClient.Create(claasCtx, &apiextensions.CustomResourceDefinition{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "helmchartrepositories.helm.openshift.io",
+				Name: "consoleplugins.console.openshift.io",
 			},
 			Spec: apiextensions.CustomResourceDefinitionSpec{
 				Scope: apiextensions.NamespaceScoped,
-				Group: v1alpha1.HelmRepoGVK.Group,
+				Group: v1alpha1.ConsolePluginGVK.Group,
 				Versions: []apiextensions.CustomResourceDefinitionVersion{
 					{
-						Name:    v1alpha1.HelmRepoGVK.Version,
+						Name:    v1alpha1.ConsolePluginGVK.Version,
 						Storage: true,
 						Schema: &apiextensions.CustomResourceValidation{
 							OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
@@ -169,15 +169,15 @@ var _ = Describe("CLaaS controller", func() {
 					},
 				},
 				Names: apiextensions.CustomResourceDefinitionNames{
-					Kind:   v1alpha1.HelmRepoGVK.Resource,
-					Plural: "helmchartrepositories",
+					Kind:   v1alpha1.ConsolePluginGVK.Resource,
+					Plural: "consoleplugins",
 				},
 			},
 		})
 		Expect(err).Should(BeNil())
 
 		Eventually(func() bool {
-			return claasReconciler.enableHelmRepo
+			return claasReconciler.enableConsolePlugin
 		}, timeout, interval).Should(BeTrue())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())

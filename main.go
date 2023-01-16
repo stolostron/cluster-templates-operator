@@ -32,6 +32,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	console "github.com/openshift/api/console/v1alpha1"
 	openshiftAPI "github.com/openshift/api/helm/v1beta1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
@@ -56,6 +57,7 @@ func init() {
 	utilruntime.Must(hivev1.AddToScheme(scheme))
 	utilruntime.Must(openshiftAPI.AddToScheme(scheme))
 	utilruntime.Must(apiextensions.AddToScheme(scheme))
+	utilruntime.Must(console.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

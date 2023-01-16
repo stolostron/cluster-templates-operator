@@ -76,7 +76,7 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "..", "testutils", "testcrds", "required"),
 			filepath.Join("..", "..", "testutils", "testcrds", "optional", "hypershift"),
 			filepath.Join("..", "..", "testutils", "testcrds", "optional", "hive"),
-			filepath.Join("..", "..", "testutils", "testcrds", "optional", "helm"),
+			filepath.Join("..", "..", "testutils", "testcrds", "optional", "console"),
 		},
 		ErrorIfCRDPathMissing: true,
 	}

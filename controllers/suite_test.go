@@ -39,10 +39,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	console "github.com/openshift/api/console/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/helm"
+	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -76,7 +80,7 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "testutils", "testcrds", "required"),
 			filepath.Join("..", "testutils", "testcrds", "optional", "hypershift"),
 			filepath.Join("..", "testutils", "testcrds", "optional", "hive"),
-			filepath.Join("..", "testutils", "testcrds", "optional", "helm"),
+			filepath.Join("..", "testutils", "testcrds", "optional", "console"),
 		},
 		ErrorIfCRDPathMissing: true,
 	}
@@ -95,6 +99,12 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	err = argo.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
+	err = console.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = v1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = appsv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -109,6 +119,14 @@ var _ = BeforeSuite(func() {
 
 	controllerCancel = StartCTIController(k8sManager, true, false)
 
+	claasNs := &v1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: pluginNamespace,
+		},
+	}
+	err = k8sManager.GetClient().Create(ctx, claasNs)
+	Expect(err).ToNot(HaveOccurred())
+
 	err = (&ClusterTemplateQuotaReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
@@ -119,6 +137,12 @@ var _ = BeforeSuite(func() {
 		Client:     k8sManager.GetClient(),
 		Scheme:     k8sManager.GetScheme(),
 		HelmClient: CreateHelmClient(k8sManager, cfg),
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
+	err = (&ConsolePluginReconciler{
+		Client: k8sManager.GetClient(),
+		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
