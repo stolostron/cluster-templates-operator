@@ -93,15 +93,13 @@ func (r *CLaaSReconciler) Reconcile(
 
 	if !r.enableConsolePlugin && isCRDSupported(crd, v1alpha1.ConsolePluginGVK) {
 		r.enableConsolePlugin = true
-		/*
-			if err := (&ConsolePluginReconciler{
-				Client: r.Manager.GetClient(),
-				Scheme: r.Manager.GetScheme(),
-			}).SetupWithManager(r.Manager); err != nil {
-				CLaaSlog.Error(err, "unable to create controller", "controller", "ConsolePlugin")
-				os.Exit(1)
-			}
-		*/
+		if err := (&ConsolePluginReconciler{
+			Client: r.Manager.GetClient(),
+			Scheme: r.Manager.GetScheme(),
+		}).SetupWithManager(r.Manager); err != nil {
+			CLaaSlog.Error(err, "unable to create controller", "controller", "ConsolePlugin")
+			os.Exit(1)
+		}
 	}
 
 	return ctrl.Result{}, nil
@@ -127,17 +125,15 @@ func (r *CLaaSReconciler) SetupWithManager() error {
 		}
 	}
 
-	/*
-		if r.enableConsolePlugin {
-			if err := (&ConsolePluginReconciler{
-				Client: client,
-				Scheme: scheme,
-			}).SetupWithManager(r.Manager); err != nil {
-				CLaaSlog.Error(err, "unable to create controller", "controller", "ConsolePlugin")
-				os.Exit(1)
-			}
+	if r.enableConsolePlugin {
+		if err := (&ConsolePluginReconciler{
+			Client: client,
+			Scheme: scheme,
+		}).SetupWithManager(r.Manager); err != nil {
+			CLaaSlog.Error(err, "unable to create controller", "controller", "ConsolePlugin")
+			os.Exit(1)
 		}
-	*/
+	}
 
 	return ctrl.NewControllerManagedBy(r.Manager).
 		For(&apiextensions.CustomResourceDefinition{}).
