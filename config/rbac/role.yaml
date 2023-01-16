@@ -16,6 +16,17 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - configmaps
+  - services
+  verbs:
+  - create
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - create
@@ -31,6 +42,16 @@ rules:
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - get
+  - list
+  - update
   - watch
 - apiGroups:
   - argoproj.io
@@ -101,9 +122,9 @@ rules:
   - patch
   - update
 - apiGroups:
-  - helm.openshift.io
+  - console.openshift.io
   resources:
-  - helmchartrepositories
+  - consoleplugins
   verbs:
   - create
   - get

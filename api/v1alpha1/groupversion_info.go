@@ -60,9 +60,9 @@ var (
 		Version:  "v1",
 	}
 
-	HelmRepoGVK = schema.GroupVersionResource{
-		Group:    "helm.openshift.io",
-		Resource: "HelmChartRepository",
-		Version:  "v1beta1",
+	ConsolePluginGVK = schema.GroupVersionResource{
+		Group:    "console.openshift.io",
+		Resource: "ConsolePlugin",
+		Version:  "v1alpha1",
 	}
 )
