@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,7 +34,6 @@ type ConsolePluginReconciler struct {
 const (
 	pluginResourceName = "claas-console-plugin"
 	pluginNamespace    = "cluster-aas-operator"
-	containerImg       = "quay.io/stolostron/cluster-templates-console-plugin:latest"
 )
 
 var (
@@ -59,7 +59,7 @@ func getConsolePlugin() *console.ConsolePlugin {
 	}
 }
 
-func getPluginDeployment() *appsv1.Deployment {
+func GetPluginDeployment() *appsv1.Deployment {
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      pluginResourceName,
@@ -77,7 +77,7 @@ func getPluginDeployment() *appsv1.Deployment {
 					Containers: []v1.Container{
 						{
 							Name:  pluginResourceName,
-							Image: containerImg,
+							Image: UIImage,
 							Ports: []v1.ContainerPort{
 								{
 									ContainerPort: 9443,
@@ -223,11 +223,12 @@ func (r *ConsolePluginReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&appsv1.Deployment{}, builder.WithPredicates(predicate.NewPredicateFuncs(r.selectPluginDeployment))).
 		Watches(&source.Channel{Source: initialSync}, &handler.EnqueueRequestForObject{}).
+		Watches(&source.Channel{Source: EnableUIconfigSync}, &handler.EnqueueRequestForObject{}).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to construct controller: %w", err)
 	}
 	go func() {
-		initialSync <- event.GenericEvent{Object: getPluginDeployment()}
+		initialSync <- event.GenericEvent{Object: GetPluginDeployment()}
 	}()
 	return nil
 }
@@ -240,63 +241,82 @@ func (r *ConsolePluginReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
-	pluginCM := getPluginCM()
-	cm := &v1.ConfigMap{
-		ObjectMeta: pluginCM.ObjectMeta,
-	}
-	_, err := applicationset.CreateOrUpdate(ctx, r.Client, cm, func() error {
-		if !reflect.DeepEqual(cm.Data, pluginCM.Data) {
-			cm.Data = pluginCM.Data
+	if EnableUI == "true" {
+		pluginCM := getPluginCM()
+		cm := &v1.ConfigMap{
+			ObjectMeta: pluginCM.ObjectMeta,
 		}
-		return nil
-	})
-	if err != nil {
-		return reconcile.Result{}, err
+		_, err := applicationset.CreateOrUpdate(ctx, r.Client, cm, func() error {
+			if !reflect.DeepEqual(cm.Data, pluginCM.Data) {
+				cm.Data = pluginCM.Data
+			}
+			return nil
+		})
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		pluginService := getPluginService()
+		service := &v1.Service{
+			ObjectMeta: pluginService.ObjectMeta,
+		}
+		_, err = applicationset.CreateOrUpdate(ctx, r.Client, service, func() error {
+			if !reflect.DeepEqual(service.Spec, pluginService.Spec) {
+				service.Spec = pluginService.Spec
+			}
+			return nil
+		})
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		pluginDeployment := GetPluginDeployment()
+		deployment := &appsv1.Deployment{
+			ObjectMeta: pluginDeployment.ObjectMeta,
+		}
+		_, err = applicationset.CreateOrUpdate(ctx, r.Client, deployment, func() error {
+			if !reflect.DeepEqual(deployment.Spec, pluginDeployment.Spec) {
+				deployment.Spec = pluginDeployment.Spec
+			}
+			return nil
+		})
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+
+		pluginConsole := getConsolePlugin()
+		console := &console.ConsolePlugin{
+			ObjectMeta: pluginConsole.ObjectMeta,
+		}
+		_, err = applicationset.CreateOrUpdate(ctx, r.Client, console, func() error {
+			if !reflect.DeepEqual(deployment.Spec, pluginConsole.Spec) {
+				console.Spec = pluginConsole.Spec
+			}
+			return nil
+		})
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+	} else {
+		objects := []client.Object{
+			getConsolePlugin(),
+			GetPluginDeployment(),
+			getPluginService(),
+			getPluginCM(),
+		}
+		for _, obj := range objects {
+			if err := r.Client.Delete(ctx, obj); err != nil {
+				if !apierrors.IsNotFound(err) {
+					return reconcile.Result{}, err
+				}
+			}
+		}
 	}
 
-	pluginService := getPluginService()
-	service := &v1.Service{
-		ObjectMeta: pluginService.ObjectMeta,
-	}
-	_, err = applicationset.CreateOrUpdate(ctx, r.Client, service, func() error {
-		if !reflect.DeepEqual(service.Spec, pluginService.Spec) {
-			service.Spec = pluginService.Spec
-		}
-		return nil
-	})
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	pluginDeployment := getPluginDeployment()
-	deployment := &appsv1.Deployment{
-		ObjectMeta: pluginDeployment.ObjectMeta,
-	}
-	_, err = applicationset.CreateOrUpdate(ctx, r.Client, deployment, func() error {
-		if !reflect.DeepEqual(deployment.Spec, pluginDeployment.Spec) {
-			deployment.Spec = pluginDeployment.Spec
-		}
-		return nil
-	})
-	if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	pluginConsole := getConsolePlugin()
-	console := &console.ConsolePlugin{
-		ObjectMeta: pluginConsole.ObjectMeta,
-	}
-	_, err = applicationset.CreateOrUpdate(ctx, r.Client, console, func() error {
-		if !reflect.DeepEqual(deployment.Spec, pluginConsole.Spec) {
-			console.Spec = pluginConsole.Spec
-		}
-		return nil
-	})
-
-	return reconcile.Result{}, err
+	return reconcile.Result{}, nil
 }
 
 func (r *ConsolePluginReconciler) selectPluginDeployment(obj client.Object) bool {
-	deployment := getPluginDeployment()
+	deployment := GetPluginDeployment()
 	return obj.GetName() == deployment.Name && obj.GetNamespace() == deployment.Namespace
 }

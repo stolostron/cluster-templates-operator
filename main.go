@@ -141,7 +141,15 @@ func main() {
 		Client:  mgr.GetClient(),
 		Manager: mgr,
 	}).SetupWithManager(); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplate")
+		setupLog.Error(err, "unable to create controller", "controller", "CLaaS")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.ConfigReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "CLaaS Config")
 		os.Exit(1)
 	}
 
