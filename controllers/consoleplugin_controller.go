@@ -55,6 +55,18 @@ func getConsolePlugin() *console.ConsolePlugin {
 				Namespace: pluginNamespace,
 				Port:      9443,
 			},
+			Proxy: []console.ConsolePluginProxy{
+				{
+					Type:      "Service",
+					Alias:     "repositories",
+					Authorize: true,
+					Service: console.ConsolePluginProxyServiceConfig{
+						Name:      "cluster-aas-operator-repo-bridge-service",
+						Namespace: pluginNamespace,
+						Port:      8001,
+					},
+				},
+			},
 		},
 	}
 }
