@@ -72,7 +72,8 @@ var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 
 type HypershiftTemplateReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme                 *runtime.Scheme
+	CreateDefaultTemplates bool
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -86,11 +87,13 @@ func (r *HypershiftTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error 
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to construct controller: %w", err)
 	}
-	go func() {
-		for template := range defaultTemplates {
-			initialSync <- event.GenericEvent{Object: defaultTemplates[template]}
-		}
-	}()
+	if r.CreateDefaultTemplates {
+		go func() {
+			for template := range defaultTemplates {
+				initialSync <- event.GenericEvent{Object: defaultTemplates[template]}
+			}
+		}()
+	}
 	return nil
 }
 

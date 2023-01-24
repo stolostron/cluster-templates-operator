@@ -43,9 +43,10 @@ var (
 type CLaaSReconciler struct {
 	Manager ctrl.Manager
 	client.Client
-	enableHypershift    bool
-	enableHive          bool
-	enableConsolePlugin bool
+	enableHypershift       bool
+	enableHive             bool
+	enableConsolePlugin    bool
+	CreateDefaultTemplates bool
 }
 
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
@@ -71,8 +72,9 @@ func (r *CLaaSReconciler) Reconcile(
 		ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
 
 		if err := (&defaultresources.HypershiftTemplateReconciler{
-			Client: r.Manager.GetClient(),
-			Scheme: r.Manager.GetScheme(),
+			Client:                 r.Manager.GetClient(),
+			Scheme:                 r.Manager.GetScheme(),
+			CreateDefaultTemplates: r.CreateDefaultTemplates,
 		}).SetupWithManager(r.Manager); err != nil {
 			CLaaSlog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
 			os.Exit(1)
@@ -117,8 +119,9 @@ func (r *CLaaSReconciler) SetupWithManager() error {
 
 	if r.enableHypershift {
 		if err := (&defaultresources.HypershiftTemplateReconciler{
-			Client: client,
-			Scheme: scheme,
+			Client:                 client,
+			Scheme:                 scheme,
+			CreateDefaultTemplates: r.CreateDefaultTemplates,
 		}).SetupWithManager(r.Manager); err != nil {
 			CLaaSlog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
 			os.Exit(1)

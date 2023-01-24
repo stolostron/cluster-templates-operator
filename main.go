@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"strconv"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -138,8 +139,9 @@ func main() {
 	}
 
 	if err = (&controllers.CLaaSReconciler{
-		Client:  mgr.GetClient(),
-		Manager: mgr,
+		Client:                 mgr.GetClient(),
+		Manager:                mgr,
+		CreateDefaultTemplates: getBoolEnv("CREATE_DEFAULT_TEMPLATES", true),
 	}).SetupWithManager(); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CLaaS")
 		os.Exit(1)
@@ -183,4 +185,15 @@ func main() {
 		setupLog.Error(err, "problem running manager")
 		os.Exit(1)
 	}
+}
+
+func getBoolEnv(envName string, defaultVal bool) bool {
+	var err error
+	boolVal := defaultVal
+	if envValue, present := os.LookupEnv(envName); present {
+		if boolVal, err = strconv.ParseBool(envValue); err != nil {
+			return boolVal
+		}
+	}
+	return boolVal
 }
