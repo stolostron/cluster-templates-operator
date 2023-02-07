@@ -4,9 +4,11 @@ import (
 	"context"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	"github.com/hashicorp/go-multierror"
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/helm"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -33,7 +35,7 @@ func (r *ClusterTemplateReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
-
+	var errors *multierror.Error
 	clusterTemplate := &v1alpha1.ClusterTemplate{}
 	err := r.Get(ctx, req.NamespacedName, clusterTemplate)
 	if err != nil {
@@ -44,11 +46,14 @@ func (r *ClusterTemplateReconciler) Reconcile(
 		ctx,
 		clusterTemplate.Spec.ClusterDefinition,
 	)
-	if err != nil {
-		return ctrl.Result{}, err
+	if err == nil {
+		clusterTemplate.Status.ClusterDefinition.Values = cdValues
+		clusterTemplate.Status.ClusterDefinition.Schema = cdSchema
+		clusterTemplate.Status.ClusterDefinition.Error = nil
+	} else {
+		errors = multierror.Append(errors, err)
+		clusterTemplate.Status.ClusterDefinition.Error = pointer.String(err.Error())
 	}
-	clusterTemplate.Status.ClusterDefinition.Values = cdValues
-	clusterTemplate.Status.ClusterDefinition.Schema = cdSchema
 
 	clusterSetupStatus := []v1alpha1.ClusterSetupSchema{}
 	for _, setup := range clusterTemplate.Spec.ClusterSetup {
@@ -56,21 +61,23 @@ func (r *ClusterTemplateReconciler) Reconcile(
 			ctx,
 			setup.Spec,
 		)
+		css := v1alpha1.ClusterSetupSchema{}
 		if err != nil {
-			return ctrl.Result{}, err
+			errors = multierror.Append(errors, err)
+			css.Error = pointer.String(err.Error())
+		} else {
+			css.Name = setup.Name
+			css.Values = values
+			css.Schema = schema
+			css.Error = nil
 		}
-		if values != "" || schema != "" {
-			clusterSetupStatus = append(clusterSetupStatus, v1alpha1.ClusterSetupSchema{
-				Name:   setup.Name,
-				Values: values,
-				Schema: schema,
-			})
-		}
+		clusterSetupStatus = append(clusterSetupStatus, css)
 	}
 	clusterTemplate.Status.ClusterSetup = clusterSetupStatus
 
 	err = r.Client.Status().Update(ctx, clusterTemplate)
-	return ctrl.Result{}, err
+	errors = multierror.Append(errors, err)
+	return ctrl.Result{}, errors.ErrorOrNil()
 }
 
 // SetupWithManager sets up the controller with the Manager.

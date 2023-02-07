@@ -50,6 +50,9 @@ type ClusterDefinitionSchema struct {
 	Values string `json:"values,omitempty"`
 	// Content of helm chart values.schema.json
 	Schema string `json:"schema,omitempty"`
+	// Contain information about failure during fetching helm chart
+	// +optional
+	Error *string `json:"error,omitempty"`
 }
 
 type ClusterSetupSchema struct {
@@ -59,6 +62,9 @@ type ClusterSetupSchema struct {
 	Values string `json:"values,omitempty"`
 	// Content of helm chart values.schema.json
 	Schema string `json:"schema,omitempty"`
+	// Contain information about failure during fetching helm chart
+	// +optional
+	Error *string `json:"error,omitempty"`
 }
 
 // ClusterTemplateStatus defines the observed state of ClusterTemplate

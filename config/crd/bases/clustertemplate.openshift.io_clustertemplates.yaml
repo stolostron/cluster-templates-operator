@@ -848,6 +848,10 @@ spec:
               clusterDefinition:
                 description: Describes helm chart properties and their schema
                 properties:
+                  error:
+                    description: Contain information about failure during fetching
+                      helm chart
+                    type: string
                   schema:
                     description: Content of helm chart values.schema.json
                     type: string
@@ -860,6 +864,10 @@ spec:
                   cluster setup step
                 items:
                   properties:
+                    error:
+                      description: Contain information about failure during fetching
+                        helm chart
+                      type: string
                     name:
                       description: Name of the cluster setup step
                       type: string

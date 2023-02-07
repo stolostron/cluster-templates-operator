@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http/httptest"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -117,6 +118,45 @@ var _ = Describe("ClusterTemplate controller", func() {
 
 			return len(foundCT.Status.ClusterDefinition.Values) > 0 &&
 				len(foundCT.Status.ClusterDefinition.Schema) > 0
+		}, timeout, interval).Should(BeTrue())
+	})
+
+	It("Should set error for ClusterDefinition in case of invalid port", func() {
+		ct.Spec.ClusterDefinition.Source.Chart = "hypershift-template"
+		ct.Spec.ClusterDefinition.Source.RepoURL = server.URL + "NONEXISTING"
+		ct.Spec.ClusterDefinition.Source.TargetRevision = "0.0.2"
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
+
+		Eventually(func() bool {
+			foundCT := &v1alpha1.ClusterTemplate{}
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(ct), foundCT)
+			if err != nil {
+				return false
+			}
+
+			if foundCT.Status.ClusterDefinition.Error != nil {
+				return strings.Contains(*foundCT.Status.ClusterDefinition.Error, "invalid port")
+			}
+			return false
+		}, timeout, interval).Should(BeTrue())
+	})
+
+	It("Should set error for ClusterSetup in case of invalid port", func() {
+		ct.Spec.ClusterSetup = []v1alpha1.ClusterSetup{{}}
+		ct.Spec.ClusterSetup[0].Spec.Source.Chart = "hypershift-template"
+		ct.Spec.ClusterSetup[0].Spec.Source.RepoURL = server.URL + "NONEXISTING"
+		ct.Spec.ClusterSetup[0].Spec.Source.TargetRevision = "0.0.2"
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
+
+		Eventually(func() bool {
+			foundCT := &v1alpha1.ClusterTemplate{}
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(ct), foundCT)
+			if err != nil {
+				return false
+			}
+
+			return len(foundCT.Status.ClusterSetup) > 0 &&
+				strings.Contains(*foundCT.Status.ClusterSetup[0].Error, "invalid port")
 		}, timeout, interval).Should(BeTrue())
 	})
 
