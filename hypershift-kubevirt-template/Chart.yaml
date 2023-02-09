@@ -4,4 +4,4 @@ description: A Helm chart which installs Hypershift cluster using KubeVirt platf
 annotations:
   cluster-template: true
 type: application
-version: 0.0.1
+version: 0.0.2
