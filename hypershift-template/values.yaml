@@ -10,6 +10,8 @@ ocpArch: x86_64
 
 #API publishing stategy that should be used
 APIPublishingStrategy: LoadBalancer
+# APIPublishingStrategy: NodePort
+# NodePortAddress: myinstance.sampletemplateinstance.com
 
 #Base DNS domain of the cluster
 baseDnsDomain: sampletemplateinstance.com

@@ -19,6 +19,9 @@
       },
       "ocpVersion": {
         "type": "string"
+      },
+      "NodePortAddress": {
+        "type": "string"
       }
     }
   }
