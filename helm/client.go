@@ -25,6 +25,8 @@ import (
 const (
 	HelmSecretTLSClientKey  = "tlsClientCertKey"
 	HelmSecretTLSClientCert = "tlsClientCertData"
+	HelmSecretUsername      = "username"
+	HelmSecretPassword      = "password"
 	HelmSecretTLSInsecure   = "insecure"
 )
 
@@ -32,6 +34,36 @@ func initSettings() *cli.EnvSettings {
 	conf := cli.New()
 	conf.RepositoryCache = "/tmp"
 	return conf
+}
+
+type HttpClient struct {
+	secret *corev1.Secret
+	client *http.Client
+}
+
+func (c *HttpClient) Get(url string) (resp *http.Response, err error) {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var username []byte
+	var password []byte
+	if c.secret != nil {
+		if usernameSecret, usernameOk := c.secret.Data[HelmSecretUsername]; usernameOk {
+			username = usernameSecret
+		}
+		if passwordSecret, passwordOk := c.secret.Data[HelmSecretPassword]; passwordOk {
+			password = passwordSecret
+		}
+	}
+
+	if username != nil && password != nil {
+		req.SetBasicAuth(string(username), string(password))
+	}
+
+	return c.client.Do(req)
+
 }
 
 type HelmClient struct {
@@ -101,11 +133,12 @@ func GetRepoCM(
 	return cm, nil
 }
 
-func GetRepoSecrets(
+func GetRepoSecret(
 	ctx context.Context,
 	k8sClient client.Client,
 	argoCDNamespace string,
-) ([]corev1.Secret, error) {
+	repoURL string,
+) (*corev1.Secret, error) {
 	secrets := &corev1.SecretList{}
 	repoLabelReq, _ := labels.NewRequirement(
 		argoCommon.LabelKeySecretType,
@@ -128,24 +161,24 @@ func GetRepoSecrets(
 			helmRepoSecrets = append(helmRepoSecrets, secret)
 		}
 	}
-	return helmRepoSecrets, nil
-}
-
-func GetRepoHTTPClient(
-	ctx context.Context,
-	repoURL string,
-	repoSecrets []corev1.Secret,
-	tlsCM *corev1.ConfigMap,
-) (*http.Client, error) {
 
 	var repoSecret *corev1.Secret
-	for _, secret := range repoSecrets {
+	for _, secret := range helmRepoSecrets {
 		url, urlOk := secret.Data["url"]
 		if urlOk && string(url) == repoURL {
 			repoSecret = &secret
 			break
 		}
 	}
+	return repoSecret, nil
+}
+
+func GetRepoHTTPClient(
+	ctx context.Context,
+	repoURL string,
+	repoSecret *corev1.Secret,
+	tlsCM *corev1.ConfigMap,
+) (*HttpClient, error) {
 
 	tlsClientCertData := []byte{}
 	tlsClientCertKey := []byte{}
@@ -206,5 +239,10 @@ func GetRepoHTTPClient(
 		TLSClientConfig: tlsConfig,
 	}}
 
-	return httpClient, nil
+	client := &HttpClient{
+		secret: repoSecret,
+		client: httpClient,
+	}
+
+	return client, nil
 }

@@ -20,7 +20,7 @@ func (h *HelmClient) GetChart(
 	argoCDNamespace string,
 ) (*chart.Chart, error) {
 
-	secrets, err := GetRepoSecrets(ctx, k8sClient, argoCDNamespace)
+	secret, err := GetRepoSecret(ctx, k8sClient, argoCDNamespace, repoURL)
 	if err != nil {
 		return nil, err
 	}
@@ -28,17 +28,17 @@ func (h *HelmClient) GetChart(
 	if err != nil {
 		return nil, err
 	}
-	httpClient, err := GetRepoHTTPClient(ctx, repoURL, secrets, cm)
+	httpClient, err := GetRepoHTTPClient(ctx, repoURL, secret, cm)
 
 	if err != nil {
 		return nil, err
 	}
-
 	chartURL, err := getChartURL(
 		httpClient,
 		repoURL,
 		chartName,
 		version,
+		secret,
 	)
 
 	if err != nil {

@@ -161,6 +161,67 @@ var _ = Describe("Helm client", func() {
 		Expect(chart).ShouldNot(BeNil())
 		Expect(err).Should(BeNil())
 	})
+	It("GetChart protected by basic auth", func() {
+		helmClient := CreateHelmClient(k8sManager, cfg)
+		secret := &corev1.Secret{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "argocd",
+				Labels: map[string]string{
+					argoCommon.LabelKeySecretType: argoCommon.LabelValueSecretTypeRepository,
+				},
+			},
+			Data: map[string][]byte{
+				"type":     []byte("helm"),
+				"url":      []byte(server.URL),
+				"username": []byte("admin"),
+				"password": []byte("password"),
+			},
+		}
+		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
+
+		chart, err := helmClient.GetChart(
+			context.TODO(),
+			client,
+			server.URL,
+			"hypershift-template",
+			"0.0.2",
+			"argocd",
+		)
+		Expect(err).Should(BeNil())
+		Expect(chart).ShouldNot(BeNil())
+	})
+	It("GetChart protected by basic auth invalid username", func() {
+		helmClient := CreateHelmClient(k8sManager, cfg)
+		secret := &corev1.Secret{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "argocd",
+				Labels: map[string]string{
+					argoCommon.LabelKeySecretType: argoCommon.LabelValueSecretTypeRepository,
+				},
+			},
+			Data: map[string][]byte{
+				"type":     []byte("helm"),
+				"url":      []byte(server.URL),
+				"username": []byte("admin"),
+				"password": []byte("invalid"),
+			},
+		}
+		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
+
+		chart, err := helmClient.GetChart(
+			context.TODO(),
+			client,
+			server.URL,
+			"hypershift-template",
+			"0.0.2",
+			"argocd",
+		)
+		Expect(chart).Should(BeNil())
+		Expect(err).ShouldNot(BeNil())
+		Expect(err.Error()).Should(ContainSubstring("401 Unauthorized"))
+	})
 })
 
 func CreateHelmClient(k8sManager manager.Manager, config *rest.Config) *HelmClient {

@@ -3,19 +3,20 @@ package helm
 import (
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"strings"
 
 	"github.com/ghodss/yaml"
 	"helm.sh/helm/v3/pkg/repo"
+	corev1 "k8s.io/api/core/v1"
 )
 
-func GetIndexFile(httpClient *http.Client, indexURL string) (*repo.IndexFile, error) {
+func GetIndexFile(httpClient *HttpClient, indexURL string, repoSecret *corev1.Secret) (*repo.IndexFile, error) {
 	indexFile := &repo.IndexFile{}
 
 	if !strings.HasSuffix(indexURL, "/index.yaml") {
 		indexURL += "/index.yaml"
 	}
+
 	resp, err := httpClient.Get(indexURL)
 	if err != nil {
 		return nil, err
@@ -38,12 +39,13 @@ func GetIndexFile(httpClient *http.Client, indexURL string) (*repo.IndexFile, er
 }
 
 func getChartURL(
-	httpClient *http.Client,
+	httpClient *HttpClient,
 	indexURL string,
 	chartName string,
 	chartVersion string,
+	repoSecret *corev1.Secret,
 ) (string, error) {
-	indexFile, err := GetIndexFile(httpClient, indexURL)
+	indexFile, err := GetIndexFile(httpClient, indexURL, repoSecret)
 	if err != nil {
 		return "", err
 	}
