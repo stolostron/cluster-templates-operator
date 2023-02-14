@@ -1,5 +1,5 @@
 # Cluster as a service operator
-**Self-service clusters with guardrails!** Cluster as a service operator provides an easy way to define clusters as templates and allows creating instances of those templates even for non-privileged developer/devops engineers. Cluster templates operator also allows specifing quotas for the developer/devops engineers.
+**Self-service clusters with guardrails!** Cluster as a service operator provides an easy way to define clusters as templates and allows creating instances of those templates even for non-privileged developer/devops engineers. CCluster as a service operator also allows specifing quotas for the developer/devops engineers.
 
 ## Description
 Cluster as a service operator adds 3 new CRDs.
