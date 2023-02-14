@@ -13,6 +13,7 @@ import (
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	ocmv1 "open-cluster-management.io/api/cluster/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
@@ -36,6 +37,7 @@ var _ = Describe("CLaaS controller", func() {
 		startTestEnv([]string{})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
@@ -45,6 +47,7 @@ var _ = Describe("CLaaS controller", func() {
 		})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeTrue())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
@@ -54,6 +57,17 @@ var _ = Describe("CLaaS controller", func() {
 		})
 		Expect(claasReconciler.enableHypershift).Should(BeTrue())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
+		Expect(ctiControllerCancel).ShouldNot(BeNil())
+	})
+	It("CLaaS reconciler start - detects managedcluster", func() {
+		startTestEnv([]string{
+			filepath.Join("..", "testutils", "testcrds", "optional", "ocm"),
+		})
+		Expect(claasReconciler.enableHypershift).Should(BeFalse())
+		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeTrue())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
@@ -63,6 +77,7 @@ var _ = Describe("CLaaS controller", func() {
 		})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeTrue())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
@@ -70,6 +85,7 @@ var _ = Describe("CLaaS controller", func() {
 		startTestEnv([]string{})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 
@@ -103,12 +119,14 @@ var _ = Describe("CLaaS controller", func() {
 			return claasReconciler.enableHypershift
 		}, timeout, interval).Should(BeTrue())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 	})
 	It("enables hive dynamically", func() {
 		startTestEnv([]string{})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 
@@ -142,12 +160,55 @@ var _ = Describe("CLaaS controller", func() {
 			return claasReconciler.enableHive
 		}, timeout, interval).Should(BeTrue())
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
+	})
+	It("enables managedcluster dynamically", func() {
+		startTestEnv([]string{})
+		Expect(claasReconciler.enableHypershift).Should(BeFalse())
+		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
+		Expect(ctiControllerCancel).ShouldNot(BeNil())
+
+		err := claasK8sClient.Create(claasCtx, &apiextensions.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "managedclusters.cluster.open-cluster-management.io",
+			},
+			Spec: apiextensions.CustomResourceDefinitionSpec{
+				Scope: apiextensions.NamespaceScoped,
+				Group: v1alpha1.ManagedClusterGVK.Group,
+				Versions: []apiextensions.CustomResourceDefinitionVersion{
+					{
+						Name:    v1alpha1.ManagedClusterGVK.Version,
+						Storage: true,
+						Schema: &apiextensions.CustomResourceValidation{
+							OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+								Type: "object",
+							},
+						},
+					},
+				},
+				Names: apiextensions.CustomResourceDefinitionNames{
+					Kind:   v1alpha1.ManagedClusterGVK.Resource,
+					Plural: "managedclusters",
+				},
+			},
+		})
+		Expect(err).Should(BeNil())
+
+		Eventually(func() bool {
+			return claasReconciler.enableManagedCluster
+		}, timeout, interval).Should(BeTrue())
+		Expect(claasReconciler.enableHypershift).Should(BeFalse())
+		Expect(claasReconciler.enableHive).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 	})
 	It("enables console plugin dynamically", func() {
 		startTestEnv([]string{})
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 
 		err := claasK8sClient.Create(claasCtx, &apiextensions.CustomResourceDefinition{
@@ -180,6 +241,7 @@ var _ = Describe("CLaaS controller", func() {
 			return claasReconciler.enableConsolePlugin
 		}, timeout, interval).Should(BeTrue())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 	})
 })
@@ -207,6 +269,8 @@ func startTestEnv(crds []string) {
 	err = hivev1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = argo.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = ocmv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	claasK8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})

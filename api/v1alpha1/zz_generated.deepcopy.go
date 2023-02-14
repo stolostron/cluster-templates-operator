@@ -227,6 +227,13 @@ func (in *ClusterTemplateInstanceStatus) DeepCopyInto(out *ClusterTemplateInstan
 		*out = new(ClusterTemplateSpec)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ClusterTemplateLabels != nil {
+		in, out := &in.ClusterTemplateLabels, &out.ClusterTemplateLabels
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.AdminPassword != nil {
 		in, out := &in.AdminPassword, &out.AdminPassword
 		*out = new(v1.LocalObjectReference)

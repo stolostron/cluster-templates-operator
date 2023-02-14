@@ -13,9 +13,10 @@ import (
 	argoAppSet "github.com/argoproj/applicationset/pkg/utils"
 	"github.com/kubernetes-client/go-base/config/api"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
+	ocm "github.com/stolostron/cluster-templates-operator/ocm"
+	utils "github.com/stolostron/cluster-templates-operator/utils"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -34,6 +35,7 @@ func AddClusterToArgo(
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 	getNewClusterClient func(configBytes []byte) (client.Client, error),
 	argoCDNamespace string,
+	withManagedCluster bool,
 ) error {
 	kubeconfigSecret := corev1.Secret{}
 
@@ -61,7 +63,7 @@ func AddClusterToArgo(
 		},
 	}
 
-	if err = ensureResourceExists(ctx, newClusterClient, sa, false); err != nil {
+	if err = utils.EnsureResourceExists(ctx, newClusterClient, sa, false); err != nil {
 		return err
 	}
 
@@ -82,7 +84,7 @@ func AddClusterToArgo(
 		},
 	}
 
-	if err = ensureResourceExists(ctx, newClusterClient, clusterRole, false); err != nil {
+	if err = utils.EnsureResourceExists(ctx, newClusterClient, clusterRole, false); err != nil {
 		return err
 	}
 
@@ -104,7 +106,7 @@ func AddClusterToArgo(
 		},
 	}
 
-	if err = ensureResourceExists(ctx, newClusterClient, clusterRoleBinding, false); err != nil {
+	if err = utils.EnsureResourceExists(ctx, newClusterClient, clusterRoleBinding, false); err != nil {
 		return err
 	}
 
@@ -119,7 +121,7 @@ func AddClusterToArgo(
 		Type: corev1.SecretTypeServiceAccountToken,
 	}
 
-	if err = ensureResourceExists(ctx, newClusterClient, tokenSecret, true); err != nil {
+	if err = utils.EnsureResourceExists(ctx, newClusterClient, tokenSecret, true); err != nil {
 		return err
 	}
 
@@ -152,6 +154,16 @@ func AddClusterToArgo(
 		return err
 	}
 
+	clusterName := clusterTemplateInstance.Namespace + "/" + clusterTemplateInstance.Name
+	if withManagedCluster {
+		// ArgoCD cluster has to match MC name
+		mc, err := ocm.GetManagedCluster(ctx, k8sClient, clusterTemplateInstance)
+		if err != nil {
+			return err
+		}
+		clusterName = mc.Name
+	}
+
 	clusterSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      app.Name,
@@ -162,38 +174,15 @@ func AddClusterToArgo(
 				v1alpha1.CTINamespaceLabel:       clusterTemplateInstance.Namespace,
 			},
 		},
-		StringData: map[string]string{
-			"name":   clusterTemplateInstance.Namespace + "/" + clusterTemplateInstance.Name,
-			"server": kubeconfig.Clusters[0].Cluster.Server,
-			"config": string(jsonConfig),
+		Data: map[string][]byte{
+			"name":   []byte(clusterName),
+			"server": []byte(kubeconfig.Clusters[0].Cluster.Server),
+			"config": jsonConfig,
 		},
 		Type: corev1.SecretTypeOpaque,
 	}
 
-	return ensureResourceExists(ctx, k8sClient, clusterSecret, false)
-}
-
-func ensureResourceExists(
-	ctx context.Context,
-	newClusterClient client.Client,
-	obj client.Object,
-	loadBack bool,
-) error {
-	if err := newClusterClient.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
-		if apierrors.IsNotFound(err) {
-			if err = newClusterClient.Create(ctx, obj); err != nil {
-				return err
-			}
-			if loadBack {
-				if err = newClusterClient.Get(ctx, client.ObjectKeyFromObject(obj), obj); err != nil {
-					return err
-				}
-			}
-		} else {
-			return err
-		}
-	}
-	return nil
+	return utils.EnsureResourceExists(ctx, k8sClient, clusterSecret, false)
 }
 
 func GetClientForCluster(configBytes []byte) (client.Client, error) {

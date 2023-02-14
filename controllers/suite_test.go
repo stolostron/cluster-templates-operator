@@ -47,6 +47,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ocmv1 "open-cluster-management.io/api/cluster/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -105,6 +106,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	err = appsv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
+	err = ocmv1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -117,7 +120,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	controllerCancel = StartCTIController(k8sManager, true, false)
+	controllerCancel = StartCTIController(k8sManager, true, false, false)
 
 	claasNs := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{

@@ -23,7 +23,9 @@ import (
 	hypershift "github.com/openshift/hypershift/api/v1alpha1"
 
 	"github.com/kubernetes-client/go-base/config/api"
+	ocm "github.com/stolostron/cluster-templates-operator/ocm"
 	"gopkg.in/yaml.v3"
+	ocmv1 "open-cluster-management.io/api/cluster/v1"
 )
 
 var _ = Describe("ClusterTemplateInstance controller", func() {
@@ -50,7 +52,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					return 0
 				}
 				return len(cti.Status.Conditions)
-			}, timeout, interval).Should(Equal(5))
+			}, timeout, interval).Should(Equal(7))
 		})
 	})
 
@@ -500,6 +502,185 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					clusterCondition.Reason == string(v1alpha1.ClusterInstalled)
 			}, timeout, interval).Should(BeTrue())
 
+		})
+	})
+
+	Context("Managed cluster phase", func() {
+		ct := &v1alpha1.ClusterTemplate{}
+		cti := &v1alpha1.ClusterTemplateInstance{}
+		BeforeEach(func() {
+			ct = testutils.GetCT(false)
+			cti = testutils.GetCTI()
+		})
+
+		It("Skips creating MC if MC CRD does not exist", func() {
+			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:   string(v1alpha1.ClusterInstallSucceeded),
+						Status: metav1.ConditionTrue,
+					},
+					{
+						Type:   string(v1alpha1.ManagedClusterCreated),
+						Status: metav1.ConditionFalse,
+					},
+				},
+				ClusterTemplateSpec: &ct.Spec,
+			}
+			reconciler := &ClusterTemplateInstanceReconciler{}
+			err := reconciler.reconcileCreateManagedCluster(ctx, cti)
+			Expect(err).Should(BeNil())
+
+			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
+			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCSkipped)))
+
+		})
+
+		It("Creates managed cluster", func() {
+			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:   string(v1alpha1.ClusterInstallSucceeded),
+						Status: metav1.ConditionTrue,
+					},
+					{
+						Type:   string(v1alpha1.ManagedClusterCreated),
+						Status: metav1.ConditionFalse,
+					},
+				},
+				ClusterTemplateSpec: &ct.Spec,
+			}
+
+			kubeconfig := api.Config{}
+			kubeconfig.Clusters = []api.NamedCluster{
+				{
+					Name: "foo",
+					Cluster: api.Cluster{
+						Server: "foo-server",
+					},
+				},
+			}
+
+			data, err := yaml.Marshal(&kubeconfig)
+			Expect(err).ShouldNot(HaveOccurred())
+			kubeconfigSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      cti.GetKubeconfigRef(),
+					Namespace: cti.Namespace,
+				},
+				Data: map[string][]byte{
+					"kubeconfig": data,
+				},
+			}
+
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret)
+			reconciler := &ClusterTemplateInstanceReconciler{
+				Client:               client,
+				EnableManagedCluster: true,
+			}
+			err = reconciler.reconcileCreateManagedCluster(ctx, cti)
+			Expect(err).Should(BeNil())
+			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
+			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCCreated)))
+
+			mc, err := ocm.GetManagedCluster(ctx, client, cti)
+			Expect(err).Should(BeNil())
+			Expect(mc).ShouldNot(BeNil())
+		})
+
+		It("Skips importing MC if MC CRD does not exist", func() {
+			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:   string(v1alpha1.ManagedClusterCreated),
+						Status: metav1.ConditionTrue,
+					},
+					{
+						Type:   string(v1alpha1.ManagedClusterImported),
+						Status: metav1.ConditionFalse,
+					},
+				},
+				ClusterTemplateSpec: &ct.Spec,
+			}
+			reconciler := &ClusterTemplateInstanceReconciler{}
+			err := reconciler.reconcileImportManagedCluster(ctx, cti)
+			Expect(err).Should(BeNil())
+
+			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
+			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCImportSkipped)))
+
+		})
+
+		It("Imports managed cluster", func() {
+			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:   string(v1alpha1.ManagedClusterCreated),
+						Status: metav1.ConditionTrue,
+					},
+					{
+						Type:   string(v1alpha1.ManagedClusterImported),
+						Status: metav1.ConditionFalse,
+					},
+				},
+				ClusterTemplateSpec: &ct.Spec,
+			}
+
+			kubeconfig := api.Config{}
+			kubeconfig.Clusters = []api.NamedCluster{
+				{
+					Name: "foo",
+					Cluster: api.Cluster{
+						Server: "foo-server",
+					},
+				},
+			}
+
+			data, err := yaml.Marshal(&kubeconfig)
+			Expect(err).ShouldNot(HaveOccurred())
+			kubeconfigSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      cti.GetKubeconfigRef(),
+					Namespace: cti.Namespace,
+				},
+				Data: map[string][]byte{
+					"kubeconfig": data,
+				},
+			}
+
+			mc := &ocmv1.ManagedCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-mc",
+					Labels: map[string]string{
+						v1alpha1.CTINameLabel:      cti.Name,
+						v1alpha1.CTINamespaceLabel: cti.Namespace,
+					},
+				},
+			}
+
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, mc)
+			reconciler := &ClusterTemplateInstanceReconciler{
+				Client:               client,
+				EnableManagedCluster: true,
+			}
+			err = reconciler.reconcileImportManagedCluster(ctx, cti)
+			Expect(err).Should(BeNil())
+
+			importSecretMeta := ocm.GetImportSecretMeta(mc.Name)
+			importSecret := &corev1.Secret{}
+			err = client.Get(
+				ctx,
+				types.NamespacedName{
+					Name:      importSecretMeta.Name,
+					Namespace: importSecretMeta.Namespace,
+				},
+				importSecret,
+			)
+			Expect(err).Should(BeNil())
+			Expect(importSecret.Name).ToNot(Equal(""))
+
+			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionFalse))
+			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCImporting)))
 		})
 	})
 

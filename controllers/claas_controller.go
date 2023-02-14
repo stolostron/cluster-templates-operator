@@ -43,9 +43,10 @@ var (
 type CLaaSReconciler struct {
 	Manager ctrl.Manager
 	client.Client
-	enableHypershift    bool
-	enableHive          bool
-	enableConsolePlugin bool
+	enableHypershift     bool
+	enableHive           bool
+	enableConsolePlugin  bool
+	enableManagedCluster bool
 }
 
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
@@ -68,7 +69,12 @@ func (r *CLaaSReconciler) Reconcile(
 	if !r.enableHypershift && isCRDSupported(crd, v1alpha1.HostedClusterGVK) {
 		r.enableHypershift = true
 		ctiControllerCancel()
-		ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
+		ctiControllerCancel = StartCTIController(
+			r.Manager,
+			r.enableHypershift,
+			r.enableHive,
+			r.enableManagedCluster,
+		)
 
 		if err := (&defaultresources.HypershiftTemplateReconciler{
 			Client: r.Manager.GetClient(),
@@ -82,13 +88,23 @@ func (r *CLaaSReconciler) Reconcile(
 	if !r.enableHive && isCRDSupported(crd, v1alpha1.ClusterDeploymentGVK) {
 		r.enableHive = true
 		ctiControllerCancel()
-		ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
+		ctiControllerCancel = StartCTIController(
+			r.Manager,
+			r.enableHypershift,
+			r.enableHive,
+			r.enableManagedCluster,
+		)
 	}
 
-	if !r.enableHive && isCRDSupported(crd, v1alpha1.ClusterDeploymentGVK) {
-		r.enableHive = true
+	if !r.enableManagedCluster && isCRDSupported(crd, v1alpha1.ManagedClusterGVK) {
+		r.enableManagedCluster = true
 		ctiControllerCancel()
-		ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
+		ctiControllerCancel = StartCTIController(
+			r.Manager,
+			r.enableHypershift,
+			r.enableHive,
+			r.enableManagedCluster,
+		)
 	}
 
 	if !r.enableConsolePlugin && isCRDSupported(crd, v1alpha1.ConsolePluginGVK) {
@@ -112,8 +128,14 @@ func (r *CLaaSReconciler) SetupWithManager() error {
 	r.enableHypershift = isCRDAvailable(client, v1alpha1.HostedClusterGVK)
 	r.enableHive = isCRDAvailable(client, v1alpha1.ClusterDeploymentGVK)
 	r.enableConsolePlugin = isCRDAvailable(client, v1alpha1.ConsolePluginGVK)
+	r.enableManagedCluster = isCRDAvailable(client, v1alpha1.ManagedClusterGVK)
 
-	ctiControllerCancel = StartCTIController(r.Manager, r.enableHypershift, r.enableHive)
+	ctiControllerCancel = StartCTIController(
+		r.Manager,
+		r.enableHypershift,
+		r.enableHive,
+		r.enableManagedCluster,
+	)
 
 	if r.enableHypershift {
 		if err := (&defaultresources.HypershiftTemplateReconciler{
