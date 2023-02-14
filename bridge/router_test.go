@@ -123,18 +123,7 @@ var _ = Describe("Repo bridge", func() {
 		}
 		createResource(secret)
 		repositories := fetchRepositories(client)
-		Expect(len(repositories)).To(Equal(1))
-
-		verifyRepo := func(repository RepositoryIndex) {
-			Expect(repository.Name).To(Equal(""))
-			Expect(repository.Url).To(Equal(""))
-			Expect(repository.Index).To(BeNil())
-			Expect(repository.Error).NotTo(Equal(""))
-		}
-		verifyRepo(repositories[0])
-
-		repository := fetchRepository(client, secret.Name)
-		verifyRepo(repository)
+		Expect(len(repositories)).To(Equal(0))
 	})
 	It("Repository secret repo", func() {
 		server := helm.StartHelmRepoServer()
@@ -150,6 +139,7 @@ var _ = Describe("Repo bridge", func() {
 			Data: map[string][]byte{
 				"name": []byte("foo"),
 				"url":  []byte(server.URL),
+				"type": []byte("helm"),
 			},
 		}
 		createResource(secret)
@@ -182,6 +172,7 @@ var _ = Describe("Repo bridge", func() {
 				"name":     []byte("foo"),
 				"url":      []byte(server.URL),
 				"insecure": []byte("true"),
+				"type":     []byte("helm"),
 			},
 		}
 		createResource(secret)
@@ -213,6 +204,7 @@ var _ = Describe("Repo bridge", func() {
 			Data: map[string][]byte{
 				"name": []byte("foo"),
 				"url":  []byte(server.URL),
+				"type": []byte("helm"),
 			},
 		}
 		createResource(secret)
@@ -244,6 +236,7 @@ var _ = Describe("Repo bridge", func() {
 			Data: map[string][]byte{
 				"name": []byte("foo"),
 				"url":  []byte(server.URL),
+				"type": []byte("helm"),
 			},
 		}
 		createResource(secret)
@@ -291,6 +284,7 @@ var _ = Describe("Repo bridge", func() {
 			Data: map[string][]byte{
 				"name": []byte("foo"),
 				"url":  []byte(server.URL),
+				"type": []byte("helm"),
 			},
 		}
 		createResource(secret)
@@ -343,6 +337,7 @@ var _ = Describe("Repo bridge", func() {
 				"url":               []byte(server.URL),
 				"tlsClientCertKey":  keyFile,
 				"tlsClientCertData": crtFile,
+				"type":              []byte("helm"),
 			},
 		}
 		createResource(secret)
