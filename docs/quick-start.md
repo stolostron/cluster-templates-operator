@@ -91,6 +91,11 @@ In order to use the template you need
 
 1. ArgoCD instance running in `argocd` namespace. You can use this sample instance definition:
 ```yaml
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: argocd
+---
 kind: ArgoCD
 apiVersion: argoproj.io/v1alpha1
 metadata:
