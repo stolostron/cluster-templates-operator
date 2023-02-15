@@ -1,4 +1,4 @@
-package helm
+package repository
 
 import (
 	"context"
@@ -10,15 +10,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"fmt"
-	"io/ioutil"
 	"os"
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	helmserver "github.com/stolostron/cluster-templates-operator/testutils/helm"
 	corev1 "k8s.io/api/core/v1"
@@ -36,17 +32,16 @@ var _ = Describe("Helm client", func() {
 		httpsServer.Close()
 	})
 	It("GetChart", func() {
-		helmClient := CreateHelmClient(k8sManager, cfg)
-		chart, err := helmClient.GetChart(context.TODO(), k8sClient, "", "", "", "argocd")
+		chart, err := GetChart(context.TODO(), k8sClient, "", "", "", "argocd")
 		Expect(chart).Should(BeNil())
 		Expect(err).ShouldNot(BeNil())
 		server := helmserver.StartHelmRepoServer()
 
-		chart, err = helmClient.GetChart(context.TODO(), k8sClient, server.URL, "", "", "argocd")
+		chart, err = GetChart(context.TODO(), k8sClient, server.URL, "", "", "argocd")
 		Expect(chart).Should(BeNil())
 		Expect(err).ShouldNot(BeNil())
 
-		chart, err = helmClient.GetChart(
+		chart, err = GetChart(
 			context.TODO(),
 			k8sClient,
 			server.URL,
@@ -58,7 +53,6 @@ var _ = Describe("Helm client", func() {
 		Expect(err).Should(BeNil())
 	})
 	It("GetChart with repo secret", func() {
-		helmClient := CreateHelmClient(k8sManager, cfg)
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo",
@@ -74,7 +68,7 @@ var _ = Describe("Helm client", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
-		chart, err := helmClient.GetChart(
+		chart, err := GetChart(
 			context.TODO(),
 			client,
 			server.URL,
@@ -86,7 +80,6 @@ var _ = Describe("Helm client", func() {
 		Expect(err).Should(BeNil())
 	})
 	It("GetChart https with repo secret - insecure", func() {
-		helmClient := CreateHelmClient(k8sManager, cfg)
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo",
@@ -103,7 +96,7 @@ var _ = Describe("Helm client", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
-		chart, err := helmClient.GetChart(
+		chart, err := GetChart(
 			context.TODO(),
 			client,
 			httpsServer.URL,
@@ -115,7 +108,6 @@ var _ = Describe("Helm client", func() {
 		Expect(err).Should(BeNil())
 	})
 	It("GetChart https with repo secret and ca cert", func() {
-		helmClient := CreateHelmClient(k8sManager, cfg)
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo",
@@ -150,7 +142,7 @@ var _ = Describe("Helm client", func() {
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret, cm)
 
-		chart, err := helmClient.GetChart(
+		chart, err := GetChart(
 			context.TODO(),
 			client,
 			httpsServer.URL,
@@ -162,7 +154,6 @@ var _ = Describe("Helm client", func() {
 		Expect(err).Should(BeNil())
 	})
 	It("GetChart protected by basic auth", func() {
-		helmClient := CreateHelmClient(k8sManager, cfg)
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo",
@@ -180,7 +171,7 @@ var _ = Describe("Helm client", func() {
 		}
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
 
-		chart, err := helmClient.GetChart(
+		chart, err := GetChart(
 			context.TODO(),
 			client,
 			server.URL,
@@ -192,7 +183,6 @@ var _ = Describe("Helm client", func() {
 		Expect(chart).ShouldNot(BeNil())
 	})
 	It("GetChart protected by basic auth invalid username", func() {
-		helmClient := CreateHelmClient(k8sManager, cfg)
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo",
@@ -210,7 +200,7 @@ var _ = Describe("Helm client", func() {
 		}
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
 
-		chart, err := helmClient.GetChart(
+		chart, err := GetChart(
 			context.TODO(),
 			client,
 			server.URL,
@@ -223,58 +213,3 @@ var _ = Describe("Helm client", func() {
 		Expect(err.Error()).Should(ContainSubstring("401 Unauthorized"))
 	})
 })
-
-func CreateHelmClient(k8sManager manager.Manager, config *rest.Config) *HelmClient {
-	certDataFile, err := os.CreateTemp("", "certdata-*")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer certDataFile.Close()
-
-	err = ioutil.WriteFile(certDataFile.Name(), config.CertData, 0644)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	certDataFileName := certDataFile.Name()
-
-	keyDataFile, err := os.CreateTemp("", "keydata-*")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer keyDataFile.Close()
-
-	err = ioutil.WriteFile(keyDataFile.Name(), config.KeyData, 0644)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	keyDataFileName := keyDataFile.Name()
-
-	caDataFile, err := os.CreateTemp("", "cadata-*")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer caDataFile.Close()
-
-	err = ioutil.WriteFile(caDataFile.Name(), config.CAData, 0644)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	caDataFileName := caDataFile.Name()
-
-	return NewHelmClient(
-		config,
-		k8sManager.GetClient(),
-		&certDataFileName,
-		&keyDataFileName,
-		&caDataFileName,
-	)
-}

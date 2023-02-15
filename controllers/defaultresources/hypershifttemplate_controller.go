@@ -36,7 +36,7 @@ var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 				Project: "default",
 				Source: argo.ApplicationSource{
 					RepoURL:        "https://stolostron.github.io/cluster-templates-operator",
-					TargetRevision: "0.0.2",
+					TargetRevision: "0.0.3",
 					Chart:          "hypershift-template",
 				},
 				SyncPolicy: &argo.SyncPolicy{
@@ -59,7 +59,7 @@ var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 				Project: "default",
 				Source: argo.ApplicationSource{
 					RepoURL:        "https://stolostron.github.io/cluster-templates-operator",
-					TargetRevision: "0.0.1",
+					TargetRevision: "0.0.2",
 					Chart:          "hypershift-kubevirt-template",
 				},
 				SyncPolicy: &argo.SyncPolicy{
