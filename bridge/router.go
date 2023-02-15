@@ -99,6 +99,11 @@ func getRepo(
 		return
 	}
 
+	if string(secret.Data["type"]) != "helm" {
+		writeError(w, "Repository secret is not of type helm", http.StatusInternalServerError)
+		return
+	}
+
 	cm, err := k8sClient.CoreV1().
 		ConfigMaps(controllers.ArgoCDNamespace).
 		Get(r.Context(), helm.RepoCMName, metav1.GetOptions{})
@@ -120,6 +125,16 @@ func getRepo(
 	w.Write(out)
 }
 
+func filterSecretsByType(secrets []corev1.Secret, secretType string) []corev1.Secret {
+	var newSecrets []corev1.Secret
+	for _, secret := range secrets {
+		if string(secret.Data["type"]) == secretType {
+			newSecrets = append(newSecrets, secret)
+		}
+	}
+	return newSecrets
+}
+
 func getRepositories(
 	w http.ResponseWriter,
 	r *http.Request,
@@ -127,7 +142,7 @@ func getRepositories(
 	k8sClient *kubernetes.Clientset,
 ) {
 	ctx := r.Context()
-	secrets, err := k8sClient.CoreV1().
+	secretsList, err := k8sClient.CoreV1().
 		Secrets(controllers.ArgoCDNamespace).
 		List(ctx, metav1.ListOptions{LabelSelector: argoCommon.LabelKeySecretType + "=" + argoCommon.LabelValueSecretTypeRepository})
 	if err != nil {
@@ -150,11 +165,12 @@ func getRepositories(
 		)
 		return
 	}
-	repositories := make([]RepositoryIndex, len(secrets.Items))
 
+	secrets := filterSecretsByType(secretsList.Items, "helm")
+	repositories := make([]RepositoryIndex, len(secrets))
 	guard := make(chan struct{}, maxConcurrent)
 	wg := sync.WaitGroup{}
-	for index, secret := range secrets.Items {
+	for index, secret := range secrets {
 		guard <- struct{}{}
 		wg.Add(1)
 		go func(index int, secret corev1.Secret) {
