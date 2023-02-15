@@ -15,6 +15,14 @@ import (
 
 func handlerFunc(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/index.yaml" {
+		if u, p, ok := r.BasicAuth(); ok {
+			if !(u == "admin" && p == "password") {
+				fmt.Println("Invalid username/password")
+				w.WriteHeader(401)
+				return
+			}
+		}
+
 		path, err := filepath.Abs("../testutils/helm/index.yaml")
 		if err != nil {
 			fmt.Println(err)

@@ -60,13 +60,13 @@ func getRepositoryIndex(
 	httpClient, err := helm.GetRepoHTTPClient(
 		ctx,
 		repoURL,
-		[]corev1.Secret{*secret},
+		secret,
 		cm,
 	)
 	if err != nil {
 		repository.Error = err.Error()
 	} else {
-		indexFile, err := helm.GetIndexFile(httpClient, repoURL)
+		indexFile, err := helm.GetIndexFile(httpClient, repoURL, secret)
 		if err != nil {
 			repository.Error = err.Error()
 		}
