@@ -115,6 +115,10 @@ spec:
                   - status
                   type: object
                 type: array
+              clusterTemplateLabels:
+                additionalProperties:
+                  type: string
+                type: object
               clusterTemplateSpec:
                 properties:
                   clusterDefinition:

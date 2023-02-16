@@ -41,6 +41,7 @@ import (
 	"github.com/stolostron/cluster-templates-operator/controllers"
 	"github.com/stolostron/cluster-templates-operator/helm"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	ocmv1 "open-cluster-management.io/api/cluster/v1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -58,6 +59,7 @@ func init() {
 	utilruntime.Must(openshiftAPI.AddToScheme(scheme))
 	utilruntime.Must(apiextensions.AddToScheme(scheme))
 	utilruntime.Must(console.AddToScheme(scheme))
+	utilruntime.Must(ocmv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

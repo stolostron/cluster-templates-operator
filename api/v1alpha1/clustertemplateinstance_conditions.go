@@ -10,6 +10,8 @@ type ConditionType string
 const (
 	ClusterDefinitionCreated ConditionType = "ClusterDefinitionCreated"
 	ClusterInstallSucceeded  ConditionType = "ClusterInstallSucceeded"
+	ManagedClusterCreated    ConditionType = "ManagedClusterCreated"
+	ManagedClusterImported   ConditionType = "ManagedClusterImported"
 	ArgoClusterAdded         ConditionType = "ArgoClusterAdded"
 	ClusterSetupCreated      ConditionType = "ClusterSetupCreated"
 	ClusterSetupSucceeded    ConditionType = "ClusterSetupSucceeded"
@@ -35,6 +37,25 @@ const (
 	ClusterStatusFailed            ClusterInstallReason = "ClusterStatusFailed"
 	ClusterInstalled               ClusterInstallReason = "ClusterInstalled"
 	ClusterInstalling              ClusterInstallReason = "ClusterInstalling"
+)
+
+type ManagedClusterCreatedReason string
+
+const (
+	MCFailed  ManagedClusterCreatedReason = "ManagedClusterFailed"
+	MCCreated ManagedClusterCreatedReason = "ManagedClusterCreated"
+	MCPending ManagedClusterCreatedReason = "ManagedClusterPending"
+	MCSkipped ManagedClusterCreatedReason = "ManagedClusterSkipped"
+)
+
+type ManagedClusterImportedReason string
+
+const (
+	MCImportFailed  ManagedClusterImportedReason = "ManagedClusterImportFailed"
+	MCImported      ManagedClusterImportedReason = "ManagedClusterImported"
+	MCImporting     ManagedClusterImportedReason = "ManagedClusterImporting"
+	MCImportPending ManagedClusterImportedReason = "ManagedClusterImportPending"
+	MCImportSkipped ManagedClusterImportedReason = "ManagedClusterImportSkipped"
 )
 
 type ArgoClusterAddedReason string
@@ -109,6 +130,34 @@ func (clusterInstance *ClusterTemplateInstance) SetClusterSetupCreatedCondition(
 	})
 }
 
+func (clusterInstance *ClusterTemplateInstance) SetManagedClusterCreatedCondition(
+	status metav1.ConditionStatus,
+	reason ManagedClusterCreatedReason,
+	message string,
+) {
+	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
+		Type:               string(ManagedClusterCreated),
+		Status:             status,
+		Reason:             string(reason),
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	})
+}
+
+func (clusterInstance *ClusterTemplateInstance) SetManagedClusterImportedCondition(
+	status metav1.ConditionStatus,
+	reason ManagedClusterImportedReason,
+	message string,
+) {
+	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
+		Type:               string(ManagedClusterImported),
+		Status:             status,
+		Reason:             string(reason),
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	})
+}
+
 func (clusterInstance *ClusterTemplateInstance) SetArgoClusterAddedCondition(
 	status metav1.ConditionStatus,
 	reason ArgoClusterAddedReason,
@@ -135,4 +184,60 @@ func (clusterInstance *ClusterTemplateInstance) SetClusterSetupSucceededConditio
 		Message:            message,
 		LastTransitionTime: metav1.Now(),
 	})
+}
+
+func (clusterInstance *ClusterTemplateInstance) SetDefaultConditions() {
+	clusterInstance.SetClusterDefinitionCreatedCondition(
+		metav1.ConditionFalse,
+		ClusterDefinitionPending,
+		"Pending",
+	)
+	clusterInstance.SetClusterInstallCondition(
+		metav1.ConditionFalse,
+		ClusterDefinitionNotCreated,
+		"Waiting for cluster definition to be created",
+	)
+	clusterInstance.SetManagedClusterCreatedCondition(
+		metav1.ConditionFalse,
+		MCPending,
+		"Waiting for cluster to be ready",
+	)
+	clusterInstance.SetManagedClusterImportedCondition(
+		metav1.ConditionFalse,
+		MCImportPending,
+		"Waiting for managed cluster to be created",
+	)
+	clusterInstance.SetArgoClusterAddedCondition(
+		metav1.ConditionFalse,
+		ArgoClusterPending,
+		"Waiting for managed cluster to be imported",
+	)
+	clusterInstance.SetClusterSetupCreatedCondition(
+		metav1.ConditionFalse,
+		ClusterNotInstalled,
+		"Waiting for argo cluster to be created",
+	)
+	clusterInstance.SetClusterSetupSucceededCondition(
+		metav1.ConditionFalse,
+		ClusterSetupNotCreated,
+		"Waiting for cluster setup to be created",
+	)
+}
+
+func (cti *ClusterTemplateInstance) PhaseCanExecute(
+	prevCondition ConditionType,
+	currentCondition ConditionType,
+) bool {
+	condition := meta.FindStatusCondition(
+		cti.Status.Conditions,
+		string(prevCondition),
+	)
+	if condition.Status == metav1.ConditionFalse {
+		return false
+	}
+	condition = meta.FindStatusCondition(
+		cti.Status.Conditions,
+		string(currentCondition),
+	)
+	return condition.Status != metav1.ConditionTrue
 }

@@ -65,4 +65,10 @@ var (
 		Resource: "ConsolePlugin",
 		Version:  "v1alpha1",
 	}
+
+	ManagedClusterGVK = schema.GroupVersionResource{
+		Group:    "cluster.open-cluster-management.io",
+		Resource: "ManagedCluster",
+		Version:  "v1",
+	}
 )

@@ -59,26 +59,29 @@ type ClusterSetupStatus struct {
 type Phase string
 
 const (
-	PendingPhase                  Phase  = "Pending"
-	PendingMessage                string = "Pending"
-	ClusterDefinitionFailedPhase  Phase  = "ClusterDefinitionFailed"
-	ClusterInstallingPhase        Phase  = "ClusterInstalling"
-	ClusterInstallFailedPhase     Phase  = "ClusterInstallFailed"
-	ArgoClusterFailedPhase        Phase  = "ArgoClusterFailed"
-	AddingArgoClusterPhase        Phase  = "AddingArgoCluster"
-	ClusterSetupCreateFailedPhase Phase  = "ClusterSetupCreateFailedPhase"
-	CreatingClusterSetupPhase     Phase  = "CreatingClusterSetup"
-	ClusterSetupDegradedPhase     Phase  = "ClusterSetupDegradedPhase"
-	ClusterSetupErrorPhase        Phase  = "ClusterSetupErrorPhase"
-	ClusterSetupFailedPhase       Phase  = "ClusterSetupFailedPhase"
-	ClusterSetupRunningPhase      Phase  = "ClusterSetupRunning"
-	ReadyPhase                    Phase  = "Ready"
-	CredentialsFailedPhase        Phase  = "CredentialsFailed"
-	FailedPhase                   Phase  = "Failed"
+	PendingPhase                    Phase  = "Pending"
+	PendingMessage                  string = "Pending"
+	ClusterDefinitionFailedPhase    Phase  = "ClusterDefinitionFailed"
+	ClusterInstallingPhase          Phase  = "ClusterInstalling"
+	ClusterInstallFailedPhase       Phase  = "ClusterInstallFailed"
+	ManagedClusterFailedPhase       Phase  = "ManagedClusterFailed"
+	ManagedClusterImportFailedPhase Phase  = "ManagedClusterImportFailed"
+	ArgoClusterFailedPhase          Phase  = "ArgoClusterFailed"
+	AddingArgoClusterPhase          Phase  = "AddingArgoCluster"
+	ClusterSetupCreateFailedPhase   Phase  = "ClusterSetupCreateFailedPhase"
+	CreatingClusterSetupPhase       Phase  = "CreatingClusterSetup"
+	ClusterSetupDegradedPhase       Phase  = "ClusterSetupDegradedPhase"
+	ClusterSetupErrorPhase          Phase  = "ClusterSetupErrorPhase"
+	ClusterSetupFailedPhase         Phase  = "ClusterSetupFailedPhase"
+	ClusterSetupRunningPhase        Phase  = "ClusterSetupRunning"
+	ReadyPhase                      Phase  = "Ready"
+	CredentialsFailedPhase          Phase  = "CredentialsFailed"
+	FailedPhase                     Phase  = "Failed"
 )
 
 type ClusterTemplateInstanceStatus struct {
-	ClusterTemplateSpec *ClusterTemplateSpec `json:"clusterTemplateSpec,omitempty"`
+	ClusterTemplateSpec   *ClusterTemplateSpec `json:"clusterTemplateSpec,omitempty"`
+	ClusterTemplateLabels map[string]string    `json:"clusterTemplateLabels,omitempty"`
 	// A reference for secret which contains username and password under keys "username" and "password"
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	AdminPassword *corev1.LocalObjectReference `json:"adminPassword,omitempty"`
