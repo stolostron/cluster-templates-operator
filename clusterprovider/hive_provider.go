@@ -31,7 +31,7 @@ func (cd ClusterDeploymentProvider) GetClusterStatus(
 	}
 
 	for _, condition := range clusterDeployment.Status.Conditions {
-		if condition.Type == hivev1.ClusterInstallCompletedClusterDeploymentCondition {
+		if condition.Type == hivev1.ClusterReadyCondition {
 			if condition.Status == corev1.ConditionTrue {
 				return createCDSecrets(ctx, k8sClient, clusterDeployment, templateInstance)
 			} else {
