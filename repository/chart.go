@@ -1,4 +1,4 @@
-package helm
+package repository
 
 import (
 	"context"
@@ -8,10 +8,18 @@ import (
 
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chart/loader"
+	"helm.sh/helm/v3/pkg/repo"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-func (h *HelmClient) GetChart(
+type HelmRepositoryIndex struct {
+	Index *repo.IndexFile `json:"index,omitempty"`
+	Error string          `json:"error,omitempty"`
+	Url   string          `json:"url,omitempty"`
+	Name  string          `json:"name,omitempty"`
+}
+
+func GetChart(
 	ctx context.Context,
 	k8sClient client.Client,
 	repoURL string,
@@ -28,7 +36,7 @@ func (h *HelmClient) GetChart(
 	if err != nil {
 		return nil, err
 	}
-	httpClient, err := GetRepoHTTPClient(ctx, repoURL, secret, cm)
+	httpClient, err := GetRepoHTTPClient(repoURL, secret, cm)
 
 	if err != nil {
 		return nil, err

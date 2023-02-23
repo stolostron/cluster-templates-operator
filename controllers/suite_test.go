@@ -18,8 +18,6 @@ package controllers
 
 import (
 	"context"
-	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -36,14 +34,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-	"sigs.k8s.io/controller-runtime/pkg/manager"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	console "github.com/openshift/api/console/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
-	"github.com/stolostron/cluster-templates-operator/helm"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -137,9 +133,8 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&ClusterTemplateReconciler{
-		Client:     k8sManager.GetClient(),
-		Scheme:     k8sManager.GetScheme(),
-		HelmClient: CreateHelmClient(k8sManager, cfg),
+		Client: k8sManager.GetClient(),
+		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -177,61 +172,6 @@ var _ = AfterSuite(func() {
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
-
-func CreateHelmClient(k8sManager manager.Manager, config *rest.Config) *helm.HelmClient {
-	certDataFile, err := os.CreateTemp("", "certdata-*")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer certDataFile.Close()
-
-	err = ioutil.WriteFile(certDataFile.Name(), config.CertData, 0644)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	certDataFileName := certDataFile.Name()
-
-	keyDataFile, err := os.CreateTemp("", "keydata-*")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer keyDataFile.Close()
-
-	err = ioutil.WriteFile(keyDataFile.Name(), config.KeyData, 0644)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	keyDataFileName := keyDataFile.Name()
-
-	caDataFile, err := os.CreateTemp("", "cadata-*")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer caDataFile.Close()
-
-	err = ioutil.WriteFile(caDataFile.Name(), config.CAData, 0644)
-
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	caDataFileName := caDataFile.Name()
-
-	return helm.NewHelmClient(
-		config,
-		k8sManager.GetClient(),
-		&certDataFileName,
-		&keyDataFileName,
-		&caDataFileName,
-	)
-}
 
 const (
 	timeout  = time.Second * 10

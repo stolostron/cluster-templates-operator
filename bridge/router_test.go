@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	argoCommon "github.com/argoproj/argo-cd/v2/common"
+	"github.com/stolostron/cluster-templates-operator/repository"
 	testutils "github.com/stolostron/cluster-templates-operator/testutils"
 	helm "github.com/stolostron/cluster-templates-operator/testutils/helm"
 	corev1 "k8s.io/api/core/v1"
@@ -18,7 +19,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func fetchRepositories(client *http.Client) []RepositoryIndex {
+func fetchRepositories(client *http.Client) []repository.HelmRepositoryIndex {
 	req, err := http.NewRequest("GET", server.URL+repositoriesAPI, nil)
 	Expect(err).NotTo(HaveOccurred())
 	req.Header.Set("Authorization", "Bearer foo")
@@ -27,13 +28,13 @@ func fetchRepositories(client *http.Client) []RepositoryIndex {
 	Expect(resp.StatusCode).To(Equal(http.StatusOK))
 	body, err := io.ReadAll(resp.Body)
 	Expect(err).ToNot(HaveOccurred())
-	repositories := []RepositoryIndex{}
+	repositories := []repository.HelmRepositoryIndex{}
 	err = yaml.Unmarshal(body, &repositories)
 	Expect(err).ToNot(HaveOccurred())
 	return repositories
 }
 
-func fetchRepository(client *http.Client, secretName string) RepositoryIndex {
+func fetchRepository(client *http.Client, secretName string) repository.HelmRepositoryIndex {
 	req, err := http.NewRequest("GET", server.URL+repositoryAPI+"/"+secretName, nil)
 	Expect(err).NotTo(HaveOccurred())
 	req.Header.Set("Authorization", "Bearer foo")
@@ -42,7 +43,7 @@ func fetchRepository(client *http.Client, secretName string) RepositoryIndex {
 	Expect(resp.StatusCode).To(Equal(http.StatusOK))
 	body, err := io.ReadAll(resp.Body)
 	Expect(err).ToNot(HaveOccurred())
-	repository := RepositoryIndex{}
+	repository := repository.HelmRepositoryIndex{}
 	err = yaml.Unmarshal(body, &repository)
 	Expect(err).ToNot(HaveOccurred())
 	return repository
@@ -146,7 +147,7 @@ var _ = Describe("Repo bridge", func() {
 		repositories := fetchRepositories(client)
 		Expect(len(repositories)).To(Equal(1))
 
-		verifyRepo := func(repository RepositoryIndex) {
+		verifyRepo := func(repository repository.HelmRepositoryIndex) {
 			Expect(repository.Name).To(Equal("foo"))
 			Expect(repository.Url).To(Equal(server.URL))
 			Expect(repository.Index).ToNot(BeNil())
@@ -179,7 +180,7 @@ var _ = Describe("Repo bridge", func() {
 		repositories := fetchRepositories(client)
 		Expect(len(repositories)).To(Equal(1))
 
-		verifyRepo := func(repository RepositoryIndex) {
+		verifyRepo := func(repository repository.HelmRepositoryIndex) {
 			Expect(repository.Name).To(Equal("foo"))
 			Expect(repository.Url).To(Equal(server.URL))
 			Expect(repository.Index).ToNot(BeNil())
@@ -211,7 +212,7 @@ var _ = Describe("Repo bridge", func() {
 		repositories := fetchRepositories(client)
 		Expect(len(repositories)).To(Equal(1))
 
-		verifyRepo := func(repository RepositoryIndex) {
+		verifyRepo := func(repository repository.HelmRepositoryIndex) {
 			Expect(repository.Name).To(Equal("foo"))
 			Expect(repository.Url).To(Equal(server.URL))
 			Expect(repository.Index).To(BeNil())
@@ -259,7 +260,7 @@ var _ = Describe("Repo bridge", func() {
 		repositories := fetchRepositories(client)
 		Expect(len(repositories)).To(Equal(1))
 
-		verifyRepo := func(repository RepositoryIndex) {
+		verifyRepo := func(repository repository.HelmRepositoryIndex) {
 			Expect(repository.Name).To(Equal("foo"))
 			Expect(repository.Url).To(Equal(server.URL))
 			Expect(repository.Index).NotTo(BeNil())
@@ -304,7 +305,7 @@ var _ = Describe("Repo bridge", func() {
 		repositories := fetchRepositories(client)
 		Expect(len(repositories)).To(Equal(1))
 
-		verifyRepo := func(repository RepositoryIndex) {
+		verifyRepo := func(repository repository.HelmRepositoryIndex) {
 			Expect(repository.Name).To(Equal("foo"))
 			Expect(repository.Url).To(Equal(server.URL))
 			Expect(repository.Index).To(BeNil())
@@ -360,7 +361,7 @@ var _ = Describe("Repo bridge", func() {
 		repositories := fetchRepositories(client)
 		Expect(len(repositories)).To(Equal(1))
 
-		verifyRepo := func(repository RepositoryIndex) {
+		verifyRepo := func(repository repository.HelmRepositoryIndex) {
 			Expect(repository.Name).To(Equal("foo"))
 			Expect(repository.Url).To(Equal(server.URL))
 			Expect(repository.Index).NotTo(BeNil())

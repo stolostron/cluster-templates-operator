@@ -11,8 +11,7 @@ import (
 	argoCommon "github.com/argoproj/argo-cd/v2/common"
 	"github.com/julienschmidt/httprouter"
 	controllers "github.com/stolostron/cluster-templates-operator/controllers"
-	helm "github.com/stolostron/cluster-templates-operator/helm"
-	"helm.sh/helm/v3/pkg/repo"
+	repoService "github.com/stolostron/cluster-templates-operator/repository"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,17 +21,12 @@ import (
 )
 
 const (
-	maxConcurrent   = 15
-	repositoriesAPI = "/api/helm-repositories"
-	repositoryAPI   = "/api/helm-repository"
+	maxConcurrent      = 15
+	repositoriesAPI    = "/api/helm-repositories"
+	repositoryAPI      = "/api/helm-repository"
+	gitRepositoriesAPI = "/api/git-repositories"
+	gitRepositoryAPI   = "/api/git-repository"
 )
-
-type RepositoryIndex struct {
-	Index *repo.IndexFile `json:"index,omitempty"`
-	Error string          `json:"error,omitempty"`
-	Url   string          `json:"url,omitempty"`
-	Name  string          `json:"name,omitempty"`
-}
 
 func writeError(w http.ResponseWriter, errorMsg string, code int) {
 	w.Header().Set("Content-Type", "application/json")
@@ -46,19 +40,33 @@ func writeError(w http.ResponseWriter, errorMsg string, code int) {
 	}
 }
 
-func getRepositoryIndex(
+func getRepositoryIndex(ctx context.Context,
+	secret *corev1.Secret,
+	cm *corev1.ConfigMap,
+	repoType string,
+) interface{} {
+	if repoType == "helm" {
+		return getHelmData(ctx, secret, cm)
+	}
+	if repoType == "git" {
+		return getGitData(ctx, secret, cm)
+	}
+
+	return fmt.Sprintf("Repo type %s is not supported", repoType)
+}
+
+func getGitData(
 	ctx context.Context,
 	secret *corev1.Secret,
 	cm *corev1.ConfigMap,
-) RepositoryIndex {
+) repoService.GitRepositoryIndex {
 	repoName := string(secret.Data["name"])
 	repoURL := string(secret.Data["url"])
-	repository := RepositoryIndex{
+	repository := repoService.GitRepositoryIndex{
 		Url:  repoURL,
 		Name: repoName,
 	}
-	httpClient, err := helm.GetRepoHTTPClient(
-		ctx,
+	httpClient, err := repoService.GetRepoHTTPClient(
 		repoURL,
 		secret,
 		cm,
@@ -66,7 +74,36 @@ func getRepositoryIndex(
 	if err != nil {
 		repository.Error = err.Error()
 	} else {
-		indexFile, err := helm.GetIndexFile(httpClient, repoURL, secret)
+		tags, branches, err := repoService.GetGitInfo(httpClient, repoURL)
+		if err != nil {
+			repository.Error = err.Error()
+		}
+		repository.Tags = tags
+		repository.Branches = branches
+	}
+	return repository
+}
+
+func getHelmData(
+	ctx context.Context,
+	secret *corev1.Secret,
+	cm *corev1.ConfigMap,
+) repoService.HelmRepositoryIndex {
+	repoName := string(secret.Data["name"])
+	repoURL := string(secret.Data["url"])
+	repository := repoService.HelmRepositoryIndex{
+		Url:  repoURL,
+		Name: repoName,
+	}
+	httpClient, err := repoService.GetRepoHTTPClient(
+		repoURL,
+		secret,
+		cm,
+	)
+	if err != nil {
+		repository.Error = err.Error()
+	} else {
+		indexFile, err := repoService.GetIndexFile(httpClient, repoURL, secret)
 		if err != nil {
 			repository.Error = err.Error()
 		}
@@ -80,6 +117,7 @@ func getRepo(
 	r *http.Request,
 	params httprouter.Params,
 	k8sClient *kubernetes.Clientset,
+	repoType string,
 ) {
 	secretName := params.ByName("name")
 
@@ -99,14 +137,14 @@ func getRepo(
 		return
 	}
 
-	if string(secret.Data["type"]) != "helm" {
-		writeError(w, "Repository secret is not of type helm", http.StatusInternalServerError)
+	if string(secret.Data["type"]) != repoType {
+		writeError(w, fmt.Sprintf("Repository secret is not of type %v it is %s", repoType, secret.Data["type"]), http.StatusInternalServerError)
 		return
 	}
 
 	cm, err := k8sClient.CoreV1().
 		ConfigMaps(controllers.ArgoCDNamespace).
-		Get(r.Context(), helm.RepoCMName, metav1.GetOptions{})
+		Get(r.Context(), repoService.RepoCMName, metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		writeError(
 			w,
@@ -115,7 +153,7 @@ func getRepo(
 		)
 		return
 	}
-	repository := getRepositoryIndex(r.Context(), secret, cm)
+	repository := getRepositoryIndex(r.Context(), secret, cm, repoType)
 	out, err := yaml.Marshal(repository)
 	if err != nil {
 		writeError(w, "Failed to deserialize index file to yaml", http.StatusInternalServerError)
@@ -140,6 +178,7 @@ func getRepositories(
 	r *http.Request,
 	_ httprouter.Params,
 	k8sClient *kubernetes.Clientset,
+	repoType string,
 ) {
 	ctx := r.Context()
 	secretsList, err := k8sClient.CoreV1().
@@ -156,7 +195,7 @@ func getRepositories(
 
 	cm, err := k8sClient.CoreV1().
 		ConfigMaps(controllers.ArgoCDNamespace).
-		Get(r.Context(), helm.RepoCMName, metav1.GetOptions{})
+		Get(r.Context(), repoService.RepoCMName, metav1.GetOptions{})
 	if err != nil && !apierrors.IsNotFound(err) {
 		writeError(
 			w,
@@ -166,8 +205,8 @@ func getRepositories(
 		return
 	}
 
-	secrets := filterSecretsByType(secretsList.Items, "helm")
-	repositories := make([]RepositoryIndex, len(secrets))
+	secrets := filterSecretsByType(secretsList.Items, repoType)
+	repositories := make([]interface{}, len(secrets))
 	guard := make(chan struct{}, maxConcurrent)
 	wg := sync.WaitGroup{}
 	for index, secret := range secrets {
@@ -175,7 +214,7 @@ func getRepositories(
 		wg.Add(1)
 		go func(index int, secret corev1.Secret) {
 			defer wg.Done()
-			repositories[index] = getRepositoryIndex(r.Context(), &secret, cm)
+			repositories[index] = getRepositoryIndex(r.Context(), &secret, cm, repoType)
 			<-guard
 		}(index, secret)
 	}
@@ -190,9 +229,9 @@ func getRepositories(
 	w.Write(out)
 }
 
-type HandleWithToken func(http.ResponseWriter, *http.Request, httprouter.Params, *kubernetes.Clientset)
+type HandleWithToken func(http.ResponseWriter, *http.Request, httprouter.Params, *kubernetes.Clientset, string)
 
-func withUserClient(h HandleWithToken, config rest.Config) httprouter.Handle {
+func withUserClient(h HandleWithToken, config rest.Config, repoType string) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
@@ -213,13 +252,17 @@ func withUserClient(h HandleWithToken, config rest.Config) httprouter.Handle {
 			)
 			return
 		}
-		h(w, r, params, client)
+		h(w, r, params, client, repoType)
 	}
 }
 
 func GetRouter(config *rest.Config) *httprouter.Router {
 	router := httprouter.New()
-	router.GET(repositoryAPI+"/:name", withUserClient(getRepo, *config))
-	router.GET(repositoriesAPI, withUserClient(getRepositories, *config))
+	// Helm repositories
+	router.GET(repositoryAPI+"/:name", withUserClient(getRepo, *config, "helm"))
+	router.GET(repositoriesAPI, withUserClient(getRepositories, *config, "helm"))
+	// Git repositories
+	router.GET(gitRepositoryAPI+"/:name", withUserClient(getRepo, *config, "git"))
+	router.GET(gitRepositoriesAPI, withUserClient(getRepositories, *config, "git"))
 	return router
 }

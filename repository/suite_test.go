@@ -1,4 +1,4 @@
-package helm
+package repository
 
 import (
 	"context"

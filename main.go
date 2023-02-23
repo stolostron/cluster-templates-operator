@@ -39,7 +39,6 @@ import (
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/bridge"
 	"github.com/stolostron/cluster-templates-operator/controllers"
-	"github.com/stolostron/cluster-templates-operator/helm"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	ocmv1 "open-cluster-management.io/api/cluster/v1"
 	//+kubebuilder:scaffold:imports
@@ -120,8 +119,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	helmClient := helm.NewHelmClient(config, mgr.GetClient(), nil, nil, nil)
-
 	if err = (&controllers.ClusterTemplateQuotaReconciler{
 		Client: mgr.GetClient(),
 		Scheme: mgr.GetScheme(),
@@ -131,9 +128,8 @@ func main() {
 	}
 
 	if err = (&controllers.ClusterTemplateReconciler{
-		Client:     mgr.GetClient(),
-		Scheme:     mgr.GetScheme(),
-		HelmClient: helmClient,
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplate")
 		os.Exit(1)
@@ -177,7 +173,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLog.Info("starting helm repo bridge server")
+	setupLog.Info("starting repository bridge server")
 	bridge.RunServer(mgr.GetConfig(), tlsCertFile, tlsKeyFile)
 
 	setupLog.Info("starting manager")

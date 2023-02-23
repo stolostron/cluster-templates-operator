@@ -15,7 +15,7 @@ COPY api/ api/
 COPY controllers/ controllers/
 COPY clusterprovider/ clusterprovider/
 COPY clustersetup/ clustersetup/
-COPY helm/ helm/
+COPY repository/ repository/
 COPY argocd/ argocd/
 COPY bridge/ bridge/
 COPY ocm/ ocm/

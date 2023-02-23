@@ -1,4 +1,4 @@
-package helm
+package repository
 
 import (
 	"fmt"
@@ -60,7 +60,7 @@ func getChartURL(
 	}
 
 	if helmChartURL == "" {
-		return "", fmt.Errorf("could not find helm chart")
+		return "", fmt.Errorf("could not find helm chart %v", indexFile)
 	}
 
 	if strings.HasSuffix(indexURL, "/index.yaml") {

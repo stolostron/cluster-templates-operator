@@ -1,4 +1,4 @@
-package helm
+package repository
 
 import (
 	"context"
@@ -23,11 +23,11 @@ import (
 )
 
 const (
-	HelmSecretTLSClientKey  = "tlsClientCertKey"
-	HelmSecretTLSClientCert = "tlsClientCertData"
-	HelmSecretUsername      = "username"
-	HelmSecretPassword      = "password"
-	HelmSecretTLSInsecure   = "insecure"
+	RepoSecretTLSClientKey  = "tlsClientCertKey"
+	RepoSecretTLSClientCert = "tlsClientCertData"
+	RepoSecretUsername      = "username"
+	RepoSecretPassword      = "password"
+	RepoSecretTLSInsecure   = "insecure"
 )
 
 func initSettings() *cli.EnvSettings {
@@ -50,10 +50,10 @@ func (c *HttpClient) Get(url string) (resp *http.Response, err error) {
 	var username []byte
 	var password []byte
 	if c.secret != nil {
-		if usernameSecret, usernameOk := c.secret.Data[HelmSecretUsername]; usernameOk {
+		if usernameSecret, usernameOk := c.secret.Data[RepoSecretUsername]; usernameOk {
 			username = usernameSecret
 		}
-		if passwordSecret, passwordOk := c.secret.Data[HelmSecretPassword]; passwordOk {
+		if passwordSecret, passwordOk := c.secret.Data[RepoSecretPassword]; passwordOk {
 			password = passwordSecret
 		}
 	}
@@ -174,7 +174,6 @@ func GetRepoSecret(
 }
 
 func GetRepoHTTPClient(
-	ctx context.Context,
 	repoURL string,
 	repoSecret *corev1.Secret,
 	tlsCM *corev1.ConfigMap,
@@ -184,15 +183,15 @@ func GetRepoHTTPClient(
 	tlsClientCertKey := []byte{}
 	insecure := false
 	if repoSecret != nil {
-		certData, certDataOk := repoSecret.Data[HelmSecretTLSClientCert]
+		certData, certDataOk := repoSecret.Data[RepoSecretTLSClientCert]
 		if certDataOk {
 			tlsClientCertData = certData
 		}
-		certKey, certKeyOk := repoSecret.Data[HelmSecretTLSClientKey]
+		certKey, certKeyOk := repoSecret.Data[RepoSecretTLSClientKey]
 		if certKeyOk {
 			tlsClientCertKey = certKey
 		}
-		insecureStr, insecureOk := repoSecret.Data[HelmSecretTLSInsecure]
+		insecureStr, insecureOk := repoSecret.Data[RepoSecretTLSInsecure]
 		if insecureOk && string(insecureStr) == "true" {
 			insecure = true
 		}

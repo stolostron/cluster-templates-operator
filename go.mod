@@ -10,6 +10,7 @@ require (
 	github.com/argoproj/gitops-engine v0.7.1-0.20221004132320-98ccd3d43fd9
 	github.com/briandowns/spinner v1.19.0
 	github.com/ghodss/yaml v1.0.1-0.20190212211648-25d852aebe32
+	github.com/go-git/go-git/v5 v5.4.2
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/kubernetes-client/go-base v0.0.0-20190205182333-3d0e39759d98

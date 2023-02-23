@@ -6,7 +6,7 @@ import (
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/hashicorp/go-multierror"
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
-	"github.com/stolostron/cluster-templates-operator/helm"
+	"github.com/stolostron/cluster-templates-operator/repository"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -24,8 +24,7 @@ type HelmRepo struct {
 
 type ClusterTemplateReconciler struct {
 	client.Client
-	Scheme     *runtime.Scheme
-	HelmClient *helm.HelmClient
+	Scheme *runtime.Scheme
 }
 
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates/status,verbs=get;update;patch
@@ -97,7 +96,7 @@ func (r *ClusterTemplateReconciler) getValuesAndSchema(
 		repoURL := appSpec.Source.RepoURL
 		chartName := appSpec.Source.Chart
 		chartVersion := appSpec.Source.TargetRevision
-		chart, err := r.HelmClient.GetChart(
+		chart, err := repository.GetChart(
 			ctx,
 			r.Client,
 			repoURL,
