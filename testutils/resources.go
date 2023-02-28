@@ -76,47 +76,113 @@ func GetCTWithCost(withSetup bool, cost *int) *v1alpha1.ClusterTemplate {
 			Name: ctName,
 		},
 		Spec: v1alpha1.ClusterTemplateSpec{
-			Cost: cost,
-			ClusterDefinition: argo.ApplicationSpec{
-				Source: argo.ApplicationSource{
-					RepoURL:        "http://foo.com",
-					TargetRevision: "0.1.0",
-					Chart:          "hypershift-template",
-				},
-				Destination: argo.ApplicationDestination{
-					Server:    "https://kubernetes.default.svc",
-					Namespace: "default",
-				},
-				Project: "",
-				SyncPolicy: &argo.SyncPolicy{
-					Automated: &argo.SyncPolicyAutomated{},
-				},
-			},
+			Cost:              cost,
+			ClusterDefinition: "appset1",
 		},
 	}
 	if withSetup {
-		ct.Spec.ClusterSetup = []v1alpha1.ClusterSetup{
-			{
-				Name: "day2",
+		ct.Spec.ClusterSetup = []string{"appset2"}
+	}
+	return ct
+}
+
+func GetAppset2() *argo.ApplicationSet {
+	return &argo.ApplicationSet{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       argo.ApplicationSetSchemaGroupVersionKind.Kind,
+			APIVersion: argo.ApplicationSetSchemaGroupVersionKind.GroupVersion().Identifier(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "appset2",
+			Namespace: "argocd",
+		},
+		Spec: argo.ApplicationSetSpec{
+			Generators: []argo.ApplicationSetGenerator{{}},
+			Template: argo.ApplicationSetTemplate{
 				Spec: argo.ApplicationSpec{
 					Source: argo.ApplicationSource{
 						RepoURL:        "http://foo.com",
 						TargetRevision: "0.1.0",
-						Chart:          "day2-template",
-					},
-					Destination: argo.ApplicationDestination{
-						Server:    "${new_cluster}",
-						Namespace: "default",
-					},
-					Project: "",
-					SyncPolicy: &argo.SyncPolicy{
-						Automated: &argo.SyncPolicyAutomated{},
+						Chart:          "hypershift-template",
 					},
 				},
 			},
-		}
+		},
 	}
-	return ct
+}
+
+func GetAppset() *argo.ApplicationSet {
+	return &argo.ApplicationSet{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       argo.ApplicationSetSchemaGroupVersionKind.Kind,
+			APIVersion: argo.ApplicationSetSchemaGroupVersionKind.GroupVersion().Identifier(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "appset1",
+			Namespace: "argocd",
+		},
+		Spec: argo.ApplicationSetSpec{
+			Generators: []argo.ApplicationSetGenerator{{}},
+			Template: argo.ApplicationSetTemplate{
+				Spec: argo.ApplicationSpec{
+					Source: argo.ApplicationSource{
+						RepoURL:        "http://foo.com",
+						TargetRevision: "0.1.0",
+						Chart:          "hypershift-template",
+					},
+				},
+			},
+		},
+	}
+}
+
+func GetAppDay2() *argo.Application {
+	return &argo.Application{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       argo.ApplicationSchemaGroupVersionKind.Kind,
+			APIVersion: argo.ApplicationSchemaGroupVersionKind.GroupVersion().Identifier(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ctiName,
+			Namespace: "argocd",
+			Labels: map[string]string{
+				v1alpha1.CTINameLabel:      ctiName,
+				v1alpha1.CTINamespaceLabel: ctiNs,
+				v1alpha1.CTISetupLabel:     "",
+			},
+		},
+		Spec: argo.ApplicationSpec{
+			Source: argo.ApplicationSource{
+				RepoURL:        "http://foo.com",
+				TargetRevision: "0.1.0",
+				Chart:          "hypershift-template",
+			},
+		},
+	}
+}
+
+func GetApp() *argo.Application {
+	return &argo.Application{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       argo.ApplicationSchemaGroupVersionKind.Kind,
+			APIVersion: argo.ApplicationSchemaGroupVersionKind.GroupVersion().Identifier(),
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ctiName,
+			Namespace: "argocd",
+			Labels: map[string]string{
+				v1alpha1.CTINameLabel:      ctiName,
+				v1alpha1.CTINamespaceLabel: ctiNs,
+			},
+		},
+		Spec: argo.ApplicationSpec{
+			Source: argo.ApplicationSource{
+				RepoURL:        "http://foo.com",
+				TargetRevision: "0.1.0",
+				Chart:          "hypershift-template",
+			},
+		},
+	}
 }
 
 func GetCT(withSetup bool) *v1alpha1.ClusterTemplate {

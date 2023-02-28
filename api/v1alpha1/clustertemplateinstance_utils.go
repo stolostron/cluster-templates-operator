@@ -18,21 +18,27 @@ package v1alpha1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
-
-	"gopkg.in/yaml.v3"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/kubernetes-client/go-base/config/api"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
-	ctrl "sigs.k8s.io/controller-runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
+)
+
+var (
+	CTIlog = logf.Log.WithName("cti-utils")
 )
 
 const (
@@ -93,7 +99,6 @@ func (i *ClusterTemplateInstance) GetDay1Application(
 	}
 
 	if len(apps.Items) == 0 {
-
 		err := apierrors.NewNotFound(schema.GroupResource{
 			Group:    argo.ApplicationSchemaGroupVersionKind.Group,
 			Resource: argo.ApplicationSchemaGroupVersionKind.Kind,
@@ -103,55 +108,127 @@ func (i *ClusterTemplateInstance) GetDay1Application(
 	return &apps.Items[0], nil
 }
 
+func (i *ClusterTemplateInstance) DeleteDay1Application(
+	ctx context.Context,
+	k8sClient client.Client,
+	argoCDNamespace string,
+) error {
+	appSet := &argo.ApplicationSet{}
+	if err := k8sClient.Get(
+		ctx,
+		types.NamespacedName{Name: i.Status.ClusterTemplateSpec.ClusterDefinition, Namespace: argoCDNamespace},
+		appSet,
+	); err != nil {
+		return err
+	}
+
+	var generators []argo.ApplicationSetGenerator
+	for _, g := range appSet.Spec.Generators {
+		if g.List != nil && g.List.Template.Name == i.Name && g.List.Template.Namespace == i.Namespace {
+			continue
+		}
+		generators = append(generators, g)
+	}
+
+	appSet.Spec.Generators = generators
+
+	return k8sClient.Update(ctx, appSet)
+}
+
+func (i *ClusterTemplateInstance) DeleteDay2Application(
+	ctx context.Context,
+	k8sClient client.Client,
+	argoCDNamespace string,
+) error {
+	appsets, err := i.getDay2Appsets(ctx, k8sClient, argoCDNamespace)
+	if err != nil {
+		return err
+	}
+
+	for _, appSet := range appsets {
+		var generators []argo.ApplicationSetGenerator
+		for _, g := range appSet.Spec.Generators {
+			if g.List != nil && g.List.Template.Name == i.Name && g.List.Template.Namespace == i.Namespace {
+				continue
+			}
+			generators = append(generators, g)
+		}
+
+		appSet.Spec.Generators = generators
+
+		if err := k8sClient.Update(ctx, appSet); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (i *ClusterTemplateInstance) UpdateApplicationSet(
+	ctx context.Context,
+	k8sClient client.Client,
+	appSet *argo.ApplicationSet,
+	server string,
+	isDay2 bool,
+) error {
+	for _, g := range appSet.Spec.Generators {
+		if g.List != nil && g.List.Template.Name == i.Name && g.List.Template.Namespace == i.Namespace {
+			return nil
+		}
+	}
+
+	params, err := i.GetHelmParameters(appSet)
+	if err != nil {
+		return err
+	}
+
+	defaultUrl, _ := json.Marshal(map[string]string{"url": server})
+	gen := argo.ApplicationSetGenerator{List: &argo.ListGenerator{
+		Elements: []apiextensionsv1.JSON{{Raw: defaultUrl}},
+		Template: argo.ApplicationSetTemplate{
+			ApplicationSetTemplateMeta: argo.ApplicationSetTemplateMeta{
+				Name: string(i.UID) + appSet.Name,
+				Finalizers: []string{
+					argo.ResourcesFinalizerName,
+				},
+				Labels: map[string]string{
+					CTINameLabel:      i.Name,
+					CTINamespaceLabel: i.Namespace,
+				},
+			},
+			Spec: argo.ApplicationSpec{
+				Source: argo.ApplicationSource{
+					Helm: &argo.ApplicationSourceHelm{
+						Parameters: params,
+					},
+				},
+			},
+		},
+	},
+	}
+	if isDay2 {
+		gen.List.Template.ApplicationSetTemplateMeta.Labels[CTISetupLabel] = ""
+	}
+	appSet.Spec.Generators = append(appSet.Spec.Generators, gen)
+
+	return k8sClient.Update(ctx, appSet)
+}
+
 func (i *ClusterTemplateInstance) CreateDay1Application(
 	ctx context.Context,
 	k8sClient client.Client,
 	argoCDNamespace string,
 ) error {
-	argoApp, err := i.GetDay1Application(ctx, k8sClient, argoCDNamespace)
-	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
-	}
-	if argoApp != nil {
-		return nil
-	}
-
-	params, err := i.GetHelmParameters("")
-
-	if err != nil {
+	appSet := &argo.ApplicationSet{}
+	if err := k8sClient.Get(
+		ctx,
+		types.NamespacedName{Name: i.Status.ClusterTemplateSpec.ClusterDefinition, Namespace: argoCDNamespace},
+		appSet,
+	); err != nil {
 		return err
 	}
 
-	appSpec := i.Status.ClusterTemplateSpec.ClusterDefinition
-
-	if len(params) > 0 {
-		if appSpec.Source.Helm == nil {
-			appSpec.Source.Helm = &argo.ApplicationSourceHelm{}
-		}
-		appSpec.Source.Helm.Parameters = params
-	}
-
-	if appSpec.Destination.Namespace == CTIInstanceNamespaceVar {
-		appSpec.Destination.Namespace = i.Namespace
-	}
-
-	argoApp = &argo.Application{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: i.Name + "-",
-			Namespace:    argoCDNamespace,
-			Finalizers: []string{
-				argo.ResourcesFinalizerName,
-			},
-			Labels: map[string]string{
-				CTINameLabel:      i.Name,
-				CTINamespaceLabel: i.Namespace,
-			},
-		},
-		Spec: appSpec,
-	}
-	return k8sClient.Create(ctx, argoApp)
+	return i.UpdateApplicationSet(ctx, k8sClient, appSet, "https://kubernetes.default.svc", false)
 }
 
 func (i *ClusterTemplateInstance) GetDay2Applications(
@@ -194,16 +271,10 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 	k8sClient client.Client,
 	argoCDNamespace string,
 ) error {
-	log := ctrl.LoggerFrom(ctx)
-	apps, err := i.GetDay2Applications(ctx, k8sClient, argoCDNamespace)
-
+	appsets, err := i.getDay2Appsets(ctx, k8sClient, argoCDNamespace)
 	if err != nil {
-		if !apierrors.IsNotFound(err) {
-			return err
-		}
+		return err
 	}
-
-	log.Info("Create day2 applications")
 
 	kubeconfigSecret := corev1.Secret{}
 	if err := k8sClient.Get(
@@ -221,74 +292,41 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 		return err
 	}
 
-	for _, clusterSetup := range i.Status.ClusterTemplateSpec.ClusterSetup {
-		setupAlreadyExists := false
-		for _, app := range apps.Items {
-			val := app.GetLabels()[CTISetupLabel]
-			if val == clusterSetup.Name {
-				setupAlreadyExists = true
-			}
-		}
-		if !setupAlreadyExists {
-			params, err := i.GetHelmParameters(clusterSetup.Name)
-
-			if err != nil {
-				return err
-			}
-
-			if len(params) > 0 {
-				if clusterSetup.Spec.Source.Helm == nil {
-					clusterSetup.Spec.Source.Helm = &argo.ApplicationSourceHelm{}
-				}
-				clusterSetup.Spec.Source.Helm.Parameters = params
-			}
-
-			if clusterSetup.Spec.Destination.Server == CTIClusterTargetVar {
-				clusterSetup.Spec.Destination.Server = kubeconfig.Clusters[0].Cluster.Server
-			}
-
-			argoApp := argo.Application{
-				ObjectMeta: metav1.ObjectMeta{
-					GenerateName: i.Name + "-",
-					Namespace:    argoCDNamespace,
-					Labels: map[string]string{
-						CTINameLabel:      i.Name,
-						CTINamespaceLabel: i.Namespace,
-						CTISetupLabel:     clusterSetup.Name,
-					},
-				},
-				Spec: clusterSetup.Spec,
-			}
-			if err := k8sClient.Create(ctx, &argoApp); err != nil {
-				return err
-			}
+	for _, appset := range appsets {
+		if err := i.UpdateApplicationSet(ctx, k8sClient, appset, kubeconfig.Clusters[0].Cluster.Server, true); err != nil {
+			return err
 		}
 	}
+
 	return nil
 }
 
-func (i *ClusterTemplateInstance) GetHelmParameters(
-	day2Name string,
-) ([]argo.HelmParameter, error) {
-
-	params := []argo.HelmParameter{}
-
-	ctSpec := i.Status.ClusterTemplateSpec
-
-	if day2Name == "" {
-		if ctSpec.ClusterDefinition.Source.Helm != nil {
-			params = ctSpec.ClusterDefinition.Source.Helm.Parameters
+func (i *ClusterTemplateInstance) getDay2Appsets(ctx context.Context, k8sClient client.Client, argoCDNamespace string) ([]*argo.ApplicationSet, error) {
+	appSets := []*argo.ApplicationSet{}
+	appSet := &argo.ApplicationSet{}
+	for _, cs := range i.Status.ClusterTemplateSpec.ClusterSetup {
+		if err := k8sClient.Get(
+			ctx,
+			types.NamespacedName{Name: cs, Namespace: argoCDNamespace},
+			appSet,
+		); err != nil {
+			return nil, err
 		}
-	} else {
-		for _, setup := range ctSpec.ClusterSetup {
-			if setup.Name == day2Name && setup.Spec.Source.Helm != nil {
-				params = setup.Spec.Source.Helm.Parameters
-			}
-		}
+		appSets = append(appSets, appSet)
 	}
 
+	return appSets, nil
+}
+
+func (i *ClusterTemplateInstance) GetHelmParameters(
+	appset *argo.ApplicationSet,
+) ([]argo.HelmParameter, error) {
+	params := []argo.HelmParameter{}
+	if appset != nil && appset.Spec.Template.Spec.Source.Helm != nil {
+		params = appset.Spec.Template.Spec.Source.Helm.Parameters
+	}
 	for _, param := range i.Spec.Parameters {
-		if param.ClusterSetup == day2Name {
+		if param.ApplicationSet == appset.Name {
 			added := false
 			for _, ctParam := range params {
 				if ctParam.Name == param.Name {

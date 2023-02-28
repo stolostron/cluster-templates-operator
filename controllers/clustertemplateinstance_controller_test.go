@@ -32,8 +32,11 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 	Context("Initial ClusterTemplateInstance Status", func() {
 		ct := &v1alpha1.ClusterTemplate{}
 		cti := &v1alpha1.ClusterTemplateInstance{}
+		appset := &argo.ApplicationSet{}
 
 		BeforeEach(func() {
+			appset = testutils.GetAppset()
+			Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
 			ct = testutils.GetCT(false)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 			cti = testutils.GetCTI()
@@ -43,6 +46,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		AfterEach(func() {
 			testutils.DeleteResource(ctx, cti, k8sClient)
 			testutils.DeleteResource(ctx, ct, k8sClient)
+			testutils.DeleteResource(ctx, appset, k8sClient)
 		})
 
 		It("Should create default conditions", func() {
@@ -82,24 +86,27 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		cti := &v1alpha1.ClusterTemplateInstance{}
 
 		ct := &v1alpha1.ClusterTemplate{}
-		ns := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "argocd",
-			},
-		}
+		appset := &argo.ApplicationSet{}
+		app := &argo.Application{}
 
 		BeforeEach(func() {
+			appset = testutils.GetAppset()
+			Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+
 			ct = testutils.GetCT(false)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
 			cti = testutils.GetCTI()
 
-			k8sClient.Create(ctx, ns)
+			app = testutils.GetApp()
+			Expect(k8sClient.Create(ctx, app)).Should(Succeed())
 		})
 
 		AfterEach(func() {
 			testutils.DeleteResource(ctx, cti, k8sClient)
 			testutils.DeleteResource(ctx, ct, k8sClient)
+			testutils.DeleteResource(ctx, appset, k8sClient)
+			testutils.DeleteResource(ctx, app, k8sClient)
 		})
 
 		It("Should create cluster definition argo app", func() {
@@ -119,9 +126,9 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				return clusterDefinitionCondition.Status == metav1.ConditionTrue
 			}, timeout, interval).Should(BeTrue())
 			Expect(cti.Status.Phase).Should(Equal(v1alpha1.ClusterInstallingPhase))
-			app, err := cti.GetDay1Application(ctx, k8sClient, "argocd")
+			a, err := cti.GetDay1Application(ctx, k8sClient, "argocd")
 			Expect(err).ShouldNot(HaveOccurred())
-			Expect(app).ShouldNot(BeNil())
+			Expect(a).ShouldNot(BeNil())
 		})
 	})
 
@@ -129,6 +136,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		cti := &v1alpha1.ClusterTemplateInstance{}
 		ct := &v1alpha1.ClusterTemplate{}
 		app := &argo.Application{}
+		appset := &argo.ApplicationSet{}
 		resourcesToDelete := []client.Object{}
 
 		BeforeEach(func() {
@@ -138,6 +146,12 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 
 			clusterti := testutils.GetCTI()
 			Expect(k8sClient.Create(ctx, clusterti)).Should(Succeed())
+
+			appset = testutils.GetAppset()
+			Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+
+			app = testutils.GetApp()
+			Expect(k8sClient.Create(ctx, app)).Should(Succeed())
 
 			Eventually(func() bool {
 				k8sClient.Get(ctx, client.ObjectKeyFromObject(clusterti), cti)
@@ -153,9 +167,11 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		AfterEach(func() {
 			testutils.DeleteResource(ctx, cti, k8sClient)
 			testutils.DeleteResource(ctx, ct, k8sClient)
+			testutils.DeleteResource(ctx, appset, k8sClient)
 			Expect(k8sClient.Get(ctx, client.ObjectKeyFromObject(app), app)).Should(Succeed())
 			app.Finalizers = []string{}
 			Expect(k8sClient.Update(ctx, app)).Should(Succeed())
+			testutils.DeleteResource(ctx, app, k8sClient)
 			testutils.EnsureResourceDoesNotExist(ctx, app, k8sClient)
 			for _, obj := range resourcesToDelete {
 				testutils.DeleteResource(ctx, obj, k8sClient)
@@ -687,6 +703,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 	Context("Cluster setup create phase", func() {
 		ct := &v1alpha1.ClusterTemplate{}
 		cti := &v1alpha1.ClusterTemplateInstance{}
+
 		BeforeEach(func() {
 			ct = testutils.GetCT(true)
 			cti = testutils.GetCTI()
@@ -729,16 +746,14 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				},
 			}
 
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret)
+			appset2 := testutils.GetAppset2()
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, appset2)
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client: client,
 			}
+
 			err = reconciler.reconcileClusterSetupCreate(ctx, cti)
 			Expect(err).Should(BeNil())
-			apps, err := cti.GetDay2Applications(ctx, client, "argocd")
-			Expect(err).Should(BeNil())
-			Expect(len(apps.Items)).Should(Equal(1))
-			Expect(apps.Items[0].Spec.Destination.Server).Should(Equal("foo-server"))
 
 			clusterSetupCreatedCondition := meta.FindStatusCondition(
 				cti.Status.Conditions,
@@ -792,7 +807,9 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				},
 			}
 
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret)
+			app := testutils.GetAppDay2()
+			appset2 := testutils.GetAppset2()
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, appset2, app)
 			err = cti.CreateDay2Applications(ctx, client, "argocd")
 			Expect(err).Should(BeNil())
 			reconciler := &ClusterTemplateInstanceReconciler{

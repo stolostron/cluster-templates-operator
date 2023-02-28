@@ -35,9 +35,8 @@ type Parameter struct {
 	Name string `json:"name"`
 	// Value of the Helm parameter
 	Value string `json:"value"`
-	// If empty, the parameter is passed to cluster installation chart
-	// otherwise the field value needs to match name of ClusterSetup of ClusterTemplate
-	ClusterSetup string `json:"clusterSetup,omitempty"`
+	// Name of the application set to which parameter is applied
+	ApplicationSet string `json:"clusterSetup,omitempty"`
 }
 
 type ClusterTemplateInstanceSpec struct {

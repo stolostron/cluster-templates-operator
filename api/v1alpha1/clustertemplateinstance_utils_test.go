@@ -70,15 +70,12 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				Name: "foo",
 			},
 			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterDefinition: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{},
-					},
-				},
+				ClusterTemplateSpec: &ClusterTemplateSpec{},
 			},
 		}
+		appset := &argo.ApplicationSet{}
 
-		params, err := cti.GetHelmParameters("")
+		params, err := cti.GetHelmParameters(appset)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{}))
@@ -96,15 +93,11 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				},
 			},
 			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterDefinition: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{},
-					},
-				},
+				ClusterTemplateSpec: &ClusterTemplateSpec{},
 			},
 		}
 
-		params, err = cti.GetHelmParameters("")
+		params, err = cti.GetHelmParameters(appset)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{
@@ -127,15 +120,20 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				},
 			},
 			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterDefinition: argo.ApplicationSpec{
+				ClusterTemplateSpec: &ClusterTemplateSpec{},
+			},
+		}
+		appset = &argo.ApplicationSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "appset1",
+			},
+			Spec: argo.ApplicationSetSpec{
+				Template: argo.ApplicationSetTemplate{
+					Spec: argo.ApplicationSpec{
 						Source: argo.ApplicationSource{
 							Helm: &argo.ApplicationSourceHelm{
 								Parameters: []argo.HelmParameter{
-									{
-										Name:  "foo",
-										Value: "baz",
-									},
+									{Name: "foo", Value: "baz"},
 								},
 							},
 						},
@@ -144,7 +142,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 		}
 
-		params, err = cti.GetHelmParameters("")
+		params, err = cti.GetHelmParameters(appset)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{
@@ -161,21 +159,29 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			Spec: ClusterTemplateInstanceSpec{
 				Parameters: []Parameter{
 					{
-						Name:  "foo",
-						Value: "bar",
+						Name:           "foo",
+						Value:          "bar",
+						ApplicationSet: "appset1",
 					},
 				},
 			},
 			Status: ClusterTemplateInstanceStatus{
 				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterDefinition: argo.ApplicationSpec{
+					ClusterDefinition: "appset1",
+				},
+			},
+		}
+		appset = &argo.ApplicationSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "appset1",
+			},
+			Spec: argo.ApplicationSetSpec{
+				Template: argo.ApplicationSetTemplate{
+					Spec: argo.ApplicationSpec{
 						Source: argo.ApplicationSource{
 							Helm: &argo.ApplicationSourceHelm{
 								Parameters: []argo.HelmParameter{
-									{
-										Name:  "foo1",
-										Value: "baz",
-									},
+									{Name: "foo1", Value: "baz"},
 								},
 							},
 						},
@@ -184,7 +190,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 		}
 
-		params, err = cti.GetHelmParameters("")
+		params, err = cti.GetHelmParameters(appset)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{
@@ -206,19 +212,13 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 			Status: ClusterTemplateInstanceStatus{
 				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterSetup: []ClusterSetup{
-						{
-							Name: "foo-day2",
-							Spec: argo.ApplicationSpec{
-								Source: argo.ApplicationSource{},
-							},
-						},
-					},
+					ClusterSetup: []string{"foo-day2"},
 				},
 			},
 		}
+		appset := &argo.ApplicationSet{}
 
-		params, err := cti.GetHelmParameters("foo-day2")
+		params, err := cti.GetHelmParameters(appset)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{}))
@@ -230,27 +230,26 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			Spec: ClusterTemplateInstanceSpec{
 				Parameters: []Parameter{
 					{
-						Name:         "foo",
-						Value:        "bar",
-						ClusterSetup: "foo-day2",
+						Name:           "foo",
+						Value:          "bar",
+						ApplicationSet: "foo-day2",
 					},
 				},
 			},
 			Status: ClusterTemplateInstanceStatus{
 				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterSetup: []ClusterSetup{
-						{
-							Name: "foo-day2",
-							Spec: argo.ApplicationSpec{
-								Source: argo.ApplicationSource{
-									Helm: &argo.ApplicationSourceHelm{
-										Parameters: []argo.HelmParameter{
-											{
-												Name:  "foo",
-												Value: "baz",
-											},
-										},
-									},
+					ClusterSetup: []string{"foo-day2"},
+				},
+			},
+		}
+		appset = &argo.ApplicationSet{
+			Spec: argo.ApplicationSetSpec{
+				Template: argo.ApplicationSetTemplate{
+					Spec: argo.ApplicationSpec{
+						Source: argo.ApplicationSource{
+							Helm: &argo.ApplicationSourceHelm{
+								Parameters: []argo.HelmParameter{
+									{Name: "foo", Value: "baz"},
 								},
 							},
 						},
@@ -258,8 +257,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				},
 			},
 		}
-
-		params, err = cti.GetHelmParameters("foo-day2")
+		params, err = cti.GetHelmParameters(appset)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{
@@ -276,27 +274,23 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			Spec: ClusterTemplateInstanceSpec{
 				Parameters: []Parameter{
 					{
-						Name:         "foo",
-						Value:        "bar",
-						ClusterSetup: "foo-day2",
+						Name:  "foo",
+						Value: "bar",
 					},
 				},
 			},
 			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterSetup: []ClusterSetup{
-						{
-							Name: "foo-day2",
-							Spec: argo.ApplicationSpec{
-								Source: argo.ApplicationSource{
-									Helm: &argo.ApplicationSourceHelm{
-										Parameters: []argo.HelmParameter{
-											{
-												Name:  "foo1",
-												Value: "baz",
-											},
-										},
-									},
+				ClusterTemplateSpec: &ClusterTemplateSpec{},
+			},
+		}
+		appset = &argo.ApplicationSet{
+			Spec: argo.ApplicationSetSpec{
+				Template: argo.ApplicationSetTemplate{
+					Spec: argo.ApplicationSpec{
+						Source: argo.ApplicationSource{
+							Helm: &argo.ApplicationSourceHelm{
+								Parameters: []argo.HelmParameter{
+									{Name: "foo1", Value: "baz"},
 								},
 							},
 						},
@@ -304,8 +298,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				},
 			},
 		}
-
-		params, err = cti.GetHelmParameters("foo-day2")
+		params, err = cti.GetHelmParameters(appset)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{
@@ -386,51 +379,32 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 			Status: ClusterTemplateInstanceStatus{
 				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterDefinition: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{
-							RepoURL: "http://foo",
-						},
-					},
+					ClusterDefinition: "foo",
 				},
 			},
 		}
+		appset := &argo.ApplicationSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "argocd",
+			},
+			Spec: argo.ApplicationSetSpec{},
+		}
 
-		client := fake.NewFakeClientWithScheme(scheme.Scheme)
+		client := fake.NewFakeClientWithScheme(scheme.Scheme, appset)
 		err := cti.CreateDay1Application(ctx, client, "argocd")
 
 		Expect(err).ShouldNot(HaveOccurred())
 
-		apps := argo.ApplicationList{}
-		Expect(client.List(ctx, &apps)).Should(Succeed())
+		a := argo.ApplicationSetList{}
+		Expect(client.List(ctx, &a)).Should(Succeed())
 
-		Expect(apps.Items[0].Labels[CTINameLabel]).To(Equal("foo"))
-		Expect(apps.Items[0].Labels[CTINamespaceLabel]).To(Equal("default"))
+		Expect(len(a.Items[0].Spec.Generators)).To(Equal(1))
+		Expect(len(a.Items[0].Spec.Generators[0].List.Elements)).To(Equal(1))
 
-		cti.Status.ClusterTemplateSpec = &ClusterTemplateSpec{
-			ClusterDefinition: argo.ApplicationSpec{
-				Source: argo.ApplicationSource{
-					RepoURL: "http://foo",
-				},
-				Destination: argo.ApplicationDestination{
-					Namespace: CTIInstanceNamespaceVar,
-				},
-			},
-		}
-
-		client = fake.NewFakeClientWithScheme(scheme.Scheme)
-		err = cti.CreateDay1Application(ctx, client, "argocd")
-
-		Expect(err).ShouldNot(HaveOccurred())
-
-		apps = argo.ApplicationList{}
-		Expect(client.List(ctx, &apps)).Should(Succeed())
-
-		Expect(apps.Items[0].Labels[CTINameLabel]).To(Equal("foo"))
-		Expect(apps.Items[0].Labels[CTINamespaceLabel]).To(Equal("default"))
-		Expect(apps.Items[0].Spec.Destination.Namespace).To(Equal("default"))
-		Expect(apps.Items[0].Spec.Source.Helm.Parameters[0].Name).To(Equal("fooParam"))
-		Expect(apps.Items[0].Spec.Source.Helm.Parameters[0].Value).To(Equal("foo"))
-
+		s, err := a.Items[0].Spec.Generators[0].List.Elements[0].MarshalJSON()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(string(s)).To(ContainSubstring("kubernetes.default.svc"))
 	})
 
 	It("CreateDay2Applications", func() {
@@ -442,24 +416,14 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			Spec: ClusterTemplateInstanceSpec{
 				Parameters: []Parameter{
 					{
-						Name:         "fooParam",
-						Value:        "foo",
-						ClusterSetup: "foo-day2",
+						Name:  "fooParam",
+						Value: "foo",
 					},
 				},
 			},
 			Status: ClusterTemplateInstanceStatus{
 				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterSetup: []ClusterSetup{
-						{
-							Name: "foo-day2",
-							Spec: argo.ApplicationSpec{
-								Source: argo.ApplicationSource{
-									RepoURL: "http://foo",
-								},
-							},
-						},
-					},
+					ClusterSetup: []string{"foo"},
 				},
 			},
 		}
@@ -485,47 +449,34 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				"kubeconfig": data,
 			},
 		}
-
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret)
-		err = cti.CreateDay2Applications(ctx, client, "argocd")
-		Expect(err).ShouldNot(HaveOccurred())
-
-		apps := argo.ApplicationList{}
-		Expect(client.List(ctx, &apps)).Should(Succeed())
-
-		Expect(apps.Items[0].Labels[CTINameLabel]).To(Equal("foo"))
-		Expect(apps.Items[0].Labels[CTINamespaceLabel]).To(Equal("default"))
-		Expect(apps.Items[0].Labels[CTISetupLabel]).To(Equal("foo-day2"))
-		Expect(apps.Items[0].Spec.Source.Helm.Parameters[0].Name).To(Equal("fooParam"))
-		Expect(apps.Items[0].Spec.Source.Helm.Parameters[0].Value).To(Equal("foo"))
-
-		cti.Status.ClusterTemplateSpec = &ClusterTemplateSpec{
-			ClusterSetup: []ClusterSetup{
-				{
-					Name: "foo-day2",
+		appset := argo.ApplicationSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "argocd",
+			},
+			Spec: argo.ApplicationSetSpec{
+				Generators: []argo.ApplicationSetGenerator{{}},
+				Template: argo.ApplicationSetTemplate{
 					Spec: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{
-							RepoURL: "http://foo",
-						},
-						Destination: argo.ApplicationDestination{
-							Server: CTIClusterTargetVar,
-						},
+						Source: argo.ApplicationSource{},
 					},
 				},
 			},
 		}
 
-		client = fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret)
+		client := fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret, &appset)
 		err = cti.CreateDay2Applications(ctx, client, "argocd")
 		Expect(err).ShouldNot(HaveOccurred())
 
-		apps = argo.ApplicationList{}
-		Expect(client.List(ctx, &apps)).Should(Succeed())
+		appsets := argo.ApplicationSetList{}
+		Expect(client.List(ctx, &appsets)).Should(Succeed())
 
-		Expect(apps.Items[0].Labels[CTINameLabel]).To(Equal("foo"))
-		Expect(apps.Items[0].Labels[CTINamespaceLabel]).To(Equal("default"))
-		Expect(apps.Items[0].Labels[CTISetupLabel]).To(Equal("foo-day2"))
-		Expect(apps.Items[0].Spec.Destination.Server).To(Equal("foo-server"))
+		Expect(len(appsets.Items[0].Spec.Generators)).To(Equal(2))
+		Expect(len(appsets.Items[0].Spec.Generators[1].List.Elements)).To(Equal(1))
+
+		data, err = appsets.Items[0].Spec.Generators[1].List.Elements[0].MarshalJSON()
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(data).To(ContainSubstring("foo-server"))
 	})
 
 	It(
@@ -539,9 +490,8 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				Spec: ClusterTemplateInstanceSpec{
 					Parameters: []Parameter{
 						{
-							Name:         "fooParam",
-							Value:        "foo",
-							ClusterSetup: "foo-day2",
+							Name:  "fooParam",
+							Value: "foo",
 						},
 					},
 				},

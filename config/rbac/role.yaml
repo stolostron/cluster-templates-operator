@@ -76,6 +76,17 @@ rules:
   - list
   - watch
 - apiGroups:
+  - argoproj.io
+  resources:
+  - applicationsets
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
   - cluster.open-cluster-management.io
   resources:
   - managedclusters
@@ -141,14 +152,6 @@ rules:
   - list
   - update
   - watch
-- apiGroups:
-  - clustertemplate.openshift.io
-  resources:
-  - clustertemplates/status
-  verbs:
-  - get
-  - patch
-  - update
 - apiGroups:
   - console.openshift.io
   resources:
