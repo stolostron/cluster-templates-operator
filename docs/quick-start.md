@@ -15,26 +15,47 @@ kind: ClusterTemplate
 metadata:
   name: hypershift-cluster
 spec:
-  argocdNamespace: argocd
   clusterDefinition:
     destination:
-      namespace: clusters
-      server: https://kubernetes.default.svc
-    project: default
-    source:
-      chart: hypershift-template
-      repoURL: https://stolostron.github.io/cluster-templates-operator
-      targetRevision: 0.0.2
-    syncPolicy:
-      automated: {}
+      name: hypershift-cluster
+      namespace: argocd
   cost: 1
 ```
 
-To learn what each of the `spec` fields represent go to [ClusterTemplate CR docs](./cluster-template.md)
+## ApplicationSet description
+Explore the ApplicationSet definition
+`kubectl get appset hypershift-cluster -n argocd -o yaml`
+
+The result will look like:
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: hypershift-cluster
+  namespace: argocd
+spec:
+  generators:
+  - {}
+  template:
+    metadata: {}
+    spec:
+      destination:
+        namespace: clusters
+        server: '{{ url }}'
+      project: default
+      source:
+        chart: hypershift-template
+        repoURL: https://stolostron.github.io/cluster-templates-operator
+        targetRevision: 0.0.3
+      syncPolicy:
+        automated: {}
+
+```
+
+To learn more about the output go to [ClusterTemplate CR docs](./cluster-template.md)
 
 To sum up:
- - `spec.argocdNamespace` defines in which namespace ArgoCD Application will be created. ArgoCD instance has to be running in this namespace. Read more about the ArgoCD setup [here](./argocd.md).
- - `spec.clusterDefinition` defines how a new cluster should look like. In this case a cluster is backed by Helm chart. 
+ - `spec.clusterDefinition` is reference to `ApplicationSet`, which defines how a new cluster should look like. In this case a cluster is backed by Helm chart. 
 
 ### Helm chart description
 Helm chart of `hypershift-cluster` can be found at [Helm chart repository](https://github.com/stolostron/cluster-templates-operator/tree/helm-repo/hypershift-template). The Helm chart deploys one resource - `HostedCluster` (Hypershift). The helm chart has 4 properties defined by `values.yaml` and `values.schema.yaml`.

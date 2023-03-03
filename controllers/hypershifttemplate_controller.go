@@ -22,6 +22,9 @@ import (
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 )
 
+// default cost of default templates
+var cost int = 1
+
 var defaultApplicationSets = map[string]*argo.ApplicationSet{
 	"hypershift-cluster": {
 		ObjectMeta: metav1.ObjectMeta{
@@ -83,7 +86,7 @@ var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 			Name: "hypershift-cluster",
 		},
 		Spec: v1alpha1.ClusterTemplateSpec{
-			Cost:              1,
+			Cost:              &cost,
 			ClusterDefinition: "hypershift-cluster",
 		},
 	},
@@ -92,7 +95,7 @@ var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 			Name: "hypershift-kubevirt-cluster",
 		},
 		Spec: v1alpha1.ClusterTemplateSpec{
-			Cost:              1,
+			Cost:              &cost,
 			ClusterDefinition: "hypershift-kubevirt-cluster",
 		},
 	},

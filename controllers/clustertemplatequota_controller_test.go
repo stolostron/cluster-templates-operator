@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
@@ -17,6 +18,7 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 		ct := &v1alpha1.ClusterTemplate{}
 		ctq := &v1alpha1.ClusterTemplateQuota{}
 		cti := &v1alpha1.ClusterTemplateInstance{}
+		appset := &argo.ApplicationSet{}
 		ns := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "argocd",
@@ -29,6 +31,9 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 			ct = testutils.GetCTWithCost(false, &cost)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
+			appset = testutils.GetAppset()
+			Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+
 			cti = testutils.GetCTI()
 
 			ctq = testutils.GetCTQ()
@@ -39,6 +44,7 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 			testutils.DeleteResource(ctx, ctq, k8sClient)
 			testutils.DeleteResource(ctx, cti, k8sClient)
 			testutils.DeleteResource(ctx, ct, k8sClient)
+			testutils.DeleteResource(ctx, appset, k8sClient)
 		})
 
 		It("Should count the template if cost specified", func() {
@@ -69,6 +75,7 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 		ct := &v1alpha1.ClusterTemplate{}
 		ctq := &v1alpha1.ClusterTemplateQuota{}
 		cti := &v1alpha1.ClusterTemplateInstance{}
+		appset := &argo.ApplicationSet{}
 		ns := &corev1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "argocd",
@@ -80,6 +87,8 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 			ct = testutils.GetCT(false)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
+			appset = testutils.GetAppset()
+			Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
 			cti = testutils.GetCTI()
 
 			ctq = testutils.GetCTQ()
@@ -90,6 +99,7 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 			testutils.DeleteResource(ctx, ctq, k8sClient)
 			testutils.DeleteResource(ctx, cti, k8sClient)
 			testutils.DeleteResource(ctx, ct, k8sClient)
+			testutils.DeleteResource(ctx, appset, k8sClient)
 		})
 		It("Should not count the template if cost not specified", func() {
 			Expect(k8sClient.Create(ctx, cti)).Should(Succeed())
