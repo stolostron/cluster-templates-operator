@@ -116,7 +116,7 @@ var _ = BeforeSuite(func() {
 	})
 	Expect(err).ToNot(HaveOccurred())
 
-	controllerCancel = StartCTIController(k8sManager, true, false, false)
+	controllerCancel = StartCTIController(k8sManager, true, false, false, false)
 
 	claasNs := &v1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{

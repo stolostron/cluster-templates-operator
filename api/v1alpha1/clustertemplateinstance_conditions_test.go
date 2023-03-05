@@ -12,7 +12,7 @@ var _ = Describe("ClusterTemplateInstance conditions", func() {
 		cti := ClusterTemplateInstance{}
 		cti.SetDefaultConditions()
 
-		Expect(len(cti.Status.Conditions)).To(Equal(7))
+		Expect(len(cti.Status.Conditions)).To(Equal(8))
 	})
 
 	It("Updates condition", func() {

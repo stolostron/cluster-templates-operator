@@ -45,6 +45,7 @@ import (
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	agent "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/selection"
@@ -65,6 +66,7 @@ type ClusterTemplateInstanceReconciler struct {
 	EnableHypershift     bool
 	EnableHive           bool
 	EnableManagedCluster bool
+	EnableKlusterlet     bool
 }
 
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=get;list;watch;create;update;patch;delete
@@ -76,6 +78,9 @@ type ClusterTemplateInstanceReconciler struct {
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings;roles,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=cluster.open-cluster-management.io,resources=managedclusters,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=cluster.open-cluster-management.io,resources=managedclustersets/join,verbs=create
+// +kubebuilder:rbac:groups=register.open-cluster-management.io,resources=managedclusters/accept,verbs=update
+// +kubebuilder:rbac:groups=agent.open-cluster-management.io,resources=klusterletaddonconfigs,verbs=get;list;watch;create;delete
 
 func (r *ClusterTemplateInstanceReconciler) Reconcile(
 	ctx context.Context,
@@ -218,9 +223,23 @@ func (r *ClusterTemplateInstanceReconciler) delete(
 		if r.EnableManagedCluster {
 			mc, err := ocm.GetManagedCluster(ctx, r.Client, clusterTemplateInstance)
 			if err != nil {
-				return ctrl.Result{}, err
+				_, ok := err.(*ocm.MCNotFoundError)
+				if !ok {
+					return ctrl.Result{}, err
+				}
 			}
 			if mc != nil {
+				if r.EnableKlusterlet {
+					klusterlet := &agent.KlusterletAddonConfig{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      mc.Name,
+							Namespace: mc.Name,
+						},
+					}
+					if err := r.Client.Delete(ctx, klusterlet); err != nil {
+						return ctrl.Result{}, err
+					}
+				}
 				importSecret := &corev1.Secret{
 					ObjectMeta: ocm.GetImportSecretMeta(mc.Name),
 				}
@@ -276,6 +295,13 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 	if err := r.reconcileImportManagedCluster(ctx, clusterTemplateInstance); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ManagedClusterImportFailedPhase
 		errMsg := fmt.Sprintf("failed to import ManagedCluster - %q", err)
+		clusterTemplateInstance.Status.Message = errMsg
+		return fmt.Errorf(errMsg)
+	}
+
+	if err := r.reconcileCreateKlusterlet(ctx, clusterTemplateInstance); err != nil {
+		clusterTemplateInstance.Status.Phase = v1alpha1.KlusterletCreateFailedPhase
+		errMsg := fmt.Sprintf("failed to create Klusterlet - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
@@ -660,6 +686,45 @@ func (r *ClusterTemplateInstanceReconciler) reconcileImportManagedCluster(
 	return nil
 }
 
+func (r *ClusterTemplateInstanceReconciler) reconcileCreateKlusterlet(
+	ctx context.Context,
+	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+) error {
+	if !clusterTemplateInstance.PhaseCanExecute(v1alpha1.ManagedClusterImported) {
+		return nil
+	}
+
+	if !r.EnableKlusterlet {
+		clusterTemplateInstance.SetKlusterletCreatedCondition(
+			metav1.ConditionTrue,
+			v1alpha1.KlusterletSkipped,
+			"KlusterletAddonConfig CRD does not exist, skipping",
+		)
+		return nil
+	}
+
+	CTIlog.Info(
+		"Create KlusterletAddonConfig for clustertemplateinstance",
+		"name",
+		clusterTemplateInstance.Name,
+	)
+
+	if err := ocm.CreateKlusterletAddonConfig(ctx, r.Client, clusterTemplateInstance); err != nil {
+		clusterTemplateInstance.SetKlusterletCreatedCondition(
+			metav1.ConditionFalse,
+			v1alpha1.KlusterletFailed,
+			fmt.Sprint("Failed to create KlusterletAddonConfig - "+err.Error()),
+		)
+		return err
+	}
+	clusterTemplateInstance.SetKlusterletCreatedCondition(
+		metav1.ConditionTrue,
+		v1alpha1.KlusterletCreated,
+		"KlusterletAddonConfig created successfully",
+	)
+	return nil
+}
+
 func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
@@ -859,6 +924,7 @@ func StartCTIController(
 	enableHypershift bool,
 	enableHive bool,
 	enableManagedCluster bool,
+	enableKlusterlet bool,
 ) context.CancelFunc {
 	ctiReconciller := &ClusterTemplateInstanceReconciler{
 		Client:               mgr.GetClient(),
@@ -866,6 +932,7 @@ func StartCTIController(
 		EnableHypershift:     enableHypershift,
 		EnableHive:           enableHive,
 		EnableManagedCluster: enableManagedCluster,
+		EnableKlusterlet:     enableKlusterlet,
 	}
 	ctiController, err := controller.NewUnmanaged("cti-controller", mgr, controller.Options{
 		Reconciler: ctiReconciller,
