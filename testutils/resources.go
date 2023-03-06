@@ -20,11 +20,31 @@ import (
 const (
 	ctiName  = "mycluster"
 	ctiNs    = "default"
+	ctqName  = "myquota"
 	ctName   = "mytemplate"
 	timeout  = time.Second * 10
 	duration = time.Second * 10
 	interval = time.Millisecond * 250
 )
+
+func GetCTQ() *v1alpha1.ClusterTemplateQuota {
+	ctq := &v1alpha1.ClusterTemplateQuota{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.APIVersion,
+			Kind:       "ClusterTemplateQuota",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      ctqName,
+			Namespace: ctiNs,
+		},
+		Spec: v1alpha1.ClusterTemplateQuotaSpec{
+			AllowedTemplates: []v1alpha1.AllowedTemplate{
+				{Name: ctName, Count: 1},
+			},
+		},
+	}
+	return ctq
+}
 
 func GetCTI() *v1alpha1.ClusterTemplateInstance {
 	cti := &v1alpha1.ClusterTemplateInstance{
@@ -46,7 +66,7 @@ func GetCTI() *v1alpha1.ClusterTemplateInstance {
 	return cti
 }
 
-func GetCT(withSetup bool) *v1alpha1.ClusterTemplate {
+func GetCTWithCost(withSetup bool, cost *int) *v1alpha1.ClusterTemplate {
 	ct := &v1alpha1.ClusterTemplate{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.GroupVersion.Identifier(),
@@ -56,6 +76,7 @@ func GetCT(withSetup bool) *v1alpha1.ClusterTemplate {
 			Name: ctName,
 		},
 		Spec: v1alpha1.ClusterTemplateSpec{
+			Cost: cost,
 			ClusterDefinition: argo.ApplicationSpec{
 				Source: argo.ApplicationSource{
 					RepoURL:        "http://foo.com",
@@ -96,6 +117,10 @@ func GetCT(withSetup bool) *v1alpha1.ClusterTemplate {
 		}
 	}
 	return ct
+}
+
+func GetCT(withSetup bool) *v1alpha1.ClusterTemplate {
+	return GetCTWithCost(withSetup, nil)
 }
 
 func GetKubeconfigSecret() (*corev1.Secret, error) {

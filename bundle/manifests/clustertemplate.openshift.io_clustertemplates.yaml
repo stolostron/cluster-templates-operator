@@ -839,7 +839,6 @@ spec:
                 type: integer
             required:
             - clusterDefinition
-            - cost
             type: object
           status:
             description: ClusterTemplateStatus defines the observed state of ClusterTemplate
