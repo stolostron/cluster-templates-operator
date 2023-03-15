@@ -186,42 +186,69 @@ func (clusterInstance *ClusterTemplateInstance) SetClusterSetupSucceededConditio
 	})
 }
 
+func (clusterInstance *ClusterTemplateInstance) hasCondition(condition ConditionType) bool {
+	return meta.FindStatusCondition(
+		clusterInstance.Status.Conditions,
+		string(condition),
+	) != nil
+}
+
 func (clusterInstance *ClusterTemplateInstance) SetDefaultConditions() {
-	clusterInstance.SetClusterDefinitionCreatedCondition(
-		metav1.ConditionFalse,
-		ClusterDefinitionPending,
-		"Pending",
-	)
-	clusterInstance.SetClusterInstallCondition(
-		metav1.ConditionFalse,
-		ClusterDefinitionNotCreated,
-		"Waiting for cluster definition to be created",
-	)
-	clusterInstance.SetManagedClusterCreatedCondition(
-		metav1.ConditionFalse,
-		MCPending,
-		"Waiting for cluster to be ready",
-	)
-	clusterInstance.SetManagedClusterImportedCondition(
-		metav1.ConditionFalse,
-		MCImportPending,
-		"Waiting for managed cluster to be created",
-	)
-	clusterInstance.SetArgoClusterAddedCondition(
-		metav1.ConditionFalse,
-		ArgoClusterPending,
-		"Waiting for managed cluster to be imported",
-	)
-	clusterInstance.SetClusterSetupCreatedCondition(
-		metav1.ConditionFalse,
-		ClusterNotInstalled,
-		"Waiting for argo cluster to be created",
-	)
-	clusterInstance.SetClusterSetupSucceededCondition(
-		metav1.ConditionFalse,
-		ClusterSetupNotCreated,
-		"Waiting for cluster setup to be created",
-	)
+	if !clusterInstance.hasCondition(ClusterDefinitionCreated) {
+		clusterInstance.SetClusterDefinitionCreatedCondition(
+			metav1.ConditionFalse,
+			ClusterDefinitionPending,
+			"Pending",
+		)
+	}
+
+	if !clusterInstance.hasCondition(ClusterInstallSucceeded) {
+		clusterInstance.SetClusterInstallCondition(
+			metav1.ConditionFalse,
+			ClusterDefinitionNotCreated,
+			"Waiting for cluster definition to be created",
+		)
+	}
+
+	if !clusterInstance.hasCondition(ManagedClusterCreated) {
+		clusterInstance.SetManagedClusterCreatedCondition(
+			metav1.ConditionFalse,
+			MCPending,
+			"Waiting for cluster to be ready",
+		)
+	}
+
+	if !clusterInstance.hasCondition(ManagedClusterImported) {
+		clusterInstance.SetManagedClusterImportedCondition(
+			metav1.ConditionFalse,
+			MCImportPending,
+			"Waiting for managed cluster to be created",
+		)
+	}
+
+	if !clusterInstance.hasCondition(ArgoClusterAdded) {
+		clusterInstance.SetArgoClusterAddedCondition(
+			metav1.ConditionFalse,
+			ArgoClusterPending,
+			"Waiting for managed cluster to be imported",
+		)
+	}
+
+	if !clusterInstance.hasCondition(ClusterSetupCreated) {
+		clusterInstance.SetClusterSetupCreatedCondition(
+			metav1.ConditionFalse,
+			ClusterNotInstalled,
+			"Waiting for argo cluster to be created",
+		)
+	}
+
+	if !clusterInstance.hasCondition(ClusterSetupSucceeded) {
+		clusterInstance.SetClusterSetupSucceededCondition(
+			metav1.ConditionFalse,
+			ClusterSetupNotCreated,
+			"Waiting for cluster setup to be created",
+		)
+	}
 }
 
 func (cti *ClusterTemplateInstance) PhaseCanExecute(

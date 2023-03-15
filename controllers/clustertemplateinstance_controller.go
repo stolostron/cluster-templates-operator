@@ -99,10 +99,10 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 	}
 
 	if len(clusterTemplateInstance.Status.Conditions) == 0 {
-		clusterTemplateInstance.SetDefaultConditions()
 		clusterTemplateInstance.Status.Phase = v1alpha1.PendingPhase
 		clusterTemplateInstance.Status.Message = v1alpha1.PendingMessage
 	}
+	clusterTemplateInstance.SetDefaultConditions()
 
 	if clusterTemplateInstance.Status.ClusterTemplateSpec == nil {
 		clusterTemplate := v1alpha1.ClusterTemplate{}

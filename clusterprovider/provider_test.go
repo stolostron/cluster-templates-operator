@@ -573,7 +573,7 @@ func getClusterDeployment(opts ResourceOpts) []runtime.Object {
 		Status: hivev1.ClusterDeploymentStatus{
 			Conditions: []hivev1.ClusterDeploymentCondition{
 				{
-					Type:               hivev1.ClusterInstallCompletedClusterDeploymentCondition,
+					Type:               hivev1.ClusterReadyCondition,
 					Status:             conditionStatus,
 					Reason:             "foo",
 					LastTransitionTime: metav1.Now(),
