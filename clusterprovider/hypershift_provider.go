@@ -53,7 +53,7 @@ func (hc HostedClusterProvider) GetClusterStatus(
 	hypershiftPass := getKubeAdminRef(*hostedCluster)
 	hypershiftKubeConfig := getKubeConfigRef(*hostedCluster)
 
-	if hypershiftPass == "" || hypershiftKubeConfig == "" {
+	if hypershiftKubeConfig == "" {
 		return false, "Waiting for pass/kubeconfig secrets", nil
 	}
 
@@ -75,19 +75,28 @@ func (hc HostedClusterProvider) GetClusterStatus(
 		return false, "", errors.New("unexpected kubeconfig format")
 	}
 
-	hypershiftKubeadminSecret := corev1.Secret{}
-	if err := k8sClient.Get(
-		ctx,
-		client.ObjectKey{Name: hypershiftPass, Namespace: hostedCluster.Namespace},
-		&hypershiftKubeadminSecret,
-	); err != nil {
-		return false, "", err
-	}
+	kubeadminPass := []byte("")
 
-	kubeadminPass, ok := hypershiftKubeadminSecret.Data["password"]
+	// if custom idp is configured, kubeadmin pass is not defined
+	if !hasIDPs(hostedCluster) {
+		if hypershiftPass == "" {
+			return false, "Waiting for pass/kubeconfig secrets", nil
+		}
+		hypershiftKubeadminSecret := corev1.Secret{}
+		if err := k8sClient.Get(
+			ctx,
+			client.ObjectKey{Name: hypershiftPass, Namespace: hostedCluster.Namespace},
+			&hypershiftKubeadminSecret,
+		); err != nil {
+			return false, "", err
+		}
 
-	if !ok {
-		return false, "", errors.New("unexpected kubeadmin password format")
+		var ok bool
+		kubeadminPass, ok = hypershiftKubeadminSecret.Data["password"]
+
+		if !ok {
+			return false, "", errors.New("unexpected kubeadmin password format")
+		}
 	}
 
 	if err := CreateClusterSecrets(
@@ -145,4 +154,11 @@ func getKubeConfigRef(hostedCluster hypershiftv1alpha1.HostedCluster) string {
 		return hostedCluster.Status.KubeConfig.Name
 	}
 	return ""
+}
+
+func hasIDPs(hostedCluster *hypershiftv1alpha1.HostedCluster) bool {
+	if hostedCluster.Spec.Configuration != nil && hostedCluster.Spec.Configuration.OAuth != nil && hostedCluster.Spec.Configuration.OAuth.IdentityProviders != nil {
+		return len(hostedCluster.Spec.Configuration.OAuth.IdentityProviders) > 0
+	}
+	return false
 }

@@ -47,6 +47,7 @@ type CLaaSReconciler struct {
 	enableHive           bool
 	enableConsolePlugin  bool
 	enableManagedCluster bool
+	enableKlusterlet     bool
 }
 
 // +kubebuilder:rbac:groups=apiextensions.k8s.io,resources=customresourcedefinitions,verbs=get;list;watch
@@ -74,6 +75,7 @@ func (r *CLaaSReconciler) Reconcile(
 			r.enableHypershift,
 			r.enableHive,
 			r.enableManagedCluster,
+			r.enableKlusterlet,
 		)
 
 		if err := (&defaultresources.HypershiftTemplateReconciler{
@@ -93,6 +95,7 @@ func (r *CLaaSReconciler) Reconcile(
 			r.enableHypershift,
 			r.enableHive,
 			r.enableManagedCluster,
+			r.enableKlusterlet,
 		)
 	}
 
@@ -104,6 +107,19 @@ func (r *CLaaSReconciler) Reconcile(
 			r.enableHypershift,
 			r.enableHive,
 			r.enableManagedCluster,
+			r.enableKlusterlet,
+		)
+	}
+
+	if !r.enableKlusterlet && isCRDSupported(crd, v1alpha1.KlusterletAddonGVK) {
+		r.enableKlusterlet = true
+		ctiControllerCancel()
+		ctiControllerCancel = StartCTIController(
+			r.Manager,
+			r.enableHypershift,
+			r.enableHive,
+			r.enableManagedCluster,
+			r.enableKlusterlet,
 		)
 	}
 
@@ -129,12 +145,14 @@ func (r *CLaaSReconciler) SetupWithManager() error {
 	r.enableHive = isCRDAvailable(client, v1alpha1.ClusterDeploymentGVK)
 	r.enableConsolePlugin = isCRDAvailable(client, v1alpha1.ConsolePluginGVK)
 	r.enableManagedCluster = isCRDAvailable(client, v1alpha1.ManagedClusterGVK)
+	r.enableKlusterlet = isCRDAvailable(client, v1alpha1.KlusterletAddonGVK)
 
 	ctiControllerCancel = StartCTIController(
 		r.Manager,
 		r.enableHypershift,
 		r.enableHive,
 		r.enableManagedCluster,
+		r.enableKlusterlet,
 	)
 
 	if r.enableHypershift {

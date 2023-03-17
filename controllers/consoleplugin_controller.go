@@ -245,9 +245,9 @@ func (r *ConsolePluginReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return nil
 }
 
-// +kubebuilder:rbac:groups="",resources=configmaps;services,verbs=get;list;watch;create;update
-// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update
-// +kubebuilder:rbac:groups=console.openshift.io,resources=consoleplugins,verbs=get;list;watch;create;update
+// +kubebuilder:rbac:groups="",resources=configmaps;services,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=console.openshift.io,resources=consoleplugins,verbs=get;list;watch;create;update;delete
 
 func (r *ConsolePluginReconciler) Reconcile(
 	ctx context.Context,

@@ -109,25 +109,27 @@ func CreateClusterSecrets(
 		}
 	}
 
-	kubeadminSecret := corev1.Secret{}
-	kubeadminSecret.Name = templateInstance.GetKubeadminPassRef()
-	kubeadminSecret.Namespace = templateInstance.Namespace
+	if string(kubeadminpass) != "" {
+		kubeadminSecret := corev1.Secret{}
+		kubeadminSecret.Name = templateInstance.GetKubeadminPassRef()
+		kubeadminSecret.Namespace = templateInstance.Namespace
 
-	if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(&kubeadminSecret), &kubeadminSecret); err != nil {
-		if apierrors.IsNotFound(err) {
-			kubeadminSecret.Data = map[string][]byte{
-				"username": kubeadmin,
-				"password": kubeadminpass,
-			}
-			kubeadminSecret.OwnerReferences = []metav1.OwnerReference{
-				templateInstance.GetOwnerReference(),
-			}
+		if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(&kubeadminSecret), &kubeadminSecret); err != nil {
+			if apierrors.IsNotFound(err) {
+				kubeadminSecret.Data = map[string][]byte{
+					"username": kubeadmin,
+					"password": kubeadminpass,
+				}
+				kubeadminSecret.OwnerReferences = []metav1.OwnerReference{
+					templateInstance.GetOwnerReference(),
+				}
 
-			if err = k8sClient.Create(ctx, &kubeadminSecret); err != nil {
+				if err = k8sClient.Create(ctx, &kubeadminSecret); err != nil {
+					return err
+				}
+			} else {
 				return err
 			}
-		} else {
-			return err
 		}
 	}
 

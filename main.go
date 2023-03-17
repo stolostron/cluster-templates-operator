@@ -39,6 +39,7 @@ import (
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/bridge"
 	"github.com/stolostron/cluster-templates-operator/controllers"
+	agent "github.com/stolostron/klusterlet-addon-controller/pkg/apis"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	ocmv1 "open-cluster-management.io/api/cluster/v1"
 	//+kubebuilder:scaffold:imports
@@ -59,6 +60,7 @@ func init() {
 	utilruntime.Must(apiextensions.AddToScheme(scheme))
 	utilruntime.Must(console.AddToScheme(scheme))
 	utilruntime.Must(ocmv1.AddToScheme(scheme))
+	utilruntime.Must(agent.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

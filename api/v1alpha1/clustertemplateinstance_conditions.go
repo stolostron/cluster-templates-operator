@@ -12,6 +12,7 @@ const (
 	ClusterInstallSucceeded  ConditionType = "ClusterInstallSucceeded"
 	ManagedClusterCreated    ConditionType = "ManagedClusterCreated"
 	ManagedClusterImported   ConditionType = "ManagedClusterImported"
+	KlusterletAddonCreated   ConditionType = "KlusterletAddonCreated"
 	ArgoClusterAdded         ConditionType = "ArgoClusterAdded"
 	ClusterSetupCreated      ConditionType = "ClusterSetupCreated"
 	ClusterSetupSucceeded    ConditionType = "ClusterSetupSucceeded"
@@ -46,6 +47,15 @@ const (
 	MCCreated ManagedClusterCreatedReason = "ManagedClusterCreated"
 	MCPending ManagedClusterCreatedReason = "ManagedClusterPending"
 	MCSkipped ManagedClusterCreatedReason = "ManagedClusterSkipped"
+)
+
+type KlusterletCreatedReason string
+
+const (
+	KlusterletCreated      KlusterletCreatedReason = "KlusterletCreated"
+	KlusterletFailed       KlusterletCreatedReason = "KlusterletFailed"
+	KlusterletCreatePeding KlusterletCreatedReason = "KlusterletCreatePending"
+	KlusterletSkipped      KlusterletCreatedReason = "KlusterletSkipped"
 )
 
 type ManagedClusterImportedReason string
@@ -158,6 +168,20 @@ func (clusterInstance *ClusterTemplateInstance) SetManagedClusterImportedConditi
 	})
 }
 
+func (clusterInstance *ClusterTemplateInstance) SetKlusterletCreatedCondition(
+	status metav1.ConditionStatus,
+	reason KlusterletCreatedReason,
+	message string,
+) {
+	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
+		Type:               string(KlusterletAddonCreated),
+		Status:             status,
+		Reason:             string(reason),
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	})
+}
+
 func (clusterInstance *ClusterTemplateInstance) SetArgoClusterAddedCondition(
 	status metav1.ConditionStatus,
 	reason ArgoClusterAddedReason,
@@ -226,11 +250,19 @@ func (clusterInstance *ClusterTemplateInstance) SetDefaultConditions() {
 		)
 	}
 
+	if !clusterInstance.hasCondition(KlusterletAddonCreated) {
+		clusterInstance.SetKlusterletCreatedCondition(
+			metav1.ConditionFalse,
+			KlusterletCreatePeding,
+			"Waiting for managed cluster to be imported",
+		)
+	}
+
 	if !clusterInstance.hasCondition(ArgoClusterAdded) {
 		clusterInstance.SetArgoClusterAddedCondition(
 			metav1.ConditionFalse,
 			ArgoClusterPending,
-			"Waiting for managed cluster to be imported",
+			"Waiting for klusterlet to be created",
 		)
 	}
 
@@ -253,7 +285,7 @@ func (clusterInstance *ClusterTemplateInstance) SetDefaultConditions() {
 
 func (cti *ClusterTemplateInstance) PhaseCanExecute(
 	prevCondition ConditionType,
-	currentCondition ConditionType,
+	currentCondition ...ConditionType,
 ) bool {
 	condition := meta.FindStatusCondition(
 		cti.Status.Conditions,
@@ -262,9 +294,13 @@ func (cti *ClusterTemplateInstance) PhaseCanExecute(
 	if condition.Status == metav1.ConditionFalse {
 		return false
 	}
+
+	if len(currentCondition) == 0 {
+		return true
+	}
 	condition = meta.FindStatusCondition(
 		cti.Status.Conditions,
-		string(currentCondition),
+		string(currentCondition[0]),
 	)
 	return condition.Status != metav1.ConditionTrue
 }

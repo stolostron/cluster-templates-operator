@@ -10,6 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/selection"
 	ocm "open-cluster-management.io/api/cluster/v1"
+
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	utils "github.com/stolostron/cluster-templates-operator/utils"
@@ -26,6 +27,19 @@ func CreateManagedCluster(
 	k8sClient client.Client,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 ) error {
+
+	mc, err := GetManagedCluster(ctx, k8sClient, clusterTemplateInstance)
+	if err != nil {
+		_, ok := err.(*MCNotFoundError)
+		if !ok {
+			return err
+		}
+	}
+
+	if mc != nil {
+		return nil
+	}
+
 	labels := map[string]string{
 		v1alpha1.CTINameLabel:      clusterTemplateInstance.Name,
 		v1alpha1.CTINamespaceLabel: clusterTemplateInstance.Namespace,
@@ -35,7 +49,7 @@ func CreateManagedCluster(
 	for k, v := range clusterTemplateInstance.Status.ClusterTemplateLabels {
 		labels[k] = v
 	}
-	mc := &ocm.ManagedCluster{
+	mc = &ocm.ManagedCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			GenerateName: "cluster-",
 			Labels:       labels,
@@ -77,7 +91,7 @@ func GetManagedCluster(
 			return &mc, nil
 		}
 	}
-	return nil, nil
+	return nil, &MCNotFoundError{}
 }
 
 func ImportManagedCluster(

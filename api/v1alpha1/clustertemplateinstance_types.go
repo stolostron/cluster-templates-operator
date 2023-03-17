@@ -66,6 +66,7 @@ const (
 	ClusterInstallFailedPhase       Phase  = "ClusterInstallFailed"
 	ManagedClusterFailedPhase       Phase  = "ManagedClusterFailed"
 	ManagedClusterImportFailedPhase Phase  = "ManagedClusterImportFailed"
+	KlusterletCreateFailedPhase     Phase  = "KlusterletCreateFailed"
 	ArgoClusterFailedPhase          Phase  = "ArgoClusterFailed"
 	AddingArgoClusterPhase          Phase  = "AddingArgoCluster"
 	ClusterSetupCreateFailedPhase   Phase  = "ClusterSetupCreateFailedPhase"

@@ -52,7 +52,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					return 0
 				}
 				return len(cti.Status.Conditions)
-			}, timeout, interval).Should(Equal(7))
+			}, timeout, interval).Should(Equal(8))
 		})
 	})
 

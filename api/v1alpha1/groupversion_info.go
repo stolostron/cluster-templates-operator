@@ -71,4 +71,10 @@ var (
 		Resource: "ManagedCluster",
 		Version:  "v1",
 	}
+
+	KlusterletAddonGVK = schema.GroupVersionResource{
+		Group:    "agent.open-cluster-management.io",
+		Resource: "KlusterletAddonConfig",
+		Version:  "v1",
+	}
 )

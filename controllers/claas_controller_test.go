@@ -38,6 +38,7 @@ var _ = Describe("CLaaS controller", func() {
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
 		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableKlusterlet).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
@@ -48,6 +49,7 @@ var _ = Describe("CLaaS controller", func() {
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeTrue())
 		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableKlusterlet).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
@@ -58,6 +60,7 @@ var _ = Describe("CLaaS controller", func() {
 		Expect(claasReconciler.enableHypershift).Should(BeTrue())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
 		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableKlusterlet).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
@@ -68,6 +71,18 @@ var _ = Describe("CLaaS controller", func() {
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
 		Expect(claasReconciler.enableManagedCluster).Should(BeTrue())
+		Expect(claasReconciler.enableKlusterlet).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
+		Expect(ctiControllerCancel).ShouldNot(BeNil())
+	})
+	It("CLaaS reconciler start - detects klusterlet", func() {
+		startTestEnv([]string{
+			filepath.Join("..", "testutils", "testcrds", "optional", "acm"),
+		})
+		Expect(claasReconciler.enableHypershift).Should(BeFalse())
+		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableKlusterlet).Should(BeTrue())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
@@ -78,6 +93,7 @@ var _ = Describe("CLaaS controller", func() {
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
 		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableKlusterlet).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeTrue())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 	})
@@ -86,6 +102,7 @@ var _ = Describe("CLaaS controller", func() {
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
 		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableKlusterlet).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 
@@ -127,6 +144,7 @@ var _ = Describe("CLaaS controller", func() {
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
 		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableKlusterlet).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 
@@ -168,6 +186,7 @@ var _ = Describe("CLaaS controller", func() {
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
 		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableKlusterlet).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 		Expect(ctiControllerCancel).ShouldNot(BeNil())
 
@@ -202,6 +221,49 @@ var _ = Describe("CLaaS controller", func() {
 		}, timeout, interval).Should(BeTrue())
 		Expect(claasReconciler.enableHypershift).Should(BeFalse())
 		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
+	})
+	It("enables klusterlet dynamically", func() {
+		startTestEnv([]string{})
+		Expect(claasReconciler.enableHypershift).Should(BeFalse())
+		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
+		Expect(claasReconciler.enableKlusterlet).Should(BeFalse())
+		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
+		Expect(ctiControllerCancel).ShouldNot(BeNil())
+
+		err := claasK8sClient.Create(claasCtx, &apiextensions.CustomResourceDefinition{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "klusterletaddonconfigs.agent.open-cluster-management.io",
+			},
+			Spec: apiextensions.CustomResourceDefinitionSpec{
+				Scope: apiextensions.NamespaceScoped,
+				Group: v1alpha1.KlusterletAddonGVK.Group,
+				Versions: []apiextensions.CustomResourceDefinitionVersion{
+					{
+						Name:    v1alpha1.KlusterletAddonGVK.Version,
+						Storage: true,
+						Schema: &apiextensions.CustomResourceValidation{
+							OpenAPIV3Schema: &apiextensions.JSONSchemaProps{
+								Type: "object",
+							},
+						},
+					},
+				},
+				Names: apiextensions.CustomResourceDefinitionNames{
+					Kind:   v1alpha1.KlusterletAddonGVK.Resource,
+					Plural: "klusterletaddonconfigs",
+				},
+			},
+		})
+		Expect(err).Should(BeNil())
+
+		Eventually(func() bool {
+			return claasReconciler.enableKlusterlet
+		}, timeout, interval).Should(BeTrue())
+		Expect(claasReconciler.enableHypershift).Should(BeFalse())
+		Expect(claasReconciler.enableHive).Should(BeFalse())
+		Expect(claasReconciler.enableManagedCluster).Should(BeFalse())
 		Expect(claasReconciler.enableConsolePlugin).Should(BeFalse())
 	})
 	It("enables console plugin dynamically", func() {
