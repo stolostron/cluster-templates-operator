@@ -126,12 +126,6 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 		}
 		clusterTemplateInstance.Status.ClusterTemplateSpec = &clusterTemplate.Spec
 		clusterTemplateInstance.Status.ClusterTemplateLabels = clusterTemplate.Labels
-		if val, ok := clusterTemplate.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
-			if clusterTemplateInstance.Annotations == nil {
-				clusterTemplateInstance.Annotations = map[string]string{}
-			}
-			clusterTemplateInstance.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation] = val
-		}
 	}
 
 	err := r.reconcile(ctx, clusterTemplateInstance)
@@ -439,7 +433,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 
 	clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallingPhase
 	clusterTemplateInstance.Status.Message = "Cluster is installing"
-	if _, ok := clusterTemplateInstance.Annotations[clusterprovider.ClusterProviderExperimentalAnnotation]; ok {
+	if _, ok := clusterTemplateInstance.Annotations[v1alpha1.ClusterProviderExperimentalAnnotation]; ok {
 		CTIlog.Info("Experimental provider specified", "name", clusterTemplateInstance.Name)
 		return nil
 	}

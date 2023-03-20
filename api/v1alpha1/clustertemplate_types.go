@@ -22,7 +22,8 @@ import (
 )
 
 var (
-	CTDescriptionLabel = "clustertemplates.openshift.io/description"
+	CTDescriptionLabel                    = "clustertemplates.openshift.io/description"
+	ClusterProviderExperimentalAnnotation = "clustertemplate.openshift.io/experimental-provider"
 )
 
 type ClusterSetup struct {

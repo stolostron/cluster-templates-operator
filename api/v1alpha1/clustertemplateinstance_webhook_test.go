@@ -298,11 +298,17 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 })
 
 var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
-	It("Adds finalizer", func() {
-		instanceControllerClient = fake.NewFakeClientWithScheme(&runtime.Scheme{})
+	It("Fails if template does not exist", func() {
+		scheme := runtime.NewScheme()
+		err := AddToScheme(scheme)
+		Expect(err).ShouldNot(HaveOccurred())
+		instanceControllerClient = fake.NewFakeClientWithScheme(scheme)
 		cti := &ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: "foo",
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef: "foo-template",
 			},
 		}
 		ctx := context.TODO()
@@ -313,9 +319,74 @@ var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
 				},
 			},
 		})
-		err := cti.Default(webhookCtx, cti)
+		err = cti.Default(webhookCtx, cti)
+		Expect(err).Should(HaveOccurred())
+	})
+	It("Adds finalizer", func() {
+		scheme := runtime.NewScheme()
+		err := AddToScheme(scheme)
+		Expect(err).ShouldNot(HaveOccurred())
+		ct := &ClusterTemplate{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "foo-template",
+			},
+		}
+		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ct)
+		cti := &ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: "foo",
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef: "foo-template",
+			},
+		}
+		ctx := context.TODO()
+		webhookCtx := admission.NewContextWithRequest(ctx, admission.Request{
+			AdmissionRequest: admissionv1.AdmissionRequest{
+				UserInfo: authenticationv1.UserInfo{
+					Username: "foo",
+				},
+			},
+		})
+		err = cti.Default(webhookCtx, cti)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(controllerutil.ContainsFinalizer(cti, CTIFinalizer)).Should(BeTrue())
 		Expect(cti.Annotations[CTIRequesterAnnotation]).Should(Equal("foo"))
+	})
+
+	It("Adds experimetal provider annotation", func() {
+		scheme := runtime.NewScheme()
+		err := AddToScheme(scheme)
+		Expect(err).ShouldNot(HaveOccurred())
+		ct := &ClusterTemplate{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "foo-template",
+				Annotations: map[string]string{
+					ClusterProviderExperimentalAnnotation: "true",
+				},
+			},
+		}
+		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ct)
+		cti := &ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: "foo",
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef: "foo-template",
+			},
+		}
+		ctx := context.TODO()
+		webhookCtx := admission.NewContextWithRequest(ctx, admission.Request{
+			AdmissionRequest: admissionv1.AdmissionRequest{
+				UserInfo: authenticationv1.UserInfo{
+					Username: "foo",
+				},
+			},
+		})
+		err = cti.Default(webhookCtx, cti)
+		Expect(err).ShouldNot(HaveOccurred())
+		value, ok := cti.Annotations[ClusterProviderExperimentalAnnotation]
+		Expect(ok).To(BeTrue())
+		Expect(value).To(Equal("true"))
 	})
 })

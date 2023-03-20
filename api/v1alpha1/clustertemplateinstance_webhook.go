@@ -51,6 +51,18 @@ func (r *ClusterTemplateInstance) Default(ctx context.Context, obj runtime.Objec
 	cti := obj.(*ClusterTemplateInstance)
 	clustertemplateinstancelog.Info("default", "name", cti.Name)
 
+	template := ClusterTemplate{}
+	if err := instanceControllerClient.Get(
+		context.TODO(),
+		client.ObjectKey{Name: cti.Spec.ClusterTemplateRef},
+		&template,
+	); err != nil {
+		if apierrors.IsNotFound(err) {
+			return fmt.Errorf("cluster template '%v' not found", cti.Spec.ClusterTemplateRef)
+		}
+		return fmt.Errorf("failed to get cluster template - %q", err)
+	}
+
 	req, err := admission.RequestFromContext(ctx)
 	if err != nil {
 		return err
@@ -59,6 +71,11 @@ func (r *ClusterTemplateInstance) Default(ctx context.Context, obj runtime.Objec
 		cti.Annotations = map[string]string{}
 	}
 	cti.Annotations[CTIRequesterAnnotation] = req.UserInfo.Username
+
+	if val, ok := template.Annotations[ClusterProviderExperimentalAnnotation]; ok {
+		cti.Annotations[ClusterProviderExperimentalAnnotation] = val
+	}
+
 	if !controllerutil.ContainsFinalizer(cti, CTIFinalizer) {
 		cti.Finalizers = append(cti.Finalizers, CTIFinalizer)
 	}
@@ -97,7 +114,6 @@ func (r *ClusterTemplateInstance) checkProps() error {
 
 	// TODO check values
 	return nil
-
 }
 
 func (r *ClusterTemplateInstance) checkQuota() error {
