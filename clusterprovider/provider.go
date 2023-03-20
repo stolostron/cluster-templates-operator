@@ -16,10 +16,6 @@ var (
 	providerLog = logf.Log.WithName("cluster-provider")
 )
 
-const (
-	ClusterProviderExperimentalAnnotation = "clustertemplate.openshift.io/experimental-provider"
-)
-
 type ClusterProvider interface {
 	GetClusterStatus(
 		ctx context.Context,
