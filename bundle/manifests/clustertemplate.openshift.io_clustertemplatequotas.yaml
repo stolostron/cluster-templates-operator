@@ -56,6 +56,10 @@ spec:
                         can exist
                       minimum: 1
                       type: integer
+                    deleteAfter:
+                      description: Specify number of seconds after which the cluster
+                        template instance should be removed
+                      type: integer
                     name:
                       description: Name of the ClusterTemplate
                       type: string
@@ -85,6 +89,10 @@ spec:
                       description: Defines how many instances of the ClusterTemplate
                         can exist
                       minimum: 1
+                      type: integer
+                    deleteAfter:
+                      description: Specify number of seconds after which the cluster
+                        template instance should be removed
                       type: integer
                     name:
                       description: Name of the ClusterTemplate
