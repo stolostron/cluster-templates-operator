@@ -221,6 +221,16 @@ http {
     ssl_certificate     /var/serving-cert/tls.crt;
     ssl_certificate_key /var/serving-cert/tls.key;
     root                /usr/share/nginx/html;
+    location = /plugin-entry.js {
+      root   /usr/share/nginx/html;
+      expires -1;
+      add_header 'Cache-Control' 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
+    }
+    location = /plugin-manifest.json {
+        root   /usr/share/nginx/html;
+        expires -1;
+        add_header 'Cache-Control' 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
+    }
   }
 }`,
 		},
