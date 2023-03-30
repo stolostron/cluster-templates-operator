@@ -26,3 +26,17 @@ func EnsureResourceExists(
 	}
 	return nil
 }
+
+func DeleteIfExists(
+	ctx context.Context,
+	k8sClient client.Client,
+	obj client.Object,
+) error {
+	if obj == nil {
+		return nil
+	}
+	if err := k8sClient.Delete(ctx, obj); err != nil && !apierrors.IsNotFound(err) {
+		return err
+	}
+	return nil
+}

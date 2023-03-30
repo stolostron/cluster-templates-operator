@@ -45,6 +45,7 @@ import (
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	"github.com/stolostron/cluster-templates-operator/utils"
 	agent "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -157,16 +158,12 @@ func (r *ClusterTemplateInstanceReconciler) delete(
 			r.Client,
 			ArgoCDNamespace,
 		)
-		if err != nil {
-			if !apierrors.IsNotFound(err) {
-				return ctrl.Result{}, err
-			}
+		if err != nil && !apierrors.IsNotFound(err) {
+			return ctrl.Result{}, err
 		}
 
-		if app != nil {
-			if err = r.Client.Delete(ctx, app); err != nil {
-				return ctrl.Result{}, err
-			}
+		if err = utils.DeleteIfExists(ctx, r.Client, app); err != nil {
+			return ctrl.Result{}, err
 		}
 
 		apps, err := clusterTemplateInstance.GetDay2Applications(
@@ -174,15 +171,13 @@ func (r *ClusterTemplateInstanceReconciler) delete(
 			r.Client,
 			ArgoCDNamespace,
 		)
-		if err != nil {
-			if !apierrors.IsNotFound(err) {
-				return ctrl.Result{}, err
-			}
+		if err != nil && !apierrors.IsNotFound(err) {
+			return ctrl.Result{}, err
 		}
 
 		if apps != nil {
 			for _, app := range apps.Items {
-				if err = r.Client.Delete(ctx, &app); err != nil {
+				if err = utils.DeleteIfExists(ctx, r.Client, &app); err != nil {
 					return ctrl.Result{}, err
 				}
 			}
@@ -209,7 +204,7 @@ func (r *ClusterTemplateInstanceReconciler) delete(
 		}
 
 		for _, secret := range secrets.Items {
-			if err := r.Client.Delete(ctx, &secret); err != nil {
+			if err = utils.DeleteIfExists(ctx, r.Client, &secret); err != nil {
 				return ctrl.Result{}, err
 			}
 		}
@@ -230,19 +225,17 @@ func (r *ClusterTemplateInstanceReconciler) delete(
 							Namespace: mc.Name,
 						},
 					}
-					if err := r.Client.Delete(ctx, klusterlet); err != nil {
+					if err = utils.DeleteIfExists(ctx, r.Client, klusterlet); err != nil {
 						return ctrl.Result{}, err
 					}
 				}
 				importSecret := &corev1.Secret{
 					ObjectMeta: ocm.GetImportSecretMeta(mc.Name),
 				}
-				if err := r.Client.Delete(ctx, importSecret); err != nil {
-					if !apierrors.IsNotFound(err) {
-						return ctrl.Result{}, err
-					}
+				if err = utils.DeleteIfExists(ctx, r.Client, importSecret); err != nil {
+					return ctrl.Result{}, err
 				}
-				if err := r.Client.Delete(ctx, mc); err != nil {
+				if err = utils.DeleteIfExists(ctx, r.Client, mc); err != nil {
 					return ctrl.Result{}, err
 				}
 			}
