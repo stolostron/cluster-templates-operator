@@ -21,13 +21,17 @@ import (
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 )
 
+var (
+	templateCost = 1
+)
+
 var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 	"hypershift-cluster": {
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "hypershift-cluster",
 		},
 		Spec: v1alpha1.ClusterTemplateSpec{
-			Cost: 1,
+			Cost: &templateCost,
 			ClusterDefinition: argo.ApplicationSpec{
 				Destination: argo.ApplicationDestination{
 					Namespace: "clusters",
@@ -50,7 +54,7 @@ var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 			Name: "hypershift-kubevirt-cluster",
 		},
 		Spec: v1alpha1.ClusterTemplateSpec{
-			Cost: 1,
+			Cost: &templateCost,
 			ClusterDefinition: argo.ApplicationSpec{
 				Destination: argo.ApplicationDestination{
 					Namespace: "clusters",

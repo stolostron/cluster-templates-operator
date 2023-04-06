@@ -41,9 +41,10 @@ type ClusterTemplateSpec struct {
 	// Array of ArgoCD application specs which are used for post installation setup of the cluster
 	ClusterSetup []ClusterSetup `json:"clusterSetup,omitempty"`
 
+	// +optional
 	//+kubebuilder:validation:Minimum=0
 	// Cost of the cluster, used for quotas
-	Cost int `json:"cost"`
+	Cost *int `json:"cost,omitempty"`
 }
 
 type ClusterDefinitionSchema struct {

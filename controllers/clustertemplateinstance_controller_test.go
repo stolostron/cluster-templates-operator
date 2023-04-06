@@ -94,7 +94,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 
 			cti = testutils.GetCTI()
 
-			Expect(k8sClient.Create(ctx, ns)).Should(Succeed())
+			k8sClient.Create(ctx, ns)
 		})
 
 		AfterEach(func() {

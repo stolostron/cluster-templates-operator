@@ -936,7 +936,6 @@ spec:
                     type: integer
                 required:
                 - clusterDefinition
-                - cost
                 type: object
               conditions:
                 description: Resource conditions

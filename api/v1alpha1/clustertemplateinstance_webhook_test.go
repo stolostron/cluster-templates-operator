@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"context"
-	"strings"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,35 +15,6 @@ import (
 )
 
 var _ = Describe("ClusterTemplateInstance validating webhook", func() {
-	It("Fails ctq list", func() {
-		instanceControllerClient = fake.NewFakeClientWithScheme(&runtime.Scheme{})
-		cti := ClusterTemplateInstance{
-			ObjectMeta: v1.ObjectMeta{
-				Namespace: "foo",
-			},
-		}
-		err := cti.ValidateCreate()
-		Expect(err).Should(HaveOccurred())
-		Expect(
-			strings.Contains(err.Error(), "could not list cluster template quotas"),
-		).Should(BeTrue())
-	})
-	It("Fails when ctq does not exit", func() {
-		scheme := runtime.NewScheme()
-		err := AddToScheme(scheme)
-		Expect(err).NotTo(HaveOccurred())
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme)
-		cti := ClusterTemplateInstance{
-			ObjectMeta: v1.ObjectMeta{
-				Namespace: "foo",
-			},
-		}
-		err = cti.ValidateCreate()
-		Expect(err).Should(HaveOccurred())
-		Expect(
-			err.Error(),
-		).Should(Equal("failed quota: no cluster template quota specified for the 'foo' namespace"))
-	})
 	It("Fails when template does not exists", func() {
 		scheme := runtime.NewScheme()
 		err := AddToScheme(scheme)
@@ -93,9 +63,13 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				},
 			},
 		}
+		cost := 1
 		ct := &ClusterTemplate{
 			ObjectMeta: v1.ObjectMeta{
 				Name: "foo-tmp",
+			},
+			Spec: ClusterTemplateSpec{
+				Cost: &cost,
 			},
 		}
 		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ctq, ct)
@@ -113,6 +87,42 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 		Expect(
 			err.Error(),
 		).Should(Equal("failed quota: quota does not allow 'foo-tmp' cluster template"))
+	})
+	It("Not Fail when quota does not allow template and cost not specified", func() {
+		scheme := runtime.NewScheme()
+		err := AddToScheme(scheme)
+		Expect(err).NotTo(HaveOccurred())
+		ctq := &ClusterTemplateQuota{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "bar",
+				Namespace: "foo",
+			},
+			Spec: ClusterTemplateQuotaSpec{
+				AllowedTemplates: []AllowedTemplate{
+					{
+						Name: "foo-tmp",
+					},
+				},
+			},
+		}
+		ct := &ClusterTemplate{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "foo-tmp",
+			},
+			Spec: ClusterTemplateSpec{},
+		}
+		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ctq, ct)
+		cti := ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "foo-instance",
+				Namespace: "foo",
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef: "foo-tmp",
+			},
+		}
+		err = cti.ValidateCreate()
+		Expect(err).ShouldNot(HaveOccurred())
 	})
 	It("Fails when max insances reached", func() {
 		scheme := runtime.NewScheme()
@@ -140,9 +150,13 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				},
 			},
 		}
+		cost := 0
 		ct := &ClusterTemplate{
 			ObjectMeta: v1.ObjectMeta{
 				Name: "foo-tmp",
+			},
+			Spec: ClusterTemplateSpec{
+				Cost: &cost,
 			},
 		}
 		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ctq, ct)
@@ -173,14 +187,27 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			Spec: ClusterTemplateQuotaSpec{
 				AllowedTemplates: []AllowedTemplate{
 					{
-						Name: "foo-tmp",
+						Name:  "foo-tmp",
+						Count: 1,
+					},
+				},
+			},
+			Status: ClusterTemplateQuotaStatus{
+				TemplateInstances: []AllowedTemplate{
+					{
+						Name:  "foo-tmp",
+						Count: 0,
 					},
 				},
 			},
 		}
+		cost := 1
 		ct := &ClusterTemplate{
 			ObjectMeta: v1.ObjectMeta{
 				Name: "foo-tmp",
+			},
+			Spec: ClusterTemplateSpec{
+				Cost: &cost,
 			},
 		}
 		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ctq, ct)

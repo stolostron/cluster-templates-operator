@@ -117,6 +117,23 @@ func (r *ClusterTemplateInstance) checkProps() error {
 }
 
 func (r *ClusterTemplateInstance) checkQuota() error {
+	templates := ClusterTemplateList{}
+	if err := instanceControllerClient.List(context.TODO(), &templates); err != nil {
+		return fmt.Errorf("could not list cluster templates - %q", err)
+	}
+
+	var ct *ClusterTemplate
+	for index := range templates.Items {
+		if templates.Items[index].Name == r.Spec.ClusterTemplateRef {
+			ct = &templates.Items[index]
+			break
+		}
+	}
+
+	if ct == nil {
+		return fmt.Errorf("cluster template does not exist")
+	}
+
 	quotas := ClusterTemplateQuotaList{}
 	opts := []client.ListOption{
 		client.InNamespace(r.Namespace),
@@ -126,33 +143,13 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 	}
 
 	if len(quotas.Items) == 0 {
-		return fmt.Errorf(
-			"failed quota: no cluster template quota specified for the '%s' namespace",
-			r.Namespace,
-		)
-	}
-
-	templates := ClusterTemplateList{}
-	if err := instanceControllerClient.List(context.TODO(), &templates); err != nil {
-		return fmt.Errorf("could not list cluster templates - %q", err)
-	}
-
-	templateIdx := -1
-	for index := range templates.Items {
-		if templates.Items[index].Name == r.Spec.ClusterTemplateRef {
-			templateIdx = index
-			break
-		}
-	}
-
-	if templateIdx == -1 {
-		return fmt.Errorf("cluster template does not exist")
+		return nil
 	}
 
 	templateAllowed := false
 	for _, quota := range quotas.Items {
 		if quota.Spec.Budget > 0 &&
-			quota.Spec.Budget < quota.Status.BudgetSpent+templates.Items[templateIdx].Spec.Cost {
+			quota.Spec.Budget < quota.Status.BudgetSpent+*ct.Spec.Cost {
 			return fmt.Errorf(
 				"failed quota: cluster instance not allowed - cluster cost would exceed budget",
 			)
