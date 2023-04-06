@@ -378,6 +378,9 @@ func (i *ClusterTemplateInstance) CreateDynamicRole(
 	roleName := i.Name + "-role-managed"
 	roleNamespace := i.Namespace
 	secretNames := []string{i.GetKubeadminPassRef(), i.GetKubeconfigRef()}
+	for _, clusterSetupSecrets := range i.Status.ClusterSetupSecrets {
+		secretNames = append(secretNames, clusterSetupSecrets.Name)
+	}
 
 	existingRole := &rbacv1.Role{}
 	err := k8sClient.Get(

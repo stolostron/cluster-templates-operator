@@ -565,6 +565,36 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCredentials(
 		Name: clusterTemplateInstance.GetKubeconfigRef(),
 	}
 
+	// Set the cluster setup secrets
+	clusterSetupSecrets := &corev1.SecretList{}
+	req, _ := labels.NewRequirement(
+		v1alpha1.CTISetupSecretLabel,
+		selection.Exists,
+		[]string{},
+	)
+	ctiNameLabelReq, _ := labels.NewRequirement(
+		v1alpha1.CTINameLabel,
+		selection.Equals,
+		[]string{clusterTemplateInstance.Name},
+	)
+	ctiNsLabelReq, _ := labels.NewRequirement(
+		v1alpha1.CTINamespaceLabel,
+		selection.Equals,
+		[]string{clusterTemplateInstance.Namespace},
+	)
+	selector := labels.NewSelector().Add(*req, *ctiNameLabelReq, *ctiNsLabelReq)
+	if err := r.Client.List(ctx, clusterSetupSecrets, &client.ListOptions{
+		LabelSelector: selector,
+	}); err != nil {
+		return err
+	}
+	for _, secret := range clusterSetupSecrets.Items {
+		clusterTemplateInstance.Status.ClusterSetupSecrets = append(
+			clusterTemplateInstance.Status.ClusterSetupSecrets,
+			corev1.LocalObjectReference{Name: secret.Name},
+		)
+	}
+
 	if err := r.ReconcileDynamicRoles(ctx, r.Client, clusterTemplateInstance); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.CredentialsFailedPhase
 		errMsg := fmt.Sprintf(

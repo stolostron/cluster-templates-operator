@@ -28,6 +28,7 @@ const (
 	CTINameLabel           = "clustertemplateinstance.openshift.io/name"
 	CTINamespaceLabel      = "clustertemplateinstance.openshift.io/namespace"
 	CTISetupLabel          = "clustertemplate.openshift.io/cluster-setup"
+	CTISetupSecretLabel    = "clustertemplate.openshift.io/cluster-setup-secret"
 )
 
 type Parameter struct {
@@ -97,6 +98,9 @@ type ClusterTemplateInstanceStatus struct {
 	// Status of each cluster setup
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	ClusterSetup *[]ClusterSetupStatus `json:"clusterSetup,omitempty"`
+	// Secrets create by cluster setup which provide crenderntials for applications created by cluster setup
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	ClusterSetupSecrets []corev1.LocalObjectReference `json:"clusterSetupSecrets,omitempty"`
 	// Represents instance installaton & setup phase
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Phase Phase `json:"phase"`
