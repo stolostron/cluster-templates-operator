@@ -8,6 +8,7 @@ import (
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/repository"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,7 +30,7 @@ type ClusterTemplateReconciler struct {
 
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates,verbs=get
-
+// +kubebuilder:rbac:groups=applicationsets.argoproj.io,resources=applicationset,verbs=get
 func (r *ClusterTemplateReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
@@ -41,9 +42,19 @@ func (r *ClusterTemplateReconciler) Reconcile(
 		return ctrl.Result{}, err
 	}
 
+	appSet := &argo.ApplicationSet{}
+	err = r.Get(
+		ctx,
+		types.NamespacedName{Name: clusterTemplate.Spec.ClusterDefinition, Namespace: ArgoCDNamespace},
+		appSet,
+	)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	cdValues, cdSchema, err := r.getValuesAndSchema(
 		ctx,
-		clusterTemplate.Spec.ClusterDefinition,
+		appSet.Spec.Template.Spec,
 	)
 	if err == nil {
 		clusterTemplate.Status.ClusterDefinition.Values = cdValues
@@ -56,16 +67,26 @@ func (r *ClusterTemplateReconciler) Reconcile(
 
 	clusterSetupStatus := []v1alpha1.ClusterSetupSchema{}
 	for _, setup := range clusterTemplate.Spec.ClusterSetup {
+		appSet := &argo.ApplicationSet{}
+		err = r.Get(
+			ctx,
+			types.NamespacedName{Name: clusterTemplate.Spec.ClusterDefinition, Namespace: ArgoCDNamespace},
+			appSet,
+		)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+
 		values, schema, err := r.getValuesAndSchema(
 			ctx,
-			setup.Spec,
+			appSet.Spec.Template.Spec,
 		)
 		css := v1alpha1.ClusterSetupSchema{}
 		if err != nil {
 			errors = multierror.Append(errors, err)
 			css.Error = pointer.String(err.Error())
 		} else {
-			css.Name = setup.Name
+			css.Name = setup
 			css.Values = values
 			css.Schema = schema
 			css.Error = nil

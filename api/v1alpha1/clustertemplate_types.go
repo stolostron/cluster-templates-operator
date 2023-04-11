@@ -17,7 +17,6 @@ limitations under the License.
 package v1alpha1
 
 import (
-	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,20 +25,13 @@ var (
 	ClusterProviderExperimentalAnnotation = "clustertemplate.openshift.io/experimental-provider"
 )
 
-type ClusterSetup struct {
-	// Name of the cluster setup
-	Name string `json:"name"`
-	// ArgoCD application spec which is used for setting up the cluster
-	Spec argo.ApplicationSpec `json:"spec"`
-}
-
 type ClusterTemplateSpec struct {
-	// ArgoCD application spec which is used for installation of the cluster
-	ClusterDefinition argo.ApplicationSpec `json:"clusterDefinition"`
+	// ArgoCD applicationset name which is used for installation of the cluster
+	ClusterDefinition string `json:"clusterDefinition"`
 
 	// +optional
-	// Array of ArgoCD application specs which are used for post installation setup of the cluster
-	ClusterSetup []ClusterSetup `json:"clusterSetup,omitempty"`
+	// Array of ArgoCD applicationset names which are used for post installation setup of the cluster
+	ClusterSetup []string `json:"clusterSetup,omitempty"`
 
 	// +optional
 	//+kubebuilder:validation:Minimum=0

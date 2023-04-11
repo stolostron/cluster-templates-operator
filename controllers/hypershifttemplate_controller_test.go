@@ -1,4 +1,4 @@
-package defaultresources
+package controllers
 
 import (
 	. "github.com/onsi/ginkgo"

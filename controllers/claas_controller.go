@@ -32,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
-	"github.com/stolostron/cluster-templates-operator/controllers/defaultresources"
 )
 
 var (
@@ -78,7 +77,7 @@ func (r *CLaaSReconciler) Reconcile(
 			r.enableKlusterlet,
 		)
 
-		if err := (&defaultresources.HypershiftTemplateReconciler{
+		if err := (&HypershiftTemplateReconciler{
 			Client: r.Manager.GetClient(),
 			Scheme: r.Manager.GetScheme(),
 		}).SetupWithManager(r.Manager); err != nil {
@@ -156,7 +155,7 @@ func (r *CLaaSReconciler) SetupWithManager() error {
 	)
 
 	if r.enableHypershift {
-		if err := (&defaultresources.HypershiftTemplateReconciler{
+		if err := (&HypershiftTemplateReconciler{
 			Client: client,
 			Scheme: scheme,
 		}).SetupWithManager(r.Manager); err != nil {

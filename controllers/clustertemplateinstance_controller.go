@@ -75,6 +75,7 @@ type ClusterTemplateInstanceReconciler struct {
 // +kubebuilder:rbac:groups=hypershift.openshift.io,resources=hostedclusters;nodepools,verbs=get;list;watch
 // +kubebuilder:rbac:groups=hive.openshift.io,resources=clusterclaims;clusterdeployments,verbs=get;list;watch
 // +kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list;watch;create;delete
+// +kubebuilder:rbac:groups=argoproj.io,resources=applicationsets,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings;roles,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=cluster.open-cluster-management.io,resources=managedclusters,verbs=get;list;watch;create;delete
@@ -152,40 +153,14 @@ func (r *ClusterTemplateInstanceReconciler) delete(
 		return ctrl.Result{}, nil
 	}
 	if clusterTemplateInstance.Status.ClusterTemplateSpec != nil {
-		app, err := clusterTemplateInstance.GetDay1Application(
-			ctx,
-			r.Client,
-			ArgoCDNamespace,
-		)
+		err := clusterTemplateInstance.DeleteDay1Application(ctx, r.Client, ArgoCDNamespace)
 		if err != nil {
-			if !apierrors.IsNotFound(err) {
-				return ctrl.Result{}, err
-			}
+			return ctrl.Result{}, err
 		}
 
-		if app != nil {
-			if err = r.Client.Delete(ctx, app); err != nil {
-				return ctrl.Result{}, err
-			}
-		}
-
-		apps, err := clusterTemplateInstance.GetDay2Applications(
-			ctx,
-			r.Client,
-			ArgoCDNamespace,
-		)
+		err = clusterTemplateInstance.DeleteDay2Application(ctx, r.Client, ArgoCDNamespace)
 		if err != nil {
-			if !apierrors.IsNotFound(err) {
-				return ctrl.Result{}, err
-			}
-		}
-
-		if apps != nil {
-			for _, app := range apps.Items {
-				if err = r.Client.Delete(ctx, &app); err != nil {
-					return ctrl.Result{}, err
-				}
-			}
+			return ctrl.Result{}, err
 		}
 
 		// cleanup argocd secrets (ie new cluster)
@@ -337,7 +312,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
 ) error {
-
 	clusterDefinitionCreatedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
 		string(v1alpha1.ClusterDefinitionCreated),
