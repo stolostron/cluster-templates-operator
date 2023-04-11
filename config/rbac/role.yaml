@@ -28,6 +28,17 @@ rules:
 - apiGroups:
   - ""
   resources:
+  - namespaces
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
   - secrets
   verbs:
   - create
@@ -54,6 +65,12 @@ rules:
   - get
   - list
   - watch
+- apiGroups:
+  - applicationsets.argoproj.io
+  resources:
+  - applicationset
+  verbs:
+  - get
 - apiGroups:
   - apps
   resources:
@@ -84,6 +101,17 @@ rules:
   - get
   - list
   - patch
+  - update
+  - watch
+- apiGroups:
+  - argoproj.io
+  resources:
+  - argocds
+  verbs:
+  - create
+  - delete
+  - get
+  - list
   - update
   - watch
 - apiGroups:
@@ -153,6 +181,14 @@ rules:
   - update
   - watch
 - apiGroups:
+  - clustertemplate.openshift.io
+  resources:
+  - clustertemplates/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - console.openshift.io
   resources:
   - consoleplugins
@@ -180,6 +216,16 @@ rules:
   verbs:
   - get
   - list
+  - watch
+- apiGroups:
+  - operators.coreos.com
+  resources:
+  - subscriptions
+  verbs:
+  - get
+  - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - rbac.authorization.k8s.io

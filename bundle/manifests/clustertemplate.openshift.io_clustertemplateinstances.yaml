@@ -123,6 +123,19 @@ spec:
                   - status
                   type: object
                 type: array
+              clusterSetupSecrets:
+                description: Secrets create by cluster setup which provide crenderntials
+                  for applications created by cluster setup
+                items:
+                  description: LocalObjectReference contains enough information to
+                    let you locate the referenced object inside the same namespace.
+                  properties:
+                    name:
+                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        TODO: Add other useful fields. apiVersion, kind, uid?'
+                      type: string
+                  type: object
+                type: array
               clusterTemplateLabels:
                 additionalProperties:
                   type: string
@@ -143,6 +156,10 @@ spec:
                     description: Cost of the cluster, used for quotas
                     minimum: 0
                     type: integer
+                  skipClusterRegistration:
+                    description: Skip the registeration of the cluster to the hub
+                      cluster
+                    type: boolean
                 required:
                 - clusterDefinition
                 type: object

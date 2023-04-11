@@ -32,7 +32,7 @@ metadata:
     categories: Integration & Delivery,OpenShift Optional
     certified: "false"
     containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-8a5d0ce2db589cdbee3c4b0fa86051b3daa2ee74
-    createdAt: "2023-04-05T15:19:59Z"
+    createdAt: "2023-04-26T09:30:23Z"
     description: Easily install fully configured clusters with guard-rails.
     operators.operatorframework.io/builder: operator-sdk-v1.27.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -62,6 +62,10 @@ spec:
       - description: Status of each cluster setup
         displayName: Cluster Setup
         path: clusterSetup
+      - description: Secrets create by cluster setup which provide crenderntials for
+          applications created by cluster setup
+        displayName: Cluster Setup Secrets
+        path: clusterSetupSecrets
       - description: Resource conditions
         displayName: Conditions
         path: conditions
@@ -150,6 +154,17 @@ spec:
         - apiGroups:
           - ""
           resources:
+          - namespaces
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - ""
+          resources:
           - secrets
           verbs:
           - create
@@ -176,6 +191,12 @@ spec:
           - get
           - list
           - watch
+        - apiGroups:
+          - applicationsets.argoproj.io
+          resources:
+          - applicationset
+          verbs:
+          - get
         - apiGroups:
           - apps
           resources:
@@ -206,6 +227,17 @@ spec:
           - get
           - list
           - patch
+          - update
+          - watch
+        - apiGroups:
+          - argoproj.io
+          resources:
+          - argocds
+          verbs:
+          - create
+          - delete
+          - get
+          - list
           - update
           - watch
         - apiGroups:
@@ -275,6 +307,14 @@ spec:
           - update
           - watch
         - apiGroups:
+          - clustertemplate.openshift.io
+          resources:
+          - clustertemplates/status
+          verbs:
+          - get
+          - patch
+          - update
+        - apiGroups:
           - console.openshift.io
           resources:
           - consoleplugins
@@ -302,6 +342,16 @@ spec:
           verbs:
           - get
           - list
+          - watch
+        - apiGroups:
+          - operators.coreos.com
+          resources:
+          - subscriptions
+          verbs:
+          - get
+          - list
+          - patch
+          - update
           - watch
         - apiGroups:
           - rbac.authorization.k8s.io

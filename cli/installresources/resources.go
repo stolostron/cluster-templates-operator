@@ -17,7 +17,7 @@ import (
 
 const (
 	operatorNamespace = "cluster-aas-operator"
-	argocdNamespace   = "argocd"
+	argocdNamespace   = "cluster-aas-operator"
 	templateNamespace = "clusters"
 	mceNamespace      = "multicluster-engine"
 )
@@ -128,7 +128,7 @@ var (
 		ObjectMeta: v1.ObjectMeta{
 			Name: templateNamespace,
 			Labels: map[string]string{
-				"argocd.argoproj.io/managed-by": "argocd",
+				"argocd.argoproj.io/managed-by": argocdNamespace,
 			},
 		},
 	}

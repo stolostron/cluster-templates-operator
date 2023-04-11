@@ -30,7 +30,7 @@ var _ = Describe("ClusterTemplate controller", func() {
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
-				Namespace: "argocd",
+				Namespace: defaultArgoCDNs,
 			},
 			Spec: v1alpha1.ClusterTemplateSpec{
 				ClusterDefinition: "foo",
@@ -43,7 +43,7 @@ var _ = Describe("ClusterTemplate controller", func() {
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
-				Namespace: "argocd",
+				Namespace: defaultArgoCDNs,
 			},
 			Spec: argo.ApplicationSetSpec{
 				Generators: []argo.ApplicationSetGenerator{{}},

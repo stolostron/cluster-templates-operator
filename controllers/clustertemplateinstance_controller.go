@@ -88,6 +88,7 @@ type ClusterTemplateInstanceReconciler struct {
 // +kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list;watch;create;delete
 // +kubebuilder:rbac:groups=argoproj.io,resources=applicationsets,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=rbac.authorization.k8s.io,resources=rolebindings;roles,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=cluster.open-cluster-management.io,resources=managedclusters,verbs=get;list;watch;create;delete
 // +kubebuilder:rbac:groups=cluster.open-cluster-management.io,resources=managedclustersets/join,verbs=create
@@ -379,7 +380,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	)
 
 	if clusterDefinitionCreatedCondition.Status == metav1.ConditionFalse {
-		if err := clusterTemplateInstance.CreateDay1Application(ctx, r.Client, ArgoCDNamespace); err != nil {
+		if err := clusterTemplateInstance.CreateDay1Application(ctx, r.Client, ArgoCDNamespace, ArgoCDNamespace == defaultArgoCDNs); err != nil {
 			clusterTemplateInstance.SetClusterDefinitionCreatedCondition(
 				metav1.ConditionFalse,
 				v1alpha1.ClusterDefinitionFailed,
@@ -848,6 +849,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 		ctx,
 		r.Client,
 		ArgoCDNamespace,
+		ArgoCDNamespace == defaultArgoCDNs,
 	); err != nil {
 		clusterTemplateInstance.SetClusterSetupCreatedCondition(
 			metav1.ConditionFalse,
