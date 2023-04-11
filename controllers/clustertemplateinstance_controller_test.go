@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"time"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -29,6 +31,40 @@ import (
 )
 
 var _ = Describe("ClusterTemplateInstance controller", func() {
+
+	Context("Auto delete the template instance", func() {
+		ct := &v1alpha1.ClusterTemplate{}
+		cti := &v1alpha1.ClusterTemplateInstance{}
+		ctq := &v1alpha1.ClusterTemplateQuota{}
+		appset := &argo.ApplicationSet{}
+
+		BeforeEach(func() {
+			appset = testutils.GetAppset()
+			Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+			ctq = testutils.GetCTQWithDeletion(5 * time.Second)
+			Expect(k8sClient.Create(ctx, ctq)).Should(Succeed())
+			ct = testutils.GetCT(false)
+			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
+			cti = testutils.GetCTI()
+			Expect(k8sClient.Create(ctx, cti)).Should(Succeed())
+		})
+
+		AfterEach(func() {
+			testutils.DeleteResource(ctx, ct, k8sClient)
+			testutils.DeleteResource(ctx, ctq, k8sClient)
+			testutils.DeleteResource(ctx, appset, k8sClient)
+		})
+
+		It("Should auto-delete the CTI", func() {
+			Eventually(func() error {
+				return k8sClient.Get(ctx, client.ObjectKeyFromObject(cti), cti)
+			}, timeout, interval).Should(BeNil())
+			Eventually(func() error {
+				return k8sClient.Get(ctx, client.ObjectKeyFromObject(cti), cti)
+			}, timeout, interval).ShouldNot(BeNil())
+		})
+	})
+
 	Context("Initial ClusterTemplateInstance Status", func() {
 		ct := &v1alpha1.ClusterTemplate{}
 		cti := &v1alpha1.ClusterTemplateInstance{}

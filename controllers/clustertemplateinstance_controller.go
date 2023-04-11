@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/kubernetes-client/go-base/config/api"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -60,6 +61,14 @@ var (
 	CTIlog = logf.Log.WithName("cti-controller")
 )
 
+type realClock struct{}
+
+func (realClock) Now() time.Time { return time.Now() }
+
+type Clock interface {
+	Now() time.Time
+}
+
 type ClusterTemplateInstanceReconciler struct {
 	client.Client
 	Scheme               *runtime.Scheme
@@ -67,11 +76,13 @@ type ClusterTemplateInstanceReconciler struct {
 	EnableHive           bool
 	EnableManagedCluster bool
 	EnableKlusterlet     bool
+	Clock
 }
 
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplateinstances/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates,verbs=get;list;watch
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplatequotas,verbs=get;list;watch
 // +kubebuilder:rbac:groups=hypershift.openshift.io,resources=hostedclusters;nodepools,verbs=get;list;watch
 // +kubebuilder:rbac:groups=hive.openshift.io,resources=clusterclaims;clusterdeployments,verbs=get;list;watch
 // +kubebuilder:rbac:groups=argoproj.io,resources=applications,verbs=get;list;watch;create;delete
@@ -104,6 +115,12 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 		return r.delete(ctx, clusterTemplateInstance)
 	}
 
+	// Check if CTI should be auto-removed:
+	requeueAfter, err := r.autoDelete(ctx, clusterTemplateInstance)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
 	if len(clusterTemplateInstance.Status.Conditions) == 0 {
 		clusterTemplateInstance.Status.Phase = v1alpha1.PendingPhase
 		clusterTemplateInstance.Status.Message = v1alpha1.PendingMessage
@@ -129,8 +146,7 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 		clusterTemplateInstance.Status.ClusterTemplateLabels = clusterTemplate.Labels
 	}
 
-	err := r.reconcile(ctx, clusterTemplateInstance)
-
+	err = r.reconcile(ctx, clusterTemplateInstance)
 	if updErr := r.Status().Update(ctx, clusterTemplateInstance); updErr != nil {
 		return ctrl.Result{}, fmt.Errorf(
 			"failed to update status of clustertemplateinstance %q: %w",
@@ -138,8 +154,53 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 			updErr,
 		)
 	}
+	if err != nil {
+		return ctrl.Result{}, err
+	}
 
-	return ctrl.Result{}, err
+	if requeueAfter != nil {
+		return ctrl.Result{RequeueAfter: *requeueAfter}, nil
+	}
+
+	return ctrl.Result{}, nil
+}
+
+// Return the amount of time the reconcile should re-queued to check the delete time,
+// if time already passed remove the CTI.
+func (r *ClusterTemplateInstanceReconciler) autoDelete(ctx context.Context, cti *v1alpha1.ClusterTemplateInstance) (*time.Duration, error) {
+	ctqList := &v1alpha1.ClusterTemplateQuotaList{}
+	if err := r.List(ctx, ctqList); err != nil {
+		return nil, err
+	}
+
+	var deleteAfter *time.Duration
+	for _, ctq := range ctqList.Items {
+		for _, allowedTemplate := range ctq.Spec.AllowedTemplates {
+			if cti.Spec.ClusterTemplateRef == allowedTemplate.Name {
+				if allowedTemplate.DeleteAfter != nil {
+					deleteAfter = &allowedTemplate.DeleteAfter.Duration
+				}
+				break
+			}
+		}
+	}
+	if deleteAfter == nil {
+		return nil, nil
+	}
+
+	now := r.Now()
+	createTimestamp := cti.CreationTimestamp
+	if now.After(createTimestamp.Add(*deleteAfter)) {
+		CTIlog.Info("Removing CTI as time to live expired", "name", cti.Name)
+		if err := r.Delete(ctx, cti); err != nil {
+			return nil, err
+		}
+	} else {
+		requeueAfter := createTimestamp.Add(*deleteAfter).Sub(now)
+		return &requeueAfter, nil
+	}
+
+	return nil, nil
 }
 
 func (r *ClusterTemplateInstanceReconciler) delete(
@@ -901,6 +962,9 @@ func StartCTIController(
 		EnableHive:           enableHive,
 		EnableManagedCluster: enableManagedCluster,
 		EnableKlusterlet:     enableKlusterlet,
+	}
+	if ctiReconciller.Clock == nil {
+		ctiReconciller.Clock = realClock{}
 	}
 	ctiController, err := controller.NewUnmanaged("cti-controller", mgr, controller.Options{
 		Reconciler: ctiReconciller,

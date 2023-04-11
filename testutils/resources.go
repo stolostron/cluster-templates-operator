@@ -27,23 +27,27 @@ const (
 	interval = time.Millisecond * 250
 )
 
-func GetCTQ() *v1alpha1.ClusterTemplateQuota {
+func GetCTQWithDeletion(deleteAfter time.Duration) *v1alpha1.ClusterTemplateQuota {
 	ctq := &v1alpha1.ClusterTemplateQuota{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.APIVersion,
 			Kind:       "ClusterTemplateQuota",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      ctqName,
+			Name:      ctName,
 			Namespace: ctiNs,
 		},
 		Spec: v1alpha1.ClusterTemplateQuotaSpec{
 			AllowedTemplates: []v1alpha1.AllowedTemplate{
-				{Name: ctName, Count: 1},
+				{DeleteAfter: &metav1.Duration{Duration: deleteAfter}, Name: ctName, Count: 1},
 			},
 		},
 	}
 	return ctq
+}
+
+func GetCTQ() *v1alpha1.ClusterTemplateQuota {
+	return GetCTQWithDeletion(120 * time.Second)
 }
 
 func GetCTI() *v1alpha1.ClusterTemplateInstance {

@@ -27,6 +27,16 @@ type AllowedTemplate struct {
 	// +optional
 	// Defines how many instances of the ClusterTemplate can exist
 	Count int `json:"count,omitempty"`
+	// Template instance will be removed after specified time
+	// This is a Duration value; see https://pkg.go.dev/time#ParseDuration for accepted formats.
+	// Note: due to discrepancies in validation vs parsing, we use a Pattern instead of `Format=duration`. See
+	// https://bugzilla.redhat.com/show_bug.cgi?id=2050332
+	// https://github.com/kubernetes/apimachinery/issues/131
+	// https://github.com/kubernetes/apiextensions-apiserver/issues/56
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:Pattern="^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+	DeleteAfter *metav1.Duration `json:"deleteAfter,omitempty"`
 }
 
 type ClusterTemplateQuotaSpec struct {
