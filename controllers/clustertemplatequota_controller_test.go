@@ -28,7 +28,7 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 
 		BeforeEach(func() {
 			k8sClient.Create(ctx, ns)
-			ct = testutils.GetCTWithCost(false, &cost)
+			ct = testutils.GetCTWithCost(false, &cost, false)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
 			appset = testutils.GetAppset()

@@ -70,7 +70,7 @@ func GetCTI() *v1alpha1.ClusterTemplateInstance {
 	return cti
 }
 
-func GetCTWithCost(withSetup bool, cost *int) *v1alpha1.ClusterTemplate {
+func GetCTWithCost(withSetup bool, cost *int, skip bool) *v1alpha1.ClusterTemplate {
 	ct := &v1alpha1.ClusterTemplate{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: v1alpha1.GroupVersion.Identifier(),
@@ -80,8 +80,9 @@ func GetCTWithCost(withSetup bool, cost *int) *v1alpha1.ClusterTemplate {
 			Name: ctName,
 		},
 		Spec: v1alpha1.ClusterTemplateSpec{
-			Cost:              cost,
-			ClusterDefinition: "appset1",
+			Cost:                    cost,
+			ClusterDefinition:       "appset1",
+			SkipClusterRegistration: skip,
 		},
 	}
 	if withSetup {
@@ -190,7 +191,7 @@ func GetApp() *argo.Application {
 }
 
 func GetCT(withSetup bool) *v1alpha1.ClusterTemplate {
-	return GetCTWithCost(withSetup, nil)
+	return GetCTWithCost(withSetup, nil, false)
 }
 
 func GetKubeconfigSecret() (*corev1.Secret, error) {

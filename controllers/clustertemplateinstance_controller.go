@@ -632,7 +632,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileCreateManagedCluster(
 		return nil
 	}
 
-	if !r.EnableManagedCluster {
+	if !(r.EnableManagedCluster && !clusterTemplateInstance.Status.ClusterTemplateSpec.SkipClusterRegistration) {
 		clusterTemplateInstance.SetManagedClusterCreatedCondition(
 			metav1.ConditionTrue,
 			v1alpha1.MCSkipped,
@@ -674,7 +674,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileImportManagedCluster(
 		return nil
 	}
 
-	if !r.EnableManagedCluster {
+	if !(r.EnableManagedCluster && !clusterTemplateInstance.Status.ClusterTemplateSpec.SkipClusterRegistration) {
 		clusterTemplateInstance.SetManagedClusterImportedCondition(
 			metav1.ConditionTrue,
 			v1alpha1.MCImportSkipped,
@@ -723,7 +723,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileCreateKlusterlet(
 		return nil
 	}
 
-	if !r.EnableKlusterlet {
+	if !(r.EnableKlusterlet && !clusterTemplateInstance.Status.ClusterTemplateSpec.SkipClusterRegistration) {
 		clusterTemplateInstance.SetKlusterletCreatedCondition(
 			metav1.ConditionTrue,
 			v1alpha1.KlusterletSkipped,
@@ -771,7 +771,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 		clusterTemplateInstance,
 		clustersetup.GetClientForCluster,
 		ArgoCDNamespace,
-		r.EnableManagedCluster,
+		r.EnableManagedCluster && !clusterTemplateInstance.Status.ClusterTemplateSpec.SkipClusterRegistration,
 	); err != nil {
 		clusterTemplateInstance.SetArgoClusterAddedCondition(
 			metav1.ConditionFalse,

@@ -565,6 +565,35 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			cti = testutils.GetCTI()
 		})
 
+		It("Skips creating MC if SkipClusterRegistraion flag is set", func() {
+			cost := 1
+			ct = testutils.GetCTWithCost(false, &cost, true)
+			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:   string(v1alpha1.ClusterInstallSucceeded),
+						Status: metav1.ConditionTrue,
+					},
+					{
+						Type:   string(v1alpha1.ManagedClusterCreated),
+						Status: metav1.ConditionFalse,
+					},
+				},
+				ClusterTemplateSpec: &ct.Spec,
+			}
+			client := fake.NewFakeClientWithScheme(scheme.Scheme)
+			reconciler := &ClusterTemplateInstanceReconciler{
+				Client:               client,
+				EnableManagedCluster: true,
+			}
+			err := reconciler.reconcileCreateManagedCluster(ctx, cti)
+			Expect(err).Should(BeNil())
+
+			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
+			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCSkipped)))
+
+		})
+
 		It("Skips creating MC if MC CRD does not exist", func() {
 			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
