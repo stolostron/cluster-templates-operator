@@ -1,4 +1,4 @@
-# Dev guide
+# Developer guide
 ## Deploying the latest version
 To deploy the latest vesion of the CLaaS operator, run the following commands:
 - `export QUAY_USERNAME=<your_quay_username>`
