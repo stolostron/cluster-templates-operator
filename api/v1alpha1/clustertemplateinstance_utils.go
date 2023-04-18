@@ -124,7 +124,7 @@ func (i *ClusterTemplateInstance) DeleteDay1Application(
 
 	var generators []argo.ApplicationSetGenerator
 	for _, g := range appSet.Spec.Generators {
-		if g.List != nil && g.List.Template.Name == i.Name && g.List.Template.Namespace == i.Namespace {
+		if g.List != nil && g.List.Template.Labels[CTINameLabel] == i.Name && g.List.Template.Labels[CTINamespaceLabel] == i.Namespace {
 			continue
 		}
 		generators = append(generators, g)
@@ -148,7 +148,7 @@ func (i *ClusterTemplateInstance) DeleteDay2Application(
 	for _, appSet := range appsets {
 		var generators []argo.ApplicationSetGenerator
 		for _, g := range appSet.Spec.Generators {
-			if g.List != nil && g.List.Template.Name == i.Name && g.List.Template.Namespace == i.Namespace {
+			if g.List != nil && g.List.Template.Labels[CTINameLabel] == i.Name && g.List.Template.Labels[CTINamespaceLabel] == i.Namespace {
 				continue
 			}
 			generators = append(generators, g)
@@ -172,7 +172,7 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 	isDay2 bool,
 ) error {
 	for _, g := range appSet.Spec.Generators {
-		if g.List != nil && g.List.Template.Name == i.Name && g.List.Template.Namespace == i.Namespace {
+		if g.List != nil && g.List.Template.Labels[CTINameLabel] == i.Name && g.List.Template.Labels[CTINamespaceLabel] == i.Namespace {
 			return nil
 		}
 	}
