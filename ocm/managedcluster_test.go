@@ -31,13 +31,8 @@ var _ = Describe("ManagedCluster", func() {
 					"foo": "bar",
 				},
 			},
-			Status: v1alpha1.ClusterTemplateInstanceStatus{
-				ClusterTemplateLabels: map[string]string{
-					"foo": "bar",
-				},
-			},
 		}
-		CreateManagedCluster(context.TODO(), client, cti)
+		CreateManagedCluster(context.TODO(), client, cti, map[string]string{"foo": "bar"})
 		mcs := &ocmv1.ManagedClusterList{}
 		client.List(context.TODO(), mcs)
 		Expect(len(mcs.Items)).To(Equal(1))

@@ -107,12 +107,12 @@ func (i *ClusterTemplateInstance) DeleteDay1Application(
 	ctx context.Context,
 	k8sClient client.Client,
 	argoCDNamespace string,
-	clusterTemplate *ClusterTemplate,
+	clusterDefinition string,
 ) error {
 	appSet := &argo.ApplicationSet{}
 	if err := k8sClient.Get(
 		ctx,
-		types.NamespacedName{Name: clusterTemplate.Spec.ClusterDefinition, Namespace: argoCDNamespace},
+		types.NamespacedName{Name: clusterDefinition, Namespace: argoCDNamespace},
 		appSet,
 	); err != nil {
 		return err
@@ -135,9 +135,9 @@ func (i *ClusterTemplateInstance) DeleteDay2Application(
 	ctx context.Context,
 	k8sClient client.Client,
 	argoCDNamespace string,
-	clusterTemplate *ClusterTemplate,
+	clusterSetup []string,
 ) error {
-	appsets, err := i.getDay2Appsets(ctx, k8sClient, argoCDNamespace, clusterTemplate)
+	appsets, err := getDay2Appsets(ctx, k8sClient, argoCDNamespace, clusterSetup)
 	if err != nil {
 		return err
 	}
@@ -239,12 +239,12 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 	k8sClient client.Client,
 	argoCDNamespace string,
 	labelNamespace bool,
-	clusterTemplate *ClusterTemplate,
+	clusterDefinition string,
 ) error {
 	appSet := &argo.ApplicationSet{}
 	if err := k8sClient.Get(
 		ctx,
-		types.NamespacedName{Name: clusterTemplate.Spec.ClusterDefinition, Namespace: argoCDNamespace},
+		types.NamespacedName{Name: clusterDefinition, Namespace: argoCDNamespace},
 		appSet,
 	); err != nil {
 		return err
@@ -299,9 +299,9 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 	k8sClient client.Client,
 	argoCDNamespace string,
 	labelNamespace bool,
-	clusterTemplate *ClusterTemplate,
+	clusterSetup []string,
 ) error {
-	appsets, err := i.getDay2Appsets(ctx, k8sClient, argoCDNamespace, clusterTemplate)
+	appsets, err := getDay2Appsets(ctx, k8sClient, argoCDNamespace, clusterSetup)
 	if err != nil {
 		return err
 	}
@@ -337,15 +337,15 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 	return nil
 }
 
-func (i *ClusterTemplateInstance) getDay2Appsets(
+func getDay2Appsets(
 	ctx context.Context,
 	k8sClient client.Client,
 	argoCDNamespace string,
-	clusterTemplate *ClusterTemplate,
+	clusterSetup []string,
 ) ([]*argo.ApplicationSet, error) {
 	appSets := []*argo.ApplicationSet{}
 	appSet := &argo.ApplicationSet{}
-	for _, cs := range clusterTemplate.Spec.ClusterSetup {
+	for _, cs := range clusterSetup {
 		if err := k8sClient.Get(
 			ctx,
 			types.NamespacedName{Name: cs, Namespace: argoCDNamespace},
@@ -494,4 +494,14 @@ func (i *ClusterTemplateInstance) CreateDynamicRoleBinding(
 	} else {
 		return nil, err
 	}
+}
+
+func (i *ClusterTemplateInstance) ContainsSetupSecret(secretName string) bool {
+	for _, secret := range i.Status.ClusterSetupSecrets {
+		if secret.Name == secretName {
+			return true
+		}
+	}
+
+	return false
 }

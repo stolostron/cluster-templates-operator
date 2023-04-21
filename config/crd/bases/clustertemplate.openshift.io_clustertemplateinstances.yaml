@@ -58,6 +58,10 @@ spec:
                 description: A reference to ClusterTemplate which will be used for
                   installing and setting up the cluster
                 type: string
+              kubeconfigSecretRef:
+                description: A reference to a secret which contains kubeconfig of
+                  the cluster. If specified day1 operation won't be executed.
+                type: string
               parameters:
                 description: Helm parameters to be passed to cluster installation
                   or setup
@@ -127,10 +131,6 @@ spec:
                       type: string
                   type: object
                 type: array
-              clusterTemplateLabels:
-                additionalProperties:
-                  type: string
-                type: object
               conditions:
                 description: Resource conditions
                 items:

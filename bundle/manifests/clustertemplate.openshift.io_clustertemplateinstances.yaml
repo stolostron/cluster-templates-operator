@@ -67,6 +67,10 @@ spec:
                 description: A reference to ClusterTemplate which will be used for
                   installing and setting up the cluster
                 type: string
+              kubeconfigSecretRef:
+                description: A reference to a secret which contains kubeconfig of
+                  the cluster. If specified day1 operation won't be executed.
+                type: string
               parameters:
                 description: Helm parameters to be passed to cluster installation
                   or setup
@@ -136,33 +140,6 @@ spec:
                       type: string
                   type: object
                 type: array
-              clusterTemplateLabels:
-                additionalProperties:
-                  type: string
-                type: object
-              clusterTemplateSpec:
-                properties:
-                  clusterDefinition:
-                    description: ArgoCD applicationset name which is used for installation
-                      of the cluster
-                    type: string
-                  clusterSetup:
-                    description: Array of ArgoCD applicationset names which are used
-                      for post installation setup of the cluster
-                    items:
-                      type: string
-                    type: array
-                  cost:
-                    description: Cost of the cluster, used for quotas
-                    minimum: 0
-                    type: integer
-                  skipClusterRegistration:
-                    description: Skip the registeration of the cluster to the hub
-                      cluster
-                    type: boolean
-                required:
-                - clusterDefinition
-                type: object
               conditions:
                 description: Resource conditions
                 items:

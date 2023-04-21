@@ -305,7 +305,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		argoApp := &argo.Application{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo-bar",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 				Labels: map[string]string{
 					CTINameLabel:      "foo",
 					CTINamespaceLabel: "default",
@@ -351,13 +351,13 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		appset := &argo.ApplicationSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 			},
 			Spec: argo.ApplicationSetSpec{},
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, appset)
-		err := cti.CreateDay1Application(ctx, client, "cluster-aas-operator", false, &ClusterTemplate{Spec: ClusterTemplateSpec{ClusterDefinition: "foo"}})
+		err := cti.CreateDay1Application(ctx, client, "cluster-aas-operator", false, "foo")
 
 		Expect(err).ShouldNot(HaveOccurred())
 
@@ -412,7 +412,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		appset := argo.ApplicationSet{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 			},
 			Spec: argo.ApplicationSetSpec{
 				Generators: []argo.ApplicationSetGenerator{{}},
@@ -425,7 +425,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret, &appset)
-		err = cti.CreateDay2Applications(ctx, client, "argocd", false, &ClusterTemplate{Spec: ClusterTemplateSpec{ClusterSetup: []string{"foo"}}})
+		err = cti.CreateDay2Applications(ctx, client, "cluster-aas-operator", false, []string{"foo"})
 		Expect(err).ShouldNot(HaveOccurred())
 
 		appsets := argo.ApplicationSetList{}

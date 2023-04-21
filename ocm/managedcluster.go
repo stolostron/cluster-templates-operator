@@ -26,6 +26,7 @@ func CreateManagedCluster(
 	ctx context.Context,
 	k8sClient client.Client,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplateLabels map[string]string,
 ) error {
 
 	mc, err := GetManagedCluster(ctx, k8sClient, clusterTemplateInstance)
@@ -46,7 +47,7 @@ func CreateManagedCluster(
 		"cloud":                    "auto-detect",
 		"vendor":                   "auto-detect",
 	}
-	for k, v := range clusterTemplateInstance.Status.ClusterTemplateLabels {
+	for k, v := range clusterTemplateLabels {
 		labels[k] = v
 	}
 	mc = &ocm.ManagedCluster{

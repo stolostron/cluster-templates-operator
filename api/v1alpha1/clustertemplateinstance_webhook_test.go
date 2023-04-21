@@ -2,11 +2,13 @@ package v1alpha1
 
 import (
 	"context"
+	"os"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	admissionv1 "k8s.io/api/admission/v1"
 	authenticationv1 "k8s.io/api/authentication/v1"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -325,6 +327,120 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 })
 
 var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
+	It("Fails if template's kubeconfig secret does not exist", func() {
+		scheme := runtime.NewScheme()
+		err := corev1.AddToScheme(scheme)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(AddToScheme(scheme)).ShouldNot(HaveOccurred())
+		ct := &ClusterTemplateSetup{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "foo-template",
+			},
+		}
+		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ct)
+		secretName := "abc"
+		cti := &ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: "foo",
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef:  "foo-template",
+				KubeconfigSecretRef: &secretName,
+			},
+		}
+		ctx := context.TODO()
+		webhookCtx := admission.NewContextWithRequest(ctx, admission.Request{
+			AdmissionRequest: admissionv1.AdmissionRequest{
+				UserInfo: authenticationv1.UserInfo{
+					Username: "foo",
+				},
+			},
+		})
+		err = cti.Default(webhookCtx, cti)
+		Expect(err).Should(HaveOccurred())
+		Expect(err.Error()).Should(ContainSubstring("secret 'abc' not found"))
+	})
+	It("Fails if template's kubeconfig secret does not contain kubeconfig section", func() {
+		scheme := runtime.NewScheme()
+		err := corev1.AddToScheme(scheme)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(AddToScheme(scheme)).ShouldNot(HaveOccurred())
+		ct := &ClusterTemplateSetup{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "foo-template",
+			},
+		}
+		secret := &corev1.Secret{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "abc",
+			},
+			Data: map[string][]byte{
+				"foo": []byte("bar"),
+			},
+		}
+		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ct, secret)
+		cti := &ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: "foo",
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef:  "foo-template",
+				KubeconfigSecretRef: &secret.Name,
+			},
+		}
+		ctx := context.TODO()
+		webhookCtx := admission.NewContextWithRequest(ctx, admission.Request{
+			AdmissionRequest: admissionv1.AdmissionRequest{
+				UserInfo: authenticationv1.UserInfo{
+					Username: "foo",
+				},
+			},
+		})
+		err = cti.Default(webhookCtx, cti)
+		Expect(err).Should(HaveOccurred())
+		Expect(err.Error()).Should(ContainSubstring("secret 'abc' must contain kubeconfig section"))
+	})
+	It("Dont fail if template's kubeconfig secret does contain valid kubeconfig section", func() {
+		scheme := runtime.NewScheme()
+		err := corev1.AddToScheme(scheme)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(AddToScheme(scheme)).ShouldNot(HaveOccurred())
+		ct := &ClusterTemplateSetup{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "foo-template",
+			},
+		}
+		kubeconfigFile, err := os.ReadFile("../../testutils/kubeconfig_mock.yaml")
+		Expect(err).ShouldNot(HaveOccurred())
+		secret := &corev1.Secret{
+			ObjectMeta: v1.ObjectMeta{
+				Name: "abc",
+			},
+			Data: map[string][]byte{
+				"kubeconfig": kubeconfigFile,
+			},
+		}
+		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ct, secret)
+		cti := &ClusterTemplateInstance{
+			ObjectMeta: v1.ObjectMeta{
+				Namespace: "foo",
+			},
+			Spec: ClusterTemplateInstanceSpec{
+				ClusterTemplateRef:  "foo-template",
+				KubeconfigSecretRef: &secret.Name,
+			},
+		}
+		ctx := context.TODO()
+		webhookCtx := admission.NewContextWithRequest(ctx, admission.Request{
+			AdmissionRequest: admissionv1.AdmissionRequest{
+				UserInfo: authenticationv1.UserInfo{
+					Username: "foo",
+				},
+			},
+		})
+		err = cti.Default(webhookCtx, cti)
+		Expect(err).ShouldNot(HaveOccurred())
+	})
 	It("Fails if template does not exist", func() {
 		scheme := runtime.NewScheme()
 		err := AddToScheme(scheme)
