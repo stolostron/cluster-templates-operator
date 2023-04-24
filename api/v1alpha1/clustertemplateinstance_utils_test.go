@@ -69,9 +69,6 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "foo",
 			},
-			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{},
-			},
 		}
 		appset := &argo.ApplicationSet{}
 
@@ -91,9 +88,6 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 						Value: "bar",
 					},
 				},
-			},
-			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{},
 			},
 		}
 
@@ -118,9 +112,6 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 						Value: "bar",
 					},
 				},
-			},
-			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{},
 			},
 		}
 		appset = &argo.ApplicationSet{
@@ -165,11 +156,6 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 					},
 				},
 			},
-			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterDefinition: "appset1",
-				},
-			},
 		}
 		appset = &argo.ApplicationSet{
 			ObjectMeta: metav1.ObjectMeta{
@@ -210,11 +196,6 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Name: "foo",
 			},
-			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterSetup: []string{"foo-day2"},
-				},
-			},
 		}
 		appset := &argo.ApplicationSet{}
 
@@ -234,11 +215,6 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 						Value:          "bar",
 						ApplicationSet: "foo-day2",
 					},
-				},
-			},
-			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterSetup: []string{"foo-day2"},
 				},
 			},
 		}
@@ -278,9 +254,6 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 						Value: "bar",
 					},
 				},
-			},
-			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{},
 			},
 		}
 		appset = &argo.ApplicationSet{
@@ -327,9 +300,6 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 					},
 				},
 			},
-			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{},
-			},
 		}
 
 		argoApp := &argo.Application{
@@ -350,14 +320,14 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, argoApp)
 
-		app, err := cti.GetDay1Application(ctx, client, "argocd")
+		app, err := cti.GetDay1Application(ctx, client, "cluster-aas-operator")
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(app).ShouldNot(BeNil())
 
 		clientWithoutApps := fake.NewFakeClientWithScheme(scheme.Scheme)
 
-		app, err = cti.GetDay1Application(ctx, clientWithoutApps, "argocd")
+		app, err = cti.GetDay1Application(ctx, clientWithoutApps, "cluster-aas-operator")
 
 		Expect(err).Should(HaveOccurred())
 		Expect(app).Should(BeNil())
@@ -377,11 +347,6 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 					},
 				},
 			},
-			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterDefinition: "foo",
-				},
-			},
 		}
 		appset := &argo.ApplicationSet{
 			ObjectMeta: metav1.ObjectMeta{
@@ -392,7 +357,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, appset)
-		err := cti.CreateDay1Application(ctx, client, "argocd", false)
+		err := cti.CreateDay1Application(ctx, client, "cluster-aas-operator", false, &ClusterTemplate{Spec: ClusterTemplateSpec{ClusterDefinition: "foo"}})
 
 		Expect(err).ShouldNot(HaveOccurred())
 
@@ -419,11 +384,6 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 						Name:  "fooParam",
 						Value: "foo",
 					},
-				},
-			},
-			Status: ClusterTemplateInstanceStatus{
-				ClusterTemplateSpec: &ClusterTemplateSpec{
-					ClusterSetup: []string{"foo"},
 				},
 			},
 		}
@@ -465,12 +425,13 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret, &appset)
-		err = cti.CreateDay2Applications(ctx, client, "argocd", false)
+		err = cti.CreateDay2Applications(ctx, client, "argocd", false, &ClusterTemplate{Spec: ClusterTemplateSpec{ClusterSetup: []string{"foo"}}})
 		Expect(err).ShouldNot(HaveOccurred())
 
 		appsets := argo.ApplicationSetList{}
 		Expect(client.List(ctx, &appsets)).Should(Succeed())
 
+		//Expect(appsets.Items[0].Spec.Generators[0].String()).To(Equal(""))
 		Expect(len(appsets.Items[0].Spec.Generators)).To(Equal(2))
 		Expect(len(appsets.Items[0].Spec.Generators[1].List.Elements)).To(Equal(1))
 

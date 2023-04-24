@@ -180,8 +180,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			ct = testutils.GetCT(false)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
-			clusterti := testutils.GetCTI()
-			Expect(k8sClient.Create(ctx, clusterti)).Should(Succeed())
+			cti = testutils.GetCTI()
+			Expect(k8sClient.Create(ctx, cti)).Should(Succeed())
 
 			appset = testutils.GetAppset()
 			Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
@@ -189,10 +189,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			app = testutils.GetApp()
 			Expect(k8sClient.Create(ctx, app)).Should(Succeed())
 
-			Eventually(func() bool {
-				k8sClient.Get(ctx, client.ObjectKeyFromObject(clusterti), cti)
-				return cti.Status.ClusterTemplateSpec != nil
-			}, timeout, interval).Should(BeTrue())
 			var err error
 			app, err = cti.GetDay1Application(ctx, k8sClient, defaultArgoCDNs)
 			Expect(err).ShouldNot(HaveOccurred())
@@ -579,14 +575,13 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 			client := fake.NewFakeClientWithScheme(scheme.Scheme)
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client:               client,
 				EnableManagedCluster: true,
 			}
-			err := reconciler.reconcileCreateManagedCluster(ctx, cti)
+			err := reconciler.reconcileCreateManagedCluster(ctx, cti, ct)
 			Expect(err).Should(BeNil())
 
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
@@ -606,10 +601,9 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 			reconciler := &ClusterTemplateInstanceReconciler{}
-			err := reconciler.reconcileCreateManagedCluster(ctx, cti)
+			err := reconciler.reconcileCreateManagedCluster(ctx, cti, ct)
 			Expect(err).Should(BeNil())
 
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
@@ -629,7 +623,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 
 			kubeconfig := api.Config{}
@@ -659,7 +652,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				Client:               client,
 				EnableManagedCluster: true,
 			}
-			err = reconciler.reconcileCreateManagedCluster(ctx, cti)
+			err = reconciler.reconcileCreateManagedCluster(ctx, cti, ct)
 			Expect(err).Should(BeNil())
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
 			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCCreated)))
@@ -681,10 +674,9 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 			reconciler := &ClusterTemplateInstanceReconciler{}
-			err := reconciler.reconcileImportManagedCluster(ctx, cti)
+			err := reconciler.reconcileImportManagedCluster(ctx, cti, ct)
 			Expect(err).Should(BeNil())
 
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
@@ -704,7 +696,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 
 			kubeconfig := api.Config{}
@@ -744,7 +735,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				Client:               client,
 				EnableManagedCluster: true,
 			}
-			err = reconciler.reconcileImportManagedCluster(ctx, cti)
+			err = reconciler.reconcileImportManagedCluster(ctx, cti, ct)
 			Expect(err).Should(BeNil())
 
 			importSecretMeta := ocm.GetImportSecretMeta(mc.Name)
@@ -786,7 +777,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 
 			kubeconfig := api.Config{}
@@ -817,7 +807,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				Client: client,
 			}
 
-			err = reconciler.reconcileClusterSetupCreate(ctx, cti)
+			err = reconciler.reconcileClusterSetupCreate(ctx, cti, ct)
 			Expect(err).Should(BeNil())
 
 			clusterSetupCreatedCondition := meta.FindStatusCondition(
@@ -847,7 +837,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 
 			kubeconfig := api.Config{}
@@ -875,12 +864,12 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			app := testutils.GetAppDay2()
 			appset2 := testutils.GetAppset2()
 			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, appset2, app)
-			err = cti.CreateDay2Applications(ctx, client, defaultArgoCDNs, false)
+			err = cti.CreateDay2Applications(ctx, client, defaultArgoCDNs, false, ct)
 			Expect(err).Should(BeNil())
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client: client,
 			}
-			err = reconciler.reconcileClusterSetup(ctx, cti)
+			err = reconciler.reconcileClusterSetup(ctx, cti, ct)
 			Expect(err).Should(BeNil())
 			clusterSetupSucceededCondition := meta.FindStatusCondition(
 				cti.Status.Conditions,

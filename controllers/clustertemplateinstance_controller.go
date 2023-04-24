@@ -112,6 +112,12 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 		return ctrl.Result{}, err
 	}
 
+	if len(clusterTemplateInstance.Status.Conditions) == 0 {
+		clusterTemplateInstance.Status.Phase = v1alpha1.PendingPhase
+		clusterTemplateInstance.Status.Message = v1alpha1.PendingMessage
+	}
+	clusterTemplateInstance.SetDefaultConditions()
+
 	if clusterTemplateInstance.GetDeletionTimestamp() != nil {
 		return r.delete(ctx, clusterTemplateInstance)
 	}
@@ -122,32 +128,22 @@ func (r *ClusterTemplateInstanceReconciler) Reconcile(
 		return ctrl.Result{}, err
 	}
 
-	if len(clusterTemplateInstance.Status.Conditions) == 0 {
-		clusterTemplateInstance.Status.Phase = v1alpha1.PendingPhase
-		clusterTemplateInstance.Status.Message = v1alpha1.PendingMessage
-	}
-	clusterTemplateInstance.SetDefaultConditions()
-
-	if clusterTemplateInstance.Status.ClusterTemplateSpec == nil {
-		clusterTemplate := v1alpha1.ClusterTemplate{}
-		if err := r.Client.Get(ctx, client.ObjectKey{Name: clusterTemplateInstance.Spec.ClusterTemplateRef}, &clusterTemplate); err != nil {
-			clusterTemplateInstance.Status.Phase = v1alpha1.FailedPhase
-			errMsg := fmt.Sprintf("failed to fetch ClusterTemplate - %q", err)
-			clusterTemplateInstance.Status.Message = errMsg
-			if updErr := r.Status().Update(ctx, clusterTemplateInstance); updErr != nil {
-				return ctrl.Result{}, fmt.Errorf(
-					"failed to update status of clustertemplateinstance %q: %w",
-					req.NamespacedName,
-					updErr,
-				)
-			}
-			return ctrl.Result{}, err
+	clusterTemplate := &v1alpha1.ClusterTemplate{}
+	if err := r.Client.Get(ctx, client.ObjectKey{Name: clusterTemplateInstance.Spec.ClusterTemplateRef}, clusterTemplate); err != nil {
+		clusterTemplateInstance.Status.Phase = v1alpha1.FailedPhase
+		clusterTemplateInstance.Status.Message = fmt.Sprintf("failed to fetch ClusterTemplate - %q", err)
+		if updErr := r.Status().Update(ctx, clusterTemplateInstance); updErr != nil {
+			return ctrl.Result{}, fmt.Errorf(
+				"failed to update status of clustertemplateinstance %q: %w",
+				req.NamespacedName,
+				updErr,
+			)
 		}
-		clusterTemplateInstance.Status.ClusterTemplateSpec = &clusterTemplate.Spec
-		clusterTemplateInstance.Status.ClusterTemplateLabels = clusterTemplate.Labels
+
+		return ctrl.Result{}, err
 	}
 
-	err = r.reconcile(ctx, clusterTemplateInstance)
+	err = r.reconcile(ctx, clusterTemplateInstance, clusterTemplate)
 	if updErr := r.Status().Update(ctx, clusterTemplateInstance); updErr != nil {
 		return ctrl.Result{}, fmt.Errorf(
 			"failed to update status of clustertemplateinstance %q: %w",
@@ -214,74 +210,79 @@ func (r *ClusterTemplateInstanceReconciler) delete(
 	) {
 		return ctrl.Result{}, nil
 	}
-	if clusterTemplateInstance.Status.ClusterTemplateSpec != nil {
-		err := clusterTemplateInstance.DeleteDay1Application(ctx, r.Client, ArgoCDNamespace)
+	clusterTemplate := &v1alpha1.ClusterTemplate{}
+	if err := r.Client.Get(ctx, client.ObjectKey{Name: clusterTemplateInstance.Spec.ClusterTemplateRef}, clusterTemplate); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return ctrl.Result{}, err
+		}
+	} else {
+		err := clusterTemplateInstance.DeleteDay1Application(ctx, r.Client, ArgoCDNamespace, clusterTemplate)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
 
-		err = clusterTemplateInstance.DeleteDay2Application(ctx, r.Client, ArgoCDNamespace)
+		err = clusterTemplateInstance.DeleteDay2Application(ctx, r.Client, ArgoCDNamespace, clusterTemplate)
 		if err != nil {
 			return ctrl.Result{}, err
 		}
+	}
 
-		// cleanup argocd secrets (ie new cluster)
-		ctiNameLabelReq, _ := labels.NewRequirement(
-			v1alpha1.CTINameLabel,
-			selection.Equals,
-			[]string{clusterTemplateInstance.Name},
-		)
-		ctiNsLabelReq, _ := labels.NewRequirement(
-			v1alpha1.CTINamespaceLabel,
-			selection.Equals,
-			[]string{clusterTemplateInstance.Namespace},
-		)
-		selector := labels.NewSelector().Add(*ctiNameLabelReq, *ctiNsLabelReq)
-		secrets := &corev1.SecretList{}
-		if err := r.Client.List(ctx, secrets, &client.ListOptions{
-			LabelSelector: selector,
-			Namespace:     ArgoCDNamespace,
-		}); err != nil {
+	// cleanup argocd secrets (ie new cluster)
+	ctiNameLabelReq, _ := labels.NewRequirement(
+		v1alpha1.CTINameLabel,
+		selection.Equals,
+		[]string{clusterTemplateInstance.Name},
+	)
+	ctiNsLabelReq, _ := labels.NewRequirement(
+		v1alpha1.CTINamespaceLabel,
+		selection.Equals,
+		[]string{clusterTemplateInstance.Namespace},
+	)
+	selector := labels.NewSelector().Add(*ctiNameLabelReq, *ctiNsLabelReq)
+	secrets := &corev1.SecretList{}
+	if err := r.Client.List(ctx, secrets, &client.ListOptions{
+		LabelSelector: selector,
+		Namespace:     ArgoCDNamespace,
+	}); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	for _, secret := range secrets.Items {
+		if err := r.Client.Delete(ctx, &secret); err != nil {
 			return ctrl.Result{}, err
 		}
+	}
 
-		for _, secret := range secrets.Items {
-			if err := r.Client.Delete(ctx, &secret); err != nil {
+	if r.EnableManagedCluster {
+		mc, err := ocm.GetManagedCluster(ctx, r.Client, clusterTemplateInstance)
+		if err != nil {
+			_, ok := err.(*ocm.MCNotFoundError)
+			if !ok {
 				return ctrl.Result{}, err
 			}
 		}
-
-		if r.EnableManagedCluster {
-			mc, err := ocm.GetManagedCluster(ctx, r.Client, clusterTemplateInstance)
-			if err != nil {
-				_, ok := err.(*ocm.MCNotFoundError)
-				if !ok {
+		if mc != nil {
+			if r.EnableKlusterlet {
+				klusterlet := &agent.KlusterletAddonConfig{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      mc.Name,
+						Namespace: mc.Name,
+					},
+				}
+				if err := r.Client.Delete(ctx, klusterlet); err != nil {
 					return ctrl.Result{}, err
 				}
 			}
-			if mc != nil {
-				if r.EnableKlusterlet {
-					klusterlet := &agent.KlusterletAddonConfig{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      mc.Name,
-							Namespace: mc.Name,
-						},
-					}
-					if err := r.Client.Delete(ctx, klusterlet); err != nil {
-						return ctrl.Result{}, err
-					}
-				}
-				importSecret := &corev1.Secret{
-					ObjectMeta: ocm.GetImportSecretMeta(mc.Name),
-				}
-				if err := r.Client.Delete(ctx, importSecret); err != nil {
-					if !apierrors.IsNotFound(err) {
-						return ctrl.Result{}, err
-					}
-				}
-				if err := r.Client.Delete(ctx, mc); err != nil {
+			importSecret := &corev1.Secret{
+				ObjectMeta: ocm.GetImportSecretMeta(mc.Name),
+			}
+			if err := r.Client.Delete(ctx, importSecret); err != nil {
+				if !apierrors.IsNotFound(err) {
 					return ctrl.Result{}, err
 				}
+			}
+			if err := r.Client.Delete(ctx, mc); err != nil {
+				return ctrl.Result{}, err
 			}
 		}
 	}
@@ -297,8 +298,9 @@ func (r *ClusterTemplateInstanceReconciler) delete(
 func (r *ClusterTemplateInstanceReconciler) reconcile(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplate *v1alpha1.ClusterTemplate,
 ) error {
-	if err := r.reconcileClusterCreate(ctx, clusterTemplateInstance); err != nil {
+	if err := r.reconcileClusterCreate(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterDefinitionFailedPhase
 		errMsg := fmt.Sprintf("failed to create cluster definition - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
@@ -316,21 +318,21 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 
 	//ACM integration
 
-	if err := r.reconcileCreateManagedCluster(ctx, clusterTemplateInstance); err != nil {
+	if err := r.reconcileCreateManagedCluster(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ManagedClusterFailedPhase
 		errMsg := fmt.Sprintf("failed to create ManagedCluster - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
 
-	if err := r.reconcileImportManagedCluster(ctx, clusterTemplateInstance); err != nil {
+	if err := r.reconcileImportManagedCluster(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ManagedClusterImportFailedPhase
 		errMsg := fmt.Sprintf("failed to import ManagedCluster - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
 
-	if err := r.reconcileCreateKlusterlet(ctx, clusterTemplateInstance); err != nil {
+	if err := r.reconcileCreateKlusterlet(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.KlusterletCreateFailedPhase
 		errMsg := fmt.Sprintf("failed to create Klusterlet - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
@@ -339,21 +341,21 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 
 	//
 
-	if err := r.reconcileAddClusterToArgo(ctx, clusterTemplateInstance); err != nil {
+	if err := r.reconcileAddClusterToArgo(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ArgoClusterFailedPhase
 		errMsg := fmt.Sprintf("failed to add cluster to argo - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
 
-	if err := r.reconcileClusterSetupCreate(ctx, clusterTemplateInstance); err != nil {
+	if err := r.reconcileClusterSetupCreate(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupCreateFailedPhase
 		errMsg := fmt.Sprintf("failed to create cluster setup - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
 		return fmt.Errorf(errMsg)
 	}
 
-	if err := r.reconcileClusterSetup(ctx, clusterTemplateInstance); err != nil {
+	if err := r.reconcileClusterSetup(ctx, clusterTemplateInstance, clusterTemplate); err != nil {
 		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupFailedPhase
 		errMsg := fmt.Sprintf("failed to reconcile cluster setup - %q", err)
 		clusterTemplateInstance.Status.Message = errMsg
@@ -373,6 +375,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplate *v1alpha1.ClusterTemplate,
 ) error {
 	clusterDefinitionCreatedCondition := meta.FindStatusCondition(
 		clusterTemplateInstance.Status.Conditions,
@@ -380,7 +383,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	)
 
 	if clusterDefinitionCreatedCondition.Status == metav1.ConditionFalse {
-		if err := clusterTemplateInstance.CreateDay1Application(ctx, r.Client, ArgoCDNamespace, ArgoCDNamespace == defaultArgoCDNs); err != nil {
+		if err := clusterTemplateInstance.CreateDay1Application(ctx, r.Client, ArgoCDNamespace, ArgoCDNamespace == defaultArgoCDNs, clusterTemplate); err != nil {
 			clusterTemplateInstance.SetClusterDefinitionCreatedCondition(
 				metav1.ConditionFalse,
 				v1alpha1.ClusterDefinitionFailed,
@@ -655,6 +658,7 @@ func (*ClusterTemplateInstanceReconciler) ReconcileDynamicRoles(
 func (r *ClusterTemplateInstanceReconciler) reconcileCreateManagedCluster(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplate *v1alpha1.ClusterTemplate,
 ) error {
 	if !clusterTemplateInstance.PhaseCanExecute(
 		v1alpha1.ClusterInstallSucceeded,
@@ -663,7 +667,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileCreateManagedCluster(
 		return nil
 	}
 
-	if !(r.EnableManagedCluster && !clusterTemplateInstance.Status.ClusterTemplateSpec.SkipClusterRegistration) {
+	if !(r.EnableManagedCluster && !clusterTemplate.Spec.SkipClusterRegistration) {
 		clusterTemplateInstance.SetManagedClusterCreatedCondition(
 			metav1.ConditionTrue,
 			v1alpha1.MCSkipped,
@@ -697,6 +701,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileCreateManagedCluster(
 func (r *ClusterTemplateInstanceReconciler) reconcileImportManagedCluster(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplate *v1alpha1.ClusterTemplate,
 ) error {
 	if !clusterTemplateInstance.PhaseCanExecute(
 		v1alpha1.ManagedClusterCreated,
@@ -705,7 +710,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileImportManagedCluster(
 		return nil
 	}
 
-	if !(r.EnableManagedCluster && !clusterTemplateInstance.Status.ClusterTemplateSpec.SkipClusterRegistration) {
+	if !(r.EnableManagedCluster && !clusterTemplate.Spec.SkipClusterRegistration) {
 		clusterTemplateInstance.SetManagedClusterImportedCondition(
 			metav1.ConditionTrue,
 			v1alpha1.MCImportSkipped,
@@ -749,12 +754,13 @@ func (r *ClusterTemplateInstanceReconciler) reconcileImportManagedCluster(
 func (r *ClusterTemplateInstanceReconciler) reconcileCreateKlusterlet(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplate *v1alpha1.ClusterTemplate,
 ) error {
 	if !clusterTemplateInstance.PhaseCanExecute(v1alpha1.ManagedClusterImported) {
 		return nil
 	}
 
-	if !(r.EnableKlusterlet && !clusterTemplateInstance.Status.ClusterTemplateSpec.SkipClusterRegistration) {
+	if !(r.EnableKlusterlet && !clusterTemplate.Spec.SkipClusterRegistration) {
 		clusterTemplateInstance.SetKlusterletCreatedCondition(
 			metav1.ConditionTrue,
 			v1alpha1.KlusterletSkipped,
@@ -788,6 +794,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileCreateKlusterlet(
 func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplate *v1alpha1.ClusterTemplate,
 ) error {
 	if !clusterTemplateInstance.PhaseCanExecute(
 		v1alpha1.ManagedClusterImported,
@@ -802,7 +809,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 		clusterTemplateInstance,
 		clustersetup.GetClientForCluster,
 		ArgoCDNamespace,
-		r.EnableManagedCluster && !clusterTemplateInstance.Status.ClusterTemplateSpec.SkipClusterRegistration,
+		r.EnableManagedCluster && !clusterTemplate.Spec.SkipClusterRegistration,
 	); err != nil {
 		clusterTemplateInstance.SetArgoClusterAddedCondition(
 			metav1.ConditionFalse,
@@ -822,6 +829,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplate *v1alpha1.ClusterTemplate,
 ) error {
 
 	if !clusterTemplateInstance.PhaseCanExecute(
@@ -831,7 +839,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 		return nil
 	}
 
-	if len(clusterTemplateInstance.Status.ClusterTemplateSpec.ClusterSetup) == 0 {
+	if len(clusterTemplate.Spec.ClusterSetup) == 0 {
 		clusterTemplateInstance.SetClusterSetupCreatedCondition(
 			metav1.ConditionTrue,
 			v1alpha1.ClusterSetupNotSpecified,
@@ -850,6 +858,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 		r.Client,
 		ArgoCDNamespace,
 		ArgoCDNamespace == defaultArgoCDNs,
+		clusterTemplate,
 	); err != nil {
 		clusterTemplateInstance.SetClusterSetupCreatedCondition(
 			metav1.ConditionFalse,
@@ -869,6 +878,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	clusterTemplate *v1alpha1.ClusterTemplate,
 ) error {
 
 	if !clusterTemplateInstance.PhaseCanExecute(
@@ -878,7 +888,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 		return nil
 	}
 
-	if len(clusterTemplateInstance.Status.ClusterTemplateSpec.ClusterSetup) == 0 {
+	if len(clusterTemplate.Spec.ClusterSetup) == 0 {
 		clusterTemplateInstance.SetClusterSetupSucceededCondition(
 			metav1.ConditionTrue,
 			v1alpha1.ClusterSetupNotDefined,

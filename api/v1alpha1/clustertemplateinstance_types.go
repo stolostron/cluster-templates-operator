@@ -81,8 +81,7 @@ const (
 )
 
 type ClusterTemplateInstanceStatus struct {
-	ClusterTemplateSpec   *ClusterTemplateSpec `json:"clusterTemplateSpec,omitempty"`
-	ClusterTemplateLabels map[string]string    `json:"clusterTemplateLabels,omitempty"`
+	ClusterTemplateLabels map[string]string `json:"clusterTemplateLabels,omitempty"`
 	// A reference for secret which contains username and password under keys "username" and "password"
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	AdminPassword *corev1.LocalObjectReference `json:"adminPassword,omitempty"`
