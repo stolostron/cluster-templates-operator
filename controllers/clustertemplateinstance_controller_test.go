@@ -891,6 +891,65 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				clusterSetupSucceededCondition.Reason,
 			).Should(Equal(string(v1alpha1.ClusterSetupRunning)))
 		})
+		It("Detects day2 secret credentials", func() {
+			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:   string(v1alpha1.ClusterSetupSucceeded),
+						Status: metav1.ConditionTrue,
+					},
+				},
+				ClusterTemplateSpec: &ct.Spec,
+			}
+
+			clusterSetupSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "day2appsecret",
+					Namespace: cti.Namespace,
+					Labels: map[string]string{
+						v1alpha1.CTISetupSecretLabel: "",
+						v1alpha1.CTINameLabel:        cti.Name,
+						v1alpha1.CTINamespaceLabel:   cti.Namespace,
+					},
+				},
+				Data: map[string][]byte{
+					"url":      []byte("http://app.url.com"),
+					"username": []byte("myuser"),
+					"password": []byte("mypassword"),
+				},
+			}
+			kubeconfig := api.Config{}
+			kubeconfig.Clusters = []api.NamedCluster{
+				{
+					Name: "foo",
+					Cluster: api.Cluster{
+						Server: "foo-server",
+					},
+				},
+			}
+
+			data, err := yaml.Marshal(&kubeconfig)
+			Expect(err).ShouldNot(HaveOccurred())
+			kubeconfigSecret := &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      cti.GetKubeconfigRef(),
+					Namespace: cti.Namespace,
+				},
+				Data: map[string][]byte{
+					"kubeconfig": data,
+				},
+			}
+
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, clusterSetupSecret)
+			reconciler := &ClusterTemplateInstanceReconciler{
+				Client: client,
+			}
+
+			err = reconciler.reconcileClusterCredentials(ctx, cti)
+			Expect(err).Should(BeNil())
+			Expect(cti.Status.ClusterSetupSecrets).Should(HaveLen(1))
+			Expect(cti.Status.ClusterSetupSecrets[0].Name).Should(Equal("day2appsecret"))
+		})
 	})
 
 	Context("Credentials phase", func() {
