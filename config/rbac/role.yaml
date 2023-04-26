@@ -66,12 +66,6 @@ rules:
   - list
   - watch
 - apiGroups:
-  - applicationsets.argoproj.io
-  resources:
-  - applicationset
-  verbs:
-  - get
-- apiGroups:
   - apps
   resources:
   - deployments

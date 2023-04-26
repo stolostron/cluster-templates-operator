@@ -58,7 +58,7 @@ var _ = Describe("ClusterTemplate controller", func() {
 				},
 			},
 		}
-		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
+		Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
 	})
 
 	AfterEach(func() {
@@ -68,13 +68,14 @@ var _ = Describe("ClusterTemplate controller", func() {
 	})
 
 	It("Should keep empty status when source is not Helm chart", func() {
-		Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 		Expect(ct.Status).Should(Equal(v1alpha1.ClusterTemplateStatus{}))
 	})
 
 	It("Should keep empty status when there are no values/schema", func() {
 		appset.Spec.Template.Spec.Source.Chart = "hypershift-template-no-val-schema"
-		Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Update(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
 		Eventually(func() bool {
 			foundCT := &v1alpha1.ClusterTemplate{}
@@ -90,7 +91,8 @@ var _ = Describe("ClusterTemplate controller", func() {
 
 	It("Should show values in status", func() {
 		appset.Spec.Template.Spec.Source.Chart = "hypershift-template-no-schema"
-		Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Update(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
 		Eventually(func() bool {
 			foundCT := &v1alpha1.ClusterTemplate{}
@@ -106,7 +108,8 @@ var _ = Describe("ClusterTemplate controller", func() {
 
 	It("Should show schema in status", func() {
 		appset.Spec.Template.Spec.Source.Chart = "hypershift-template-no-val"
-		Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Update(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
 		Eventually(func() bool {
 			foundCT := &v1alpha1.ClusterTemplate{}
@@ -122,7 +125,8 @@ var _ = Describe("ClusterTemplate controller", func() {
 
 	It("Should show values and schema in status", func() {
 		appset.Spec.Template.Spec.Source.Chart = "hypershift-template"
-		Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Update(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
 		Eventually(func() bool {
 			foundCT := &v1alpha1.ClusterTemplate{}
@@ -139,7 +143,8 @@ var _ = Describe("ClusterTemplate controller", func() {
 	It("Should set error for ClusterDefinition in case of invalid port", func() {
 		appset.Spec.Template.Spec.Source.Chart = "hypershift-template"
 		appset.Spec.Template.Spec.Source.RepoURL = server.URL + "NONEXISTING"
-		Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Update(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
 		Eventually(func() bool {
 			foundCT := &v1alpha1.ClusterTemplate{}

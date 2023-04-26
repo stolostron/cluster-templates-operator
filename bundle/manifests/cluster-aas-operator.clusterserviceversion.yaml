@@ -32,7 +32,7 @@ metadata:
     categories: Integration & Delivery,OpenShift Optional
     certified: "false"
     containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-8a5d0ce2db589cdbee3c4b0fa86051b3daa2ee74
-    createdAt: "2023-04-26T09:30:23Z"
+    createdAt: "2023-04-26T11:18:27Z"
     description: Easily install fully configured clusters with guard-rails.
     operators.operatorframework.io/builder: operator-sdk-v1.27.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -191,12 +191,6 @@ spec:
           - get
           - list
           - watch
-        - apiGroups:
-          - applicationsets.argoproj.io
-          resources:
-          - applicationset
-          verbs:
-          - get
         - apiGroups:
           - apps
           resources:
