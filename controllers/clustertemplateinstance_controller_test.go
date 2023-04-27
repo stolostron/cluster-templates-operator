@@ -162,7 +162,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				return clusterDefinitionCondition.Status == metav1.ConditionTrue
 			}, timeout, interval).Should(BeTrue())
 			Expect(cti.Status.Phase).Should(Equal(v1alpha1.ClusterInstallingPhase))
-			a, err := cti.GetDay1Application(ctx, k8sClient, "argocd")
+			a, err := cti.GetDay1Application(ctx, k8sClient, defaultArgoCDNs)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(a).ShouldNot(BeNil())
 		})
@@ -194,7 +194,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				return cti.Status.ClusterTemplateSpec != nil
 			}, timeout, interval).Should(BeTrue())
 			var err error
-			app, err = cti.GetDay1Application(ctx, k8sClient, "argocd")
+			app, err = cti.GetDay1Application(ctx, k8sClient, defaultArgoCDNs)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(app).ShouldNot(BeNil())
 			resourcesToDelete = []client.Object{}
@@ -875,7 +875,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			app := testutils.GetAppDay2()
 			appset2 := testutils.GetAppset2()
 			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, appset2, app)
-			err = cti.CreateDay2Applications(ctx, client, "argocd")
+			err = cti.CreateDay2Applications(ctx, client, defaultArgoCDNs, false)
 			Expect(err).Should(BeNil())
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client: client,

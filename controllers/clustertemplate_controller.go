@@ -30,7 +30,8 @@ type ClusterTemplateReconciler struct {
 
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=clustertemplates,verbs=get
-// +kubebuilder:rbac:groups=applicationsets.argoproj.io,resources=applicationset,verbs=get
+// +kubebuilder:rbac:groups=argoproj.io,resources=applicationsets,verbs=get;
+
 func (r *ClusterTemplateReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,

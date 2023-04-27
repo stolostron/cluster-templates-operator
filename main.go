@@ -31,11 +31,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	argooperator "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	console "github.com/openshift/api/console/v1alpha1"
 	openshiftAPI "github.com/openshift/api/helm/v1beta1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/bridge"
 	"github.com/stolostron/cluster-templates-operator/controllers"
@@ -61,6 +63,8 @@ func init() {
 	utilruntime.Must(console.AddToScheme(scheme))
 	utilruntime.Must(ocmv1.AddToScheme(scheme))
 	utilruntime.Must(agent.AddToScheme(scheme))
+	utilruntime.Must(argooperator.AddToScheme(scheme))
+	utilruntime.Must(operators.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -142,6 +146,14 @@ func main() {
 		Manager: mgr,
 	}).SetupWithManager(); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CLaaS")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.ArgoCDReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ArgoCD Reconciler")
 		os.Exit(1)
 	}
 

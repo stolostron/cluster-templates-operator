@@ -87,7 +87,7 @@ var _ = Describe("Repo bridge", func() {
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 				Labels: map[string]string{
 					argoCommon.LabelKeySecretType: argoCommon.LabelValueSecretTypeRepository,
 				},
@@ -115,7 +115,7 @@ var _ = Describe("Repo bridge", func() {
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 				Labels: map[string]string{
 					argoCommon.LabelKeySecretType: argoCommon.LabelValueSecretTypeRepository,
 				},
@@ -132,7 +132,7 @@ var _ = Describe("Repo bridge", func() {
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "public-repo",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 				Labels: map[string]string{
 					argoCommon.LabelKeySecretType: argoCommon.LabelValueSecretTypeRepository,
 				},
@@ -164,7 +164,7 @@ var _ = Describe("Repo bridge", func() {
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "public-repo",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 				Labels: map[string]string{
 					argoCommon.LabelKeySecretType: argoCommon.LabelValueSecretTypeRepository,
 				},
@@ -197,7 +197,7 @@ var _ = Describe("Repo bridge", func() {
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "public-repo",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 				Labels: map[string]string{
 					argoCommon.LabelKeySecretType: argoCommon.LabelValueSecretTypeRepository,
 				},
@@ -229,7 +229,7 @@ var _ = Describe("Repo bridge", func() {
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "public-repo",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 				Labels: map[string]string{
 					argoCommon.LabelKeySecretType: argoCommon.LabelValueSecretTypeRepository,
 				},
@@ -250,7 +250,7 @@ var _ = Describe("Repo bridge", func() {
 		cm := &corev1.ConfigMap{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "argocd-tls-certs-cm",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 			},
 			Data: map[string]string{
 				parsedUrl.Hostname(): string(file),
@@ -277,7 +277,7 @@ var _ = Describe("Repo bridge", func() {
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "public-repo",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 				Labels: map[string]string{
 					argoCommon.LabelKeySecretType: argoCommon.LabelValueSecretTypeRepository,
 				},
@@ -295,7 +295,7 @@ var _ = Describe("Repo bridge", func() {
 		cm := &corev1.ConfigMap{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "argocd-tls-certs-cm",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 			},
 			Data: map[string]string{
 				parsedUrl.Hostname(): "invalid_content",
@@ -328,7 +328,7 @@ var _ = Describe("Repo bridge", func() {
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "private-repo",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 				Labels: map[string]string{
 					argoCommon.LabelKeySecretType: argoCommon.LabelValueSecretTypeRepository,
 				},
@@ -351,7 +351,7 @@ var _ = Describe("Repo bridge", func() {
 		cm := &corev1.ConfigMap{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "argocd-tls-certs-cm",
-				Namespace: "argocd",
+				Namespace: "cluster-aas-operator",
 			},
 			Data: map[string]string{
 				parsedUrl.Hostname(): string(file),

@@ -214,10 +214,34 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 	return k8sClient.Update(ctx, appSet)
 }
 
+func labelDestionationNamespace(ctx context.Context, appSet *argo.ApplicationSet, k8sClient client.Client, argoCDNamespace string) error {
+	if appSet.Spec.Template.Spec.Destination.Namespace == "" {
+		return nil
+	}
+	// Set the Argo label for the destination namespace:
+	ns := &corev1.Namespace{}
+	if err := k8sClient.Get(
+		ctx,
+		types.NamespacedName{Name: appSet.Spec.Template.Spec.Destination.Namespace},
+		ns,
+	); err != nil {
+		return err
+	}
+
+	if l, lOk := ns.Labels["argocd.argoproj.io/managed-by"]; !lOk || l != argoCDNamespace {
+		ns.Labels["argocd.argoproj.io/managed-by"] = argoCDNamespace
+		if err := k8sClient.Update(ctx, ns); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (i *ClusterTemplateInstance) CreateDay1Application(
 	ctx context.Context,
 	k8sClient client.Client,
 	argoCDNamespace string,
+	labelNamespace bool,
 ) error {
 	appSet := &argo.ApplicationSet{}
 	if err := k8sClient.Get(
@@ -226,6 +250,12 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 		appSet,
 	); err != nil {
 		return err
+	}
+
+	if labelNamespace {
+		if err := labelDestionationNamespace(ctx, appSet, k8sClient, argoCDNamespace); err != nil {
+			return err
+		}
 	}
 
 	return i.UpdateApplicationSet(ctx, k8sClient, appSet, "https://kubernetes.default.svc", false)
@@ -270,6 +300,7 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 	ctx context.Context,
 	k8sClient client.Client,
 	argoCDNamespace string,
+	labelNamespace bool,
 ) error {
 	appsets, err := i.getDay2Appsets(ctx, k8sClient, argoCDNamespace)
 	if err != nil {
@@ -293,6 +324,12 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 	}
 
 	for _, appset := range appsets {
+		if labelNamespace {
+			if err := labelDestionationNamespace(ctx, appset, k8sClient, argoCDNamespace); err != nil {
+				return err
+			}
+		}
+
 		if err := i.UpdateApplicationSet(ctx, k8sClient, appset, kubeconfig.Clusters[0].Cluster.Server, true); err != nil {
 			return err
 		}

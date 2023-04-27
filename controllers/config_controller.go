@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -12,6 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
+	argo "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -20,16 +22,19 @@ const (
 	enableUIConfig = "enable-ui"
 	uiImageConfig  = "ui-image"
 
-	defaultArgoCDNs = "argocd"
-	defaultEnableUI = "false"
-	defaultUIImage  = "quay.io/stolostron/cluster-templates-console-plugin:latest"
+	defaultArgoCDNs      = "cluster-aas-operator"
+	defaultDisableArgoCD = "false"
+	defaultEnableUI      = "false"
+	defaultUIImage       = "quay.io/stolostron/cluster-templates-console-plugin:latest"
 )
 
 var (
-	ArgoCDNamespace    = defaultArgoCDNs
-	EnableUI           = defaultEnableUI
-	UIImage            = defaultUIImage
-	EnableUIconfigSync = make(chan event.GenericEvent)
+	ArgoCDNamespace      = defaultArgoCDNs
+	EnableUI             = defaultEnableUI
+	DisableArgo          = defaultDisableArgoCD
+	UIImage              = defaultUIImage
+	EnableUIconfigSync   = make(chan event.GenericEvent)
+	EnableArgoconfigSync = make(chan event.GenericEvent)
 )
 
 type ConfigReconciler struct {
@@ -48,8 +53,10 @@ func (r *ConfigReconciler) Reconcile(
 		if apierrors.IsNotFound(err) {
 			ArgoCDNamespace = defaultArgoCDNs
 			EnableUI = defaultEnableUI
+			DisableArgo = defaultDisableArgoCD
 			UIImage = defaultUIImage
 			EnableUIconfigSync <- event.GenericEvent{Object: GetPluginDeployment()}
+			EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argoname, Namespace: ArgoCDNamespace}}}
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
@@ -57,6 +64,10 @@ func (r *ConfigReconciler) Reconcile(
 	val, ok := config.Data[argoCDNsConfig]
 	if ok && val != "" {
 		ArgoCDNamespace = val
+		EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argoname, Namespace: ArgoCDNamespace}}}
+	} else {
+		ArgoCDNamespace = defaultArgoCDNs
+		EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argoname, Namespace: ArgoCDNamespace}}}
 	}
 	enableUI, enableUIOk := config.Data[enableUIConfig]
 	uiImage, uiImageOk := config.Data[uiImageConfig]
@@ -69,6 +80,7 @@ func (r *ConfigReconciler) Reconcile(
 		}
 		EnableUIconfigSync <- event.GenericEvent{Object: GetPluginDeployment()}
 	}
+
 	return ctrl.Result{}, nil
 }
 

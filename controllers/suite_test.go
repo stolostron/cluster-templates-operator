@@ -36,11 +36,14 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	argooperator "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	console "github.com/openshift/api/console/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
+	testutils "github.com/stolostron/cluster-templates-operator/testutils"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -105,6 +108,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	err = ocmv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
+	err = argooperator.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = operators.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
@@ -157,19 +164,24 @@ var _ = BeforeSuite(func() {
 	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
+	err = (&ArgoCDReconciler{
+		Client: k8sManager.GetClient(),
+		Scheme: k8sManager.GetScheme(),
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
 	go func() {
 		defer GinkgoRecover()
 		err = k8sManager.Start(ctx)
 		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
 	}()
-
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "argocd",
+			Name: "openshift-operators",
 		},
 	}
 	Expect(k8sClient.Create(ctx, ns)).Should(Succeed())
-
+	Expect(k8sClient.Create(ctx, testutils.GetSubscription(nil))).Should(Succeed())
 }, 60)
 
 var certDataFileName string

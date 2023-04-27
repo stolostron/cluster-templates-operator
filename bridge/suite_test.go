@@ -58,7 +58,7 @@ var _ = BeforeSuite(func() {
 	server = httptest.NewServer(GetRouter(cfg))
 	ns := &corev1.Namespace{
 		ObjectMeta: v1.ObjectMeta{
-			Name: "argocd",
+			Name: "cluster-aas-operator",
 		},
 	}
 	err = k8sClient.Create(ctx, ns)

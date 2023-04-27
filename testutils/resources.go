@@ -9,6 +9,7 @@ import (
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	. "github.com/onsi/gomega"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -19,7 +20,7 @@ import (
 
 const (
 	ctiName  = "mycluster"
-	ctiNs    = "default"
+	ctiNs    = "cluster-aas-operator"
 	ctqName  = "myquota"
 	ctName   = "mytemplate"
 	timeout  = time.Second * 10
@@ -99,7 +100,7 @@ func GetAppset2() *argo.ApplicationSet {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "appset2",
-			Namespace: "argocd",
+			Namespace: "cluster-aas-operator",
 		},
 		Spec: argo.ApplicationSetSpec{
 			Generators: []argo.ApplicationSetGenerator{{}},
@@ -124,12 +125,15 @@ func GetAppset() *argo.ApplicationSet {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "appset1",
-			Namespace: "argocd",
+			Namespace: "cluster-aas-operator",
 		},
 		Spec: argo.ApplicationSetSpec{
 			Generators: []argo.ApplicationSetGenerator{{}},
 			Template: argo.ApplicationSetTemplate{
 				Spec: argo.ApplicationSpec{
+					Destination: argo.ApplicationDestination{
+						Namespace: "cluster-aas-operator",
+					},
 					Source: argo.ApplicationSource{
 						RepoURL:        "http://foo.com",
 						TargetRevision: "0.1.0",
@@ -149,7 +153,7 @@ func GetAppDay2() *argo.Application {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ctiName,
-			Namespace: "argocd",
+			Namespace: "cluster-aas-operator",
 			Labels: map[string]string{
 				v1alpha1.CTINameLabel:      ctiName,
 				v1alpha1.CTINamespaceLabel: ctiNs,
@@ -174,7 +178,7 @@ func GetApp() *argo.Application {
 		},
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      ctiName,
-			Namespace: "argocd",
+			Namespace: "cluster-aas-operator",
 			Labels: map[string]string{
 				v1alpha1.CTINameLabel:      ctiName,
 				v1alpha1.CTINamespaceLabel: ctiNs,
@@ -192,6 +196,31 @@ func GetApp() *argo.Application {
 
 func GetCT(withSetup bool) *v1alpha1.ClusterTemplate {
 	return GetCTWithCost(withSetup, nil, false)
+}
+
+func GetSubscription(config *operators.SubscriptionConfig) *operators.Subscription {
+	return &operators.Subscription{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: operators.GroupVersion,
+			Kind:       operators.SubscriptionKind,
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "argocd-operator",
+			Namespace: "openshift-operators",
+			Labels: map[string]string{
+				"operators.coreos.com/argocd-operator.openshift-operators": "",
+			},
+		},
+		Spec: &operators.SubscriptionSpec{
+			Channel:                "alpha",
+			CatalogSource:          "community-operators",
+			CatalogSourceNamespace: "openshift-marketplace",
+			Package:                "argocd-operator",
+			InstallPlanApproval:    operators.ApprovalAutomatic,
+			StartingCSV:            "argocd-operator.v0.5.0",
+			Config:                 config,
+		},
+	}
 }
 
 func GetKubeconfigSecret() (*corev1.Secret, error) {

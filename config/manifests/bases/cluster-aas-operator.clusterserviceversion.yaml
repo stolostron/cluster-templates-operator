@@ -33,6 +33,10 @@ spec:
       - description: Status of each cluster setup
         displayName: Cluster Setup
         path: clusterSetup
+      - description: Secrets create by cluster setup which provide crenderntials for
+          applications created by cluster setup
+        displayName: Cluster Setup Secrets
+        path: clusterSetupSecrets
       - description: Resource conditions
         displayName: Conditions
         path: conditions

@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/testutils"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -19,15 +18,9 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 		ctq := &v1alpha1.ClusterTemplateQuota{}
 		cti := &v1alpha1.ClusterTemplateInstance{}
 		appset := &argo.ApplicationSet{}
-		ns := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "argocd",
-			},
-		}
 		cost := 1
 
 		BeforeEach(func() {
-			k8sClient.Create(ctx, ns)
 			ct = testutils.GetCTWithCost(false, &cost, false)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
@@ -76,14 +69,8 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 		ctq := &v1alpha1.ClusterTemplateQuota{}
 		cti := &v1alpha1.ClusterTemplateInstance{}
 		appset := &argo.ApplicationSet{}
-		ns := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "argocd",
-			},
-		}
 
 		BeforeEach(func() {
-			k8sClient.Create(ctx, ns)
 			ct = testutils.GetCT(false)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
