@@ -28,6 +28,8 @@ const (
 	interval = time.Millisecond * 250
 )
 
+var ctiSecret = "mysecret"
+
 func GetCTQWithDeletion(deleteAfter time.Duration) *v1alpha1.ClusterTemplateQuota {
 	ctq := &v1alpha1.ClusterTemplateQuota{
 		TypeMeta: metav1.TypeMeta{
@@ -51,6 +53,12 @@ func GetCTQ() *v1alpha1.ClusterTemplateQuota {
 	return GetCTQWithDeletion(120 * time.Second)
 }
 
+func GetCTIWithSecret() *v1alpha1.ClusterTemplateInstance {
+	cti := GetCTI()
+	cti.Spec.KubeconfigSecretRef = &ctiSecret
+	return cti
+}
+
 func GetCTI() *v1alpha1.ClusterTemplateInstance {
 	cti := &v1alpha1.ClusterTemplateInstance{
 		TypeMeta: metav1.TypeMeta{
@@ -69,6 +77,22 @@ func GetCTI() *v1alpha1.ClusterTemplateInstance {
 		},
 	}
 	return cti
+}
+
+func GetCTSetup() *v1alpha1.ClusterTemplateSetup {
+	ct := &v1alpha1.ClusterTemplateSetup{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: v1alpha1.GroupVersion.Identifier(),
+			Kind:       "ClusterTemplateSetup",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: ctName,
+		},
+		Spec: v1alpha1.ClusterTemplateSetupSpec{
+			SkipClusterRegistration: true,
+		},
+	}
+	return ct
 }
 
 func GetCTWithCost(withSetup bool, cost *int, skip bool) *v1alpha1.ClusterTemplate {
@@ -223,7 +247,7 @@ func GetSubscription(config *operators.SubscriptionConfig) *operators.Subscripti
 	}
 }
 
-func GetKubeconfigSecret() (*corev1.Secret, error) {
+func GetKubeconfigSecretWithName(name string) (*corev1.Secret, error) {
 	kubeconfigFile, err := ioutil.ReadFile("../testutils/kubeconfig_mock.yaml")
 	if err != nil {
 		return nil, err
@@ -234,7 +258,7 @@ func GetKubeconfigSecret() (*corev1.Secret, error) {
 			Kind:       "Secret",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "hypershift-kube-config",
+			Name:      name,
 			Namespace: ctiNs,
 		},
 		Data: map[string][]byte{
@@ -242,6 +266,10 @@ func GetKubeconfigSecret() (*corev1.Secret, error) {
 		},
 	}
 	return kubeConfigSecret, nil
+}
+
+func GetKubeconfigSecret() (*corev1.Secret, error) {
+	return GetKubeconfigSecretWithName("hypershift-kube-config")
 }
 
 func GetKubeadminSecret() (*corev1.Secret, error) {

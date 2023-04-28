@@ -20,6 +20,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/kubernetes-client/go-base/config/api"
+	"gopkg.in/yaml.v2"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -51,11 +54,19 @@ func (r *ClusterTemplateInstance) Default(ctx context.Context, obj runtime.Objec
 	cti := obj.(*ClusterTemplateInstance)
 	clustertemplateinstancelog.Info("default", "name", cti.Name)
 
-	template := ClusterTemplate{}
+	var template client.Object
+	if cti.Spec.KubeconfigSecretRef == nil {
+		template = &ClusterTemplate{}
+	} else {
+		if err := cti.checkSecretIsValid(); err != nil {
+			return err
+		}
+		template = &ClusterTemplateSetup{}
+	}
 	if err := instanceControllerClient.Get(
 		context.TODO(),
 		client.ObjectKey{Name: cti.Spec.ClusterTemplateRef},
-		&template,
+		template,
 	); err != nil {
 		if apierrors.IsNotFound(err) {
 			return fmt.Errorf("cluster template '%v' not found", cti.Spec.ClusterTemplateRef)
@@ -72,7 +83,7 @@ func (r *ClusterTemplateInstance) Default(ctx context.Context, obj runtime.Objec
 	}
 	cti.Annotations[CTIRequesterAnnotation] = req.UserInfo.Username
 
-	if val, ok := template.Annotations[ClusterProviderExperimentalAnnotation]; ok {
+	if val, ok := template.GetAnnotations()[ClusterProviderExperimentalAnnotation]; ok {
 		cti.Annotations[ClusterProviderExperimentalAnnotation] = val
 	}
 
@@ -99,12 +110,46 @@ func (r *ClusterTemplateInstance) ValidateCreate() error {
 	return nil
 }
 
+func (r *ClusterTemplateInstance) checkSecretIsValid() error {
+	secret := &corev1.Secret{}
+	if err := instanceControllerClient.Get(
+		context.TODO(),
+		client.ObjectKey{Name: *r.Spec.KubeconfigSecretRef},
+		secret,
+	); err != nil {
+		if apierrors.IsNotFound(err) {
+			return fmt.Errorf("secret '%v' not found", *r.Spec.KubeconfigSecretRef)
+		}
+		return fmt.Errorf("failed to get cluster template kubeconfig secret - %q", err)
+	}
+
+	kubeconfigData := secret.Data["kubeconfig"]
+	if secret.Data == nil || len(kubeconfigData) == 0 {
+		return fmt.Errorf("secret '%v' must contain kubeconfig section", *r.Spec.KubeconfigSecretRef)
+	}
+
+	kubeconfig := api.Config{}
+	if err := yaml.Unmarshal(kubeconfigData, &kubeconfig); err != nil {
+		return fmt.Errorf("failed to unmarshal kubeconfig data - %q", err)
+	}
+
+	return nil
+}
+
 func (r *ClusterTemplateInstance) checkProps() error {
-	template := ClusterTemplate{}
+	var template client.Object
+	if r.Spec.KubeconfigSecretRef != nil {
+		if err := r.checkSecretIsValid(); err != nil {
+			return err
+		}
+		template = &ClusterTemplateSetup{}
+	} else {
+		template = &ClusterTemplate{}
+	}
 	if err := instanceControllerClient.Get(
 		context.TODO(),
 		client.ObjectKey{Name: r.Spec.ClusterTemplateRef},
-		&template,
+		template,
 	); err != nil {
 		if apierrors.IsNotFound(err) {
 			return fmt.Errorf("cluster template '%v' not found", r.Spec.ClusterTemplateRef)
@@ -117,6 +162,11 @@ func (r *ClusterTemplateInstance) checkProps() error {
 }
 
 func (r *ClusterTemplateInstance) checkQuota() error {
+	// Do not check quota for the cluster template setup only:
+	if r.Spec.KubeconfigSecretRef != nil {
+		return nil
+	}
+
 	templates := ClusterTemplateList{}
 	if err := instanceControllerClient.List(context.TODO(), &templates); err != nil {
 		return fmt.Errorf("could not list cluster templates - %q", err)

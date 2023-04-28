@@ -41,6 +41,8 @@ type Parameter struct {
 }
 
 type ClusterTemplateInstanceSpec struct {
+	// A reference to a secret which contains kubeconfig of the cluster. If specified day1 operation won't be executed.
+	KubeconfigSecretRef *string `json:"kubeconfigSecretRef,omitempty"`
 	// A reference to ClusterTemplate which will be used for installing and setting up the cluster
 	ClusterTemplateRef string `json:"clusterTemplateRef"`
 	// Helm parameters to be passed to cluster installation or setup
@@ -81,8 +83,6 @@ const (
 )
 
 type ClusterTemplateInstanceStatus struct {
-	ClusterTemplateSpec   *ClusterTemplateSpec `json:"clusterTemplateSpec,omitempty"`
-	ClusterTemplateLabels map[string]string    `json:"clusterTemplateLabels,omitempty"`
 	// A reference for secret which contains username and password under keys "username" and "password"
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	AdminPassword *corev1.LocalObjectReference `json:"adminPassword,omitempty"`

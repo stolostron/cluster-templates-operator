@@ -20,29 +20,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var (
-	CTDescriptionLabel                    = "clustertemplates.openshift.io/description"
-	ClusterProviderExperimentalAnnotation = "clustertemplate.openshift.io/experimental-provider"
-)
-
-type ClusterTemplateSpec struct {
-	// ArgoCD applicationset name which is used for installation of the cluster
-	ClusterDefinition string `json:"clusterDefinition"`
-
+type ClusterTemplateSetupSpec struct {
 	// Skip the registeration of the cluster to the hub cluster
 	SkipClusterRegistration bool `json:"skipClusterRegistration,omitempty"`
 
 	// +optional
 	// Array of ArgoCD applicationset names which are used for post installation setup of the cluster
 	ClusterSetup []string `json:"clusterSetup,omitempty"`
-
-	// +optional
-	//+kubebuilder:validation:Minimum=0
-	// Cost of the cluster, used for quotas
-	Cost *int `json:"cost,omitempty"`
 }
 
-type ClusterDefinitionSchema struct {
+type ClusterSetupSchema struct {
+	// Name of the cluster setup step
+	Name string `json:"name"`
 	// Content of helm chart values.yaml
 	Values string `json:"values,omitempty"`
 	// Content of helm chart values.schema.json
@@ -52,11 +41,8 @@ type ClusterDefinitionSchema struct {
 	Error *string `json:"error,omitempty"`
 }
 
-// ClusterTemplateStatus defines the observed state of ClusterTemplate
-type ClusterTemplateStatus struct {
-	// Describes helm chart properties and their schema
-	// +operator-sdk:csv:customresourcedefinitions:type=status
-	ClusterDefinition ClusterDefinitionSchema `json:"clusterDefinition,omitempty"`
+// ClusterTemplateStatus defines the observed state of ClusterTemplateSetup
+type ClusterTemplateSetupStatus struct {
 	// Describes helm chart properties and schema for every cluster setup step
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	ClusterSetup []ClusterSetupSchema `json:"clusterSetup,omitempty"`
@@ -64,28 +50,27 @@ type ClusterTemplateStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:path=clustertemplates,shortName=ct;cts,scope=Cluster
-//+kubebuilder:printcolumn:name="Cost",type="integer",JSONPath=".spec.cost",description="Cluster cost"
-//+operator-sdk:csv:customresourcedefinitions:displayName="Cluster template",resources={{Pod, v1, ""}}
+//+kubebuilder:resource:path=clustertemplatesetup,shortName=ctsetup;ctsetup,scope=Cluster
+//+operator-sdk:csv:customresourcedefinitions:displayName="Cluster template setup",resources={{Pod, v1, ""}}
 
-// Template of a cluster - both installation and post-install setup are defined as ArgoCD application spec. Any application source is supported - typically a Helm chart
-type ClusterTemplate struct {
+// Template of a cluster - post-install setup are defined as ArgoCD application set refs.
+type ClusterTemplateSetup struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ClusterTemplateSpec   `json:"spec"`
-	Status ClusterTemplateStatus `json:"status,omitempty"`
+	Spec   ClusterTemplateSetupSpec   `json:"spec"`
+	Status ClusterTemplateSetupStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 
-// ClusterTemplateList contains a list of ClusterTemplate
-type ClusterTemplateList struct {
+// ClusterTemplateSetupList contains a list of ClusterTemplateSetup
+type ClusterTemplateSetupList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ClusterTemplate `json:"items"`
+	Items           []ClusterTemplateSetup `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ClusterTemplate{}, &ClusterTemplateList{})
+	SchemeBuilder.Register(&ClusterTemplateSetup{}, &ClusterTemplateSetupList{})
 }

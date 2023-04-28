@@ -118,6 +118,59 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		})
 	})
 
+	Context("Cluster secret provided for day2 only", func() {
+		cti := &v1alpha1.ClusterTemplateInstance{}
+
+		ct := &v1alpha1.ClusterTemplateSetup{}
+		appset := &argo.ApplicationSet{}
+		secret := &corev1.Secret{}
+		app := &argo.Application{}
+		var err error
+
+		BeforeEach(func() {
+			appset = testutils.GetAppset()
+			Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
+
+			ct = testutils.GetCTSetup()
+			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
+
+			cti = testutils.GetCTIWithSecret()
+
+			app = testutils.GetApp()
+			Expect(k8sClient.Create(ctx, app)).Should(Succeed())
+
+			secret, err = testutils.GetKubeconfigSecretWithName("mysecret")
+			Expect(err).Should(BeNil())
+			Expect(k8sClient.Create(ctx, secret)).Should(Succeed())
+		})
+
+		AfterEach(func() {
+			testutils.DeleteResource(ctx, secret, k8sClient)
+			testutils.DeleteResource(ctx, cti, k8sClient)
+			testutils.DeleteResource(ctx, ct, k8sClient)
+			testutils.DeleteResource(ctx, appset, k8sClient)
+			testutils.DeleteResource(ctx, app, k8sClient)
+		})
+
+		It("Should create cluster definition", func() {
+			Expect(k8sClient.Create(ctx, cti)).Should(Succeed())
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(cti), cti)
+				if err != nil {
+					return false
+				}
+				clusterDefinitionCondition := meta.FindStatusCondition(
+					cti.Status.Conditions,
+					string(v1alpha1.ClusterInstallSucceeded),
+				)
+				if clusterDefinitionCondition == nil {
+					return false
+				}
+				return clusterDefinitionCondition.Status == metav1.ConditionTrue && clusterDefinitionCondition.Message == "Cluster defined via secret"
+			}, timeout, interval).Should(BeTrue())
+		})
+	})
+
 	Context("Cluster definition phase", func() {
 		cti := &v1alpha1.ClusterTemplateInstance{}
 
@@ -180,8 +233,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			ct = testutils.GetCT(false)
 			Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
 
-			clusterti := testutils.GetCTI()
-			Expect(k8sClient.Create(ctx, clusterti)).Should(Succeed())
+			cti = testutils.GetCTI()
+			Expect(k8sClient.Create(ctx, cti)).Should(Succeed())
 
 			appset = testutils.GetAppset()
 			Expect(k8sClient.Create(ctx, appset)).Should(Succeed())
@@ -189,10 +242,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			app = testutils.GetApp()
 			Expect(k8sClient.Create(ctx, app)).Should(Succeed())
 
-			Eventually(func() bool {
-				k8sClient.Get(ctx, client.ObjectKeyFromObject(clusterti), cti)
-				return cti.Status.ClusterTemplateSpec != nil
-			}, timeout, interval).Should(BeTrue())
 			var err error
 			app, err = cti.GetDay1Application(ctx, k8sClient, defaultArgoCDNs)
 			Expect(err).ShouldNot(HaveOccurred())
@@ -558,16 +607,12 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 	})
 
 	Context("Managed cluster phase", func() {
-		ct := &v1alpha1.ClusterTemplate{}
 		cti := &v1alpha1.ClusterTemplateInstance{}
 		BeforeEach(func() {
-			ct = testutils.GetCT(false)
 			cti = testutils.GetCTI()
 		})
 
 		It("Skips creating MC if SkipClusterRegistraion flag is set", func() {
-			cost := 1
-			ct = testutils.GetCTWithCost(false, &cost, true)
 			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
 					{
@@ -579,14 +624,13 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 			client := fake.NewFakeClientWithScheme(scheme.Scheme)
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client:               client,
 				EnableManagedCluster: true,
 			}
-			err := reconciler.reconcileCreateManagedCluster(ctx, cti)
+			err := reconciler.reconcileCreateManagedCluster(ctx, cti, true, map[string]string{})
 			Expect(err).Should(BeNil())
 
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
@@ -606,10 +650,9 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 			reconciler := &ClusterTemplateInstanceReconciler{}
-			err := reconciler.reconcileCreateManagedCluster(ctx, cti)
+			err := reconciler.reconcileCreateManagedCluster(ctx, cti, false, map[string]string{})
 			Expect(err).Should(BeNil())
 
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
@@ -629,7 +672,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 
 			kubeconfig := api.Config{}
@@ -659,7 +701,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				Client:               client,
 				EnableManagedCluster: true,
 			}
-			err = reconciler.reconcileCreateManagedCluster(ctx, cti)
+			err = reconciler.reconcileCreateManagedCluster(ctx, cti, false, map[string]string{})
 			Expect(err).Should(BeNil())
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
 			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCCreated)))
@@ -681,10 +723,9 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 			reconciler := &ClusterTemplateInstanceReconciler{}
-			err := reconciler.reconcileImportManagedCluster(ctx, cti)
+			err := reconciler.reconcileImportManagedCluster(ctx, cti, false)
 			Expect(err).Should(BeNil())
 
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
@@ -704,7 +745,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 
 			kubeconfig := api.Config{}
@@ -744,7 +784,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				Client:               client,
 				EnableManagedCluster: true,
 			}
-			err = reconciler.reconcileImportManagedCluster(ctx, cti)
+			err = reconciler.reconcileImportManagedCluster(ctx, cti, false)
 			Expect(err).Should(BeNil())
 
 			importSecretMeta := ocm.GetImportSecretMeta(mc.Name)
@@ -766,11 +806,9 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 	})
 
 	Context("Cluster setup create phase", func() {
-		ct := &v1alpha1.ClusterTemplate{}
 		cti := &v1alpha1.ClusterTemplateInstance{}
 
 		BeforeEach(func() {
-			ct = testutils.GetCT(true)
 			cti = testutils.GetCTI()
 		})
 
@@ -786,7 +824,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 
 			kubeconfig := api.Config{}
@@ -817,7 +854,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				Client: client,
 			}
 
-			err = reconciler.reconcileClusterSetupCreate(ctx, cti)
+			err = reconciler.reconcileClusterSetupCreate(ctx, cti, []string{"appset2"})
 			Expect(err).Should(BeNil())
 
 			clusterSetupCreatedCondition := meta.FindStatusCondition(
@@ -829,10 +866,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 	})
 
 	Context("Cluster setup create phase", func() {
-		ct := &v1alpha1.ClusterTemplate{}
 		cti := &v1alpha1.ClusterTemplateInstance{}
 		BeforeEach(func() {
-			ct = testutils.GetCT(true)
 			cti = testutils.GetCTI()
 		})
 		It("Detects running day2 app", func() {
@@ -847,7 +882,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionFalse,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 
 			kubeconfig := api.Config{}
@@ -875,12 +909,12 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			app := testutils.GetAppDay2()
 			appset2 := testutils.GetAppset2()
 			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, appset2, app)
-			err = cti.CreateDay2Applications(ctx, client, defaultArgoCDNs, false)
+			err = cti.CreateDay2Applications(ctx, client, defaultArgoCDNs, false, []string{"appset2"})
 			Expect(err).Should(BeNil())
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client: client,
 			}
-			err = reconciler.reconcileClusterSetup(ctx, cti)
+			err = reconciler.reconcileClusterSetup(ctx, cti, []string{"appset2"})
 			Expect(err).Should(BeNil())
 			clusterSetupSucceededCondition := meta.FindStatusCondition(
 				cti.Status.Conditions,
@@ -899,7 +933,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionTrue,
 					},
 				},
-				ClusterTemplateSpec: &ct.Spec,
 			}
 
 			clusterSetupSecret := &corev1.Secret{

@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/clustertemplate.openshift.io_clustertemplates.yaml
+- bases/clustertemplate.openshift.io_clustertemplatesetup.yaml
 - bases/clustertemplate.openshift.io_clustertemplatequotas.yaml
 - bases/clustertemplate.openshift.io_clustertemplateinstances.yaml
 #+kubebuilder:scaffold:crdkustomizeresource

@@ -86,9 +86,6 @@ func getResources() (
 			Name:      "foo",
 			Namespace: "bar",
 		},
-		Status: v1alpha1.ClusterTemplateInstanceStatus{
-			ClusterTemplateSpec: &v1alpha1.ClusterTemplateSpec{},
-		},
 	}
 
 	kubeconfig := api.Config{

@@ -183,6 +183,22 @@ rules:
   - patch
   - update
 - apiGroups:
+  - clustertemplate.openshift.io
+  resources:
+  - clustertemplatesetup
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - clustertemplate.openshift.io
+  resources:
+  - clustertemplatesetup/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
   - console.openshift.io
   resources:
   - consoleplugins

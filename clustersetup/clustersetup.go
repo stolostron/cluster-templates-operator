@@ -149,9 +149,15 @@ func AddClusterToArgo(
 		return err
 	}
 
-	app, err := clusterTemplateInstance.GetDay1Application(ctx, k8sClient, argoCDNamespace)
-	if err != nil {
-		return err
+	var appName string
+	if clusterTemplateInstance.Spec.KubeconfigSecretRef != nil {
+		appName = *clusterTemplateInstance.Spec.KubeconfigSecretRef
+	} else {
+		app, err := clusterTemplateInstance.GetDay1Application(ctx, k8sClient, argoCDNamespace)
+		if err != nil {
+			return err
+		}
+		appName = app.Name
 	}
 
 	clusterName := clusterTemplateInstance.Namespace + "/" + clusterTemplateInstance.Name
@@ -166,8 +172,8 @@ func AddClusterToArgo(
 
 	clusterSecret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      app.Name,
-			Namespace: app.Namespace,
+			Name:      appName,
+			Namespace: argoCDNamespace,
 			Labels: map[string]string{
 				argoAppSet.ArgoCDSecretTypeLabel: argoAppSet.ArgoCDSecretTypeCluster,
 				v1alpha1.CTINameLabel:            clusterTemplateInstance.Name,

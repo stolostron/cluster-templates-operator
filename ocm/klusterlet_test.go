@@ -32,11 +32,6 @@ var _ = Describe("Klusterlet", func() {
 					"foo": "bar",
 				},
 			},
-			Status: v1alpha1.ClusterTemplateInstanceStatus{
-				ClusterTemplateLabels: map[string]string{
-					"foo": "bar",
-				},
-			},
 		}
 		err := CreateKlusterletAddonConfig(context.TODO(), client, cti)
 		Expect(err).Should(HaveOccurred())
@@ -47,11 +42,6 @@ var _ = Describe("Klusterlet", func() {
 				Name:      "foo",
 				Namespace: "bar",
 				Labels: map[string]string{
-					"foo": "bar",
-				},
-			},
-			Status: v1alpha1.ClusterTemplateInstanceStatus{
-				ClusterTemplateLabels: map[string]string{
 					"foo": "bar",
 				},
 			},
