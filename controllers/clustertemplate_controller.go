@@ -71,7 +71,7 @@ func (r *ClusterTemplateReconciler) Reconcile(
 		appSet := &argo.ApplicationSet{}
 		err = r.Get(
 			ctx,
-			types.NamespacedName{Name: clusterTemplate.Spec.ClusterDefinition, Namespace: ArgoCDNamespace},
+			types.NamespacedName{Name: setup, Namespace: ArgoCDNamespace},
 			appSet,
 		)
 		if err != nil {
