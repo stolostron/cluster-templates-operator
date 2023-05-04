@@ -30,6 +30,9 @@ var defaultApplicationSets = map[string]*argo.ApplicationSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "hypershift-cluster",
 			Namespace: ArgoCDNamespace,
+			Labels: map[string]string{
+				"clustertemplates.openshift.io/vendor": "community",
+			},
 		},
 		Spec: argo.ApplicationSetSpec{
 			Generators: []argo.ApplicationSetGenerator{{}},
@@ -56,6 +59,9 @@ var defaultApplicationSets = map[string]*argo.ApplicationSet{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "hypershift-kubevirt-cluster",
 			Namespace: ArgoCDNamespace,
+			Labels: map[string]string{
+				"clustertemplates.openshift.io/vendor": "community",
+			},
 		},
 		Spec: argo.ApplicationSetSpec{
 			Generators: []argo.ApplicationSetGenerator{{}},
