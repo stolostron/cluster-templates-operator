@@ -10,7 +10,7 @@ import (
 
 	argoCommon "github.com/argoproj/argo-cd/v2/common"
 	"github.com/julienschmidt/httprouter"
-	controllers "github.com/stolostron/cluster-templates-operator/controllers"
+	"github.com/stolostron/cluster-templates-operator/controllers"
 	repoService "github.com/stolostron/cluster-templates-operator/repository"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"

@@ -7,31 +7,28 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/event"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	argo "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
-	v1 "k8s.io/api/core/v1"
+	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 )
 
 const (
-	argoCDNsConfig = "argocd-ns"
-	enableUIConfig = "enable-ui"
-	uiImageConfig  = "ui-image"
+	configName = "config"
 
-	defaultArgoCDNs      = "cluster-aas-operator"
-	defaultDisableArgoCD = "false"
-	defaultEnableUI      = "false"
-	defaultUIImage       = "quay.io/stolostron/cluster-templates-console-plugin:latest"
+	defaultArgoCDNs = "cluster-aas-operator"
+	defaultEnableUI = false
+	defaultUIImage  = "quay.io/stolostron/cluster-templates-console-plugin:latest"
 )
 
 var (
 	ArgoCDNamespace      = defaultArgoCDNs
 	EnableUI             = defaultEnableUI
-	DisableArgo          = defaultDisableArgoCD
 	UIImage              = defaultUIImage
 	EnableUIconfigSync   = make(chan event.GenericEvent)
 	EnableArgoconfigSync = make(chan event.GenericEvent)
@@ -42,42 +39,54 @@ type ConfigReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// +kubebuilder:rbac:groups="",resources=configmaps,verbs=get;list;watch
+func getDefaultConfig() *v1alpha1.Config {
+	return &v1alpha1.Config{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      configName,
+			Namespace: defaultArgoCDNs,
+		},
+		Spec: v1alpha1.ConfigSpec{
+			ArgoCDNamespace: defaultArgoCDNs,
+			UIImage:         defaultUIImage,
+			UIEnabled:       defaultEnableUI,
+		},
+	}
+}
+
+// +kubebuilder:rbac:groups=clustertemplate.openshift.io,resources=config,verbs=get;list;watch;create;update;patch
 
 func (r *ConfigReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
-	config := &v1.ConfigMap{}
-	if err := r.Get(ctx, req.NamespacedName, config); err != nil {
+	config := &v1alpha1.Config{}
+	if err := r.Get(ctx, types.NamespacedName{Name: configName, Namespace: defaultArgoCDNs}, config); err != nil {
 		if apierrors.IsNotFound(err) {
-			ArgoCDNamespace = defaultArgoCDNs
-			EnableUI = defaultEnableUI
-			DisableArgo = defaultDisableArgoCD
-			UIImage = defaultUIImage
-			EnableUIconfigSync <- event.GenericEvent{Object: GetPluginDeployment()}
-			EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argoname, Namespace: ArgoCDNamespace}}}
+			if err := r.Create(ctx, getDefaultConfig()); err != nil {
+				return ctrl.Result{}, err
+			}
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
 	}
-	val, ok := config.Data[argoCDNsConfig]
-	if ok && val != "" {
-		ArgoCDNamespace = val
-		EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argoname, Namespace: ArgoCDNamespace}}}
-	} else {
-		ArgoCDNamespace = defaultArgoCDNs
-		EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argoname, Namespace: ArgoCDNamespace}}}
+
+	if ArgoCDNamespace != config.Spec.ArgoCDNamespace {
+		ArgoCDNamespace = config.Spec.ArgoCDNamespace
+		EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argoname, Namespace: defaultArgoCDNs}}}
 	}
-	enableUI, enableUIOk := config.Data[enableUIConfig]
-	uiImage, uiImageOk := config.Data[uiImageConfig]
-	if enableUIOk || uiImageOk {
-		EnableUI = enableUI
-		if !uiImageOk {
-			UIImage = defaultUIImage
-		} else if uiImage != "" {
-			UIImage = uiImage
-		}
+
+	uiChanged := false
+	if EnableUI != config.Spec.UIEnabled {
+		EnableUI = config.Spec.UIEnabled
+		uiChanged = true
+	}
+
+	if UIImage != config.Spec.UIImage {
+		UIImage = config.Spec.UIImage
+		uiChanged = true
+	}
+
+	if uiChanged {
 		EnableUIconfigSync <- event.GenericEvent{Object: GetPluginDeployment()}
 	}
 
@@ -86,14 +95,15 @@ func (r *ConfigReconciler) Reconcile(
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	initialSync := make(chan event.GenericEvent)
 	if err := ctrl.NewControllerManagedBy(mgr).
-		For(&v1.ConfigMap{}, builder.WithPredicates(predicate.NewPredicateFuncs(selectCM))).
+		For(&v1alpha1.Config{}).
+		Watches(&source.Channel{Source: initialSync}, &handler.EnqueueRequestForObject{}).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to construct controller: %w", err)
 	}
+	go func() {
+		initialSync <- event.GenericEvent{Object: getDefaultConfig()}
+	}()
 	return nil
-}
-
-func selectCM(obj client.Object) bool {
-	return obj.GetName() == "claas-config" && obj.GetNamespace() == "cluster-aas-operator"
 }

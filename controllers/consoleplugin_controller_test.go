@@ -17,11 +17,13 @@ import (
 )
 
 var _ = Describe("ConsolePlugin controller", func() {
+
 	AfterEach(func() {
-		EnableUI = "false"
+		EnableUI = false
 	})
+
 	It("Creates all deployment resources", func() {
-		EnableUI = "true"
+		EnableUI = true
 		EnableUIconfigSync <- event.GenericEvent{Object: GetPluginDeployment()}
 		Eventually(func() error {
 			consolePlugin := getConsolePlugin()
@@ -49,7 +51,7 @@ var _ = Describe("ConsolePlugin controller", func() {
 	})
 
 	It("Recreates deployment", func() {
-		EnableUI = "true"
+		EnableUI = true
 		pluginDeployment := GetPluginDeployment()
 		EnableUIconfigSync <- event.GenericEvent{Object: pluginDeployment}
 		deployment := &appsv1.Deployment{}

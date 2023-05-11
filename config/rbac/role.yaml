@@ -9,14 +9,6 @@ rules:
   - ""
   resources:
   - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
   - services
   verbs:
   - create
@@ -198,6 +190,17 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - clustertemplate.openshift.io
+  resources:
+  - config
+  verbs:
+  - create
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - console.openshift.io
   resources:

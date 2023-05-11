@@ -6,6 +6,7 @@ resources:
 - bases/clustertemplate.openshift.io_clustertemplatesetup.yaml
 - bases/clustertemplate.openshift.io_clustertemplatequotas.yaml
 - bases/clustertemplate.openshift.io_clustertemplateinstances.yaml
+- bases/clustertemplate.openshift.io_config.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
