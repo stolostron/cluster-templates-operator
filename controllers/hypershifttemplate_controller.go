@@ -41,8 +41,8 @@ var defaultApplicationSets = map[string]*argo.ApplicationSet{
 					},
 					Project: "default",
 					Source: argo.ApplicationSource{
-						RepoURL:        "https://stolostron.github.io/cluster-templates-operator",
-						TargetRevision: "0.0.3",
+						RepoURL:        "https://stolostron.github.io/cluster-templates-manifests",
+						TargetRevision: "0.0.1",
 						Chart:          "hypershift-template",
 					},
 					SyncPolicy: &argo.SyncPolicy{
@@ -67,8 +67,8 @@ var defaultApplicationSets = map[string]*argo.ApplicationSet{
 					},
 					Project: "default",
 					Source: argo.ApplicationSource{
-						RepoURL:        "https://stolostron.github.io/cluster-templates-operator",
-						TargetRevision: "0.0.2",
+						RepoURL:        "https://stolostron.github.io/cluster-templates-manifests",
+						TargetRevision: "0.0.1",
 						Chart:          "hypershift-kubevirt-template",
 					},
 					SyncPolicy: &argo.SyncPolicy{
