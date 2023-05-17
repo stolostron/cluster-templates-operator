@@ -21,6 +21,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	applicationset "github.com/argoproj/applicationset/pkg/utils"
+	consoleV1 "github.com/openshift/api/console/v1"
 	console "github.com/openshift/api/console/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -41,6 +42,41 @@ var (
 		"clustertemplates.openshift.io/component": "console-plugin",
 	}
 )
+
+func getQuickStarts() []*consoleV1.ConsoleQuickStart {
+	return []*consoleV1.ConsoleQuickStart{GetTemplateQuickStart(), GetQuotaQuickStart(), GetShareTemplateQuickStart()}
+}
+
+func getQuickStartClientObjects() []client.Object {
+	quickStarts := getQuickStarts()
+	objects := make([]client.Object, len(quickStarts))
+	for i, c := range quickStarts {
+		objects[i] = (client.Object)(c)
+	}
+	return objects
+}
+
+func (r *ConsolePluginReconciler) createOrUpdateQuickStarts(
+	ctx context.Context,
+	req ctrl.Request,
+) error {
+	quickStarts := getQuickStarts()
+	for _, qs := range quickStarts {
+		originalQs := &consoleV1.ConsoleQuickStart{
+			ObjectMeta: qs.ObjectMeta,
+		}
+		_, err := applicationset.CreateOrUpdate(ctx, r.Client, originalQs, func() error {
+			if !reflect.DeepEqual(originalQs.Spec, qs.Spec) {
+				originalQs.Spec = qs.Spec
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func getConsolePlugin() *console.ConsolePlugin {
 	return &console.ConsolePlugin{
@@ -319,13 +355,20 @@ func (r *ConsolePluginReconciler) Reconcile(
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+		err = r.createOrUpdateQuickStarts(ctx, req)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 	} else {
+		quickStartClientObjects := getQuickStartClientObjects()
 		objects := []client.Object{
 			getConsolePlugin(),
 			GetPluginDeployment(),
 			getPluginService(),
 			getPluginCM(),
 		}
+		objects = append(objects, quickStartClientObjects...)
+
 		for _, obj := range objects {
 			if err := r.Client.Delete(ctx, obj); err != nil {
 				if !apierrors.IsNotFound(err) {
