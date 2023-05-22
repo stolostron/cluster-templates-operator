@@ -50,47 +50,55 @@ func (r *ClusterTemplateReconciler) Reconcile(
 		appSet,
 	)
 	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	cdValues, cdSchema, err := r.getValuesAndSchema(
-		ctx,
-		appSet.Spec.Template.Spec,
-	)
-	if err == nil {
-		clusterTemplate.Status.ClusterDefinition.Values = cdValues
-		clusterTemplate.Status.ClusterDefinition.Schema = cdSchema
-		clusterTemplate.Status.ClusterDefinition.Error = nil
-	} else {
 		errors = multierror.Append(errors, err)
 		clusterTemplate.Status.ClusterDefinition.Error = pointer.String(err.Error())
+	} else {
+		clusterTemplate.Status.ClusterDefinition.Error = nil
+
+		cdValues, cdSchema, err := r.getValuesAndSchema(
+			ctx,
+			appSet.Spec.Template.Spec,
+		)
+		if err != nil {
+			errors = multierror.Append(errors, err)
+			clusterTemplate.Status.ClusterDefinition.Error = pointer.String(err.Error())
+		} else {
+			clusterTemplate.Status.ClusterDefinition.Values = cdValues
+			clusterTemplate.Status.ClusterDefinition.Schema = cdSchema
+			clusterTemplate.Status.ClusterDefinition.Error = nil
+		}
 	}
 
 	clusterSetupStatus := []v1alpha1.ClusterSetupSchema{}
 	for _, setup := range clusterTemplate.Spec.ClusterSetup {
+		css := v1alpha1.ClusterSetupSchema{}
+		css.Name = setup
+
 		appSet := &argo.ApplicationSet{}
 		err = r.Get(
 			ctx,
 			types.NamespacedName{Name: setup, Namespace: ArgoCDNamespace},
 			appSet,
 		)
-		if err != nil {
-			return ctrl.Result{}, err
-		}
 
-		values, schema, err := r.getValuesAndSchema(
-			ctx,
-			appSet.Spec.Template.Spec,
-		)
-		css := v1alpha1.ClusterSetupSchema{}
 		if err != nil {
 			errors = multierror.Append(errors, err)
 			css.Error = pointer.String(err.Error())
 		} else {
-			css.Name = setup
-			css.Values = values
-			css.Schema = schema
 			css.Error = nil
+
+			values, schema, err := r.getValuesAndSchema(
+				ctx,
+				appSet.Spec.Template.Spec,
+			)
+			if err != nil {
+				errors = multierror.Append(errors, err)
+				css.Error = pointer.String(err.Error())
+			} else {
+				css.Error = nil
+				css.Values = values
+				css.Schema = schema
+			}
 		}
 		clusterSetupStatus = append(clusterSetupStatus, css)
 	}

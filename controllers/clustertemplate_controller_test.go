@@ -160,4 +160,42 @@ var _ = Describe("ClusterTemplate controller", func() {
 		}, timeout, interval).Should(BeTrue())
 	})
 
+	It("Should set error for ClusterDefinition in case of invalid appset", func() {
+		ct.Spec.ClusterDefinition = "nonexistent"
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
+
+		Eventually(func() bool {
+			foundCT := &v1alpha1.ClusterTemplate{}
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(ct), foundCT)
+			if err != nil {
+				return false
+			}
+
+			if foundCT.Status.ClusterDefinition.Error != nil {
+				return strings.Contains(*foundCT.Status.ClusterDefinition.Error, "ApplicationSet.argoproj.io \"nonexistent\" not found")
+			}
+			return false
+		}, timeout, interval).Should(BeTrue())
+	})
+
+	It("Should set error for ClusterSetup in case of invalid appset", func() {
+		ct.Spec.ClusterSetup = []string{"nonexistent"}
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
+
+		Eventually(func() bool {
+			foundCT := &v1alpha1.ClusterTemplate{}
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(ct), foundCT)
+			if err != nil {
+				return false
+			}
+
+			for _, cs := range foundCT.Status.ClusterSetup {
+				if cs.Error != nil {
+					return strings.Contains(*cs.Error, "ApplicationSet.argoproj.io \"nonexistent\" not found")
+				}
+			}
+			return false
+		}, timeout, interval).Should(BeTrue())
+	})
+
 })
