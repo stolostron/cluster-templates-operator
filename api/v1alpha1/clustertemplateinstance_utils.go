@@ -40,11 +40,6 @@ var (
 	CTIlog = logf.Log.WithName("cti-utils")
 )
 
-const (
-	CTIClusterTargetVar     = "${new_cluster}"
-	CTIInstanceNamespaceVar = "${instance_ns}"
-)
-
 func (i *ClusterTemplateInstance) GetKubeadminPassRef() string {
 	return i.Name + "-admin-password"
 }
@@ -174,9 +169,9 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 		}
 	}
 
-	params, err := i.GetHelmParameters(appSet)
-	if err != nil {
-		return err
+	name := string(i.UID)
+	if isDay2 {
+		name = name + "-" + appSet.Name
 	}
 
 	defaultUrl, _ := json.Marshal(map[string]string{"url": server})
@@ -184,7 +179,7 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 		Elements: []apiextensionsv1.JSON{{Raw: defaultUrl}},
 		Template: argo.ApplicationSetTemplate{
 			ApplicationSetTemplateMeta: argo.ApplicationSetTemplateMeta{
-				Name: string(i.UID) + appSet.Name,
+				Name: name,
 				Finalizers: []string{
 					argo.ResourcesFinalizerName,
 				},
@@ -193,16 +188,25 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 					CTINamespaceLabel: i.Namespace,
 				},
 			},
-			Spec: argo.ApplicationSpec{
-				Source: argo.ApplicationSource{
-					Helm: &argo.ApplicationSourceHelm{
-						Parameters: params,
-					},
-				},
-			},
 		},
 	},
 	}
+
+	if appSet.Spec.Template.Spec.Source.Chart != "" {
+		params, err := i.GetHelmParameters(appSet)
+		if err != nil {
+			return err
+		}
+
+		gen.List.Template.Spec = argo.ApplicationSpec{
+			Source: argo.ApplicationSource{
+				Helm: &argo.ApplicationSourceHelm{
+					Parameters: params,
+				},
+			},
+		}
+	}
+
 	if isDay2 {
 		gen.List.Template.ApplicationSetTemplateMeta.Labels[CTISetupLabel] = ""
 	}

@@ -325,6 +325,7 @@ func getClusterProperties(clusterTemplate client.Object) (bool, string, []string
 	case *v1alpha1.ClusterTemplate:
 		skipClusterRegistration = clusterTemplate.(*v1alpha1.ClusterTemplate).Spec.SkipClusterRegistration
 		clusterDefinition = clusterTemplate.(*v1alpha1.ClusterTemplate).Spec.ClusterDefinition
+		clusterSetup = clusterTemplate.(*v1alpha1.ClusterTemplate).Spec.ClusterSetup
 	}
 
 	return skipClusterRegistration, clusterDefinition, clusterSetup
