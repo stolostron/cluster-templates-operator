@@ -3,9 +3,8 @@ package controllers
 import (
 	argooperator "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	testutils "github.com/stolostron/cluster-templates-operator/testutils"
-	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	. "github.com/onsi/ginkgo"
@@ -40,10 +39,10 @@ var _ = Describe("ArgoCD controller", func() {
 
 var _ = Describe("ArgoCD controller with cm", func() {
 	argo := &argooperator.ArgoCD{}
-	var cm *v1.ConfigMap
+	c := &v1alpha1.Config{}
 
 	AfterEach(func() {
-		testutils.DeleteResource(ctx, cm, k8sClient)
+		testutils.DeleteResource(ctx, c, k8sClient)
 	})
 
 	It("ArgoCD should be deleted if default namespace is changed", func() {
@@ -62,20 +61,11 @@ var _ = Describe("ArgoCD controller with cm", func() {
 			return sub.Spec.Config.Env[0].Value
 		}, timeout, interval).Should(Equal(defaultArgoCDNs))
 
-		cm = &v1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "claas-config",
-				Namespace: "cluster-aas-operator",
-			},
-			Data: map[string]string{
-				argoCDNsConfig: "my-argocd-ns",
-			},
-		}
-		Expect(k8sClient.Create(ctx, cm)).ToNot(HaveOccurred())
-
-		Eventually(func() bool {
-			return ArgoCDNamespace == "my-argocd-ns"
-		}, timeout, interval).Should(BeTrue())
+		Eventually(func() error {
+			return k8sClient.Get(ctx, types.NamespacedName{Name: configName, Namespace: defaultArgoCDNs}, c)
+		}, timeout, interval).Should(BeNil())
+		c.Spec.ArgoCDNamespace = "my-argocd-ns"
+		Expect(k8sClient.Update(ctx, c)).ToNot(HaveOccurred())
 
 		Eventually(func() error {
 			return k8sClient.Get(ctx, types.NamespacedName{Name: argoname, Namespace: defaultArgoCDNs}, argo)

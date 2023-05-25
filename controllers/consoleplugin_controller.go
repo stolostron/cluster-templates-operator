@@ -263,7 +263,7 @@ func (r *ConsolePluginReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
-	if EnableUI == "true" {
+	if EnableUI {
 		pluginCM := getPluginCM()
 		cm := &v1.ConfigMap{
 			ObjectMeta: pluginCM.ObjectMeta,
@@ -339,6 +339,5 @@ func (r *ConsolePluginReconciler) Reconcile(
 }
 
 func (r *ConsolePluginReconciler) selectPluginDeployment(obj client.Object) bool {
-	deployment := GetPluginDeployment()
-	return obj.GetName() == deployment.Name && obj.GetNamespace() == deployment.Namespace
+	return obj.GetName() == pluginResourceName && obj.GetNamespace() == pluginNamespace
 }

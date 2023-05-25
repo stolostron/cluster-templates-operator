@@ -134,6 +134,12 @@ var _ = BeforeSuite(func() {
 	err = k8sManager.GetClient().Create(ctx, claasNs)
 	Expect(err).ToNot(HaveOccurred())
 
+	err = (&ConfigReconciler{
+		Client: k8sManager.GetClient(),
+		Scheme: k8sManager.GetScheme(),
+	}).SetupWithManager(k8sManager)
+	Expect(err).ToNot(HaveOccurred())
+
 	err = (&ClusterTemplateQuotaReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
