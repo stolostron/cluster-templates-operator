@@ -538,4 +538,30 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			Expect(rb).ShouldNot(BeNil())
 		},
 	)
+
+	It("DeleteDay1Application - handles missing day1 app set", func() {
+		cti := ClusterTemplateInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+			Spec: ClusterTemplateInstanceSpec{},
+		}
+		client := fake.NewFakeClientWithScheme(scheme.Scheme)
+		err := cti.DeleteDay1Application(ctx, client, "default", "foo")
+		Expect(err).ShouldNot(HaveOccurred())
+	})
+
+	It("DeleteDay2Application - handles missing day2 app set", func() {
+		cti := ClusterTemplateInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "default",
+			},
+			Spec: ClusterTemplateInstanceSpec{},
+		}
+		client := fake.NewFakeClientWithScheme(scheme.Scheme)
+		err := cti.DeleteDay2Application(ctx, client, "default", []string{"foo", "bar"})
+		Expect(err).ShouldNot(HaveOccurred())
+	})
 })

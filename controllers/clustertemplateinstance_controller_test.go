@@ -1049,4 +1049,31 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			Expect(len(roleBinding.Subjects)).Should(Equal(3))
 		})
 	})
+
+	Context("CTI delete", func() {
+		cti := testutils.GetCTI()
+		It("Handles missing Kubelet", func() {
+			objs := []runtime.Object{
+				cti,
+				&ocmv1.ManagedCluster{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "cluster-mc",
+						Labels: map[string]string{
+							v1alpha1.CTINameLabel:      cti.Name,
+							v1alpha1.CTINamespaceLabel: cti.Namespace,
+						},
+					},
+				},
+			}
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, objs...)
+
+			reconciler := &ClusterTemplateInstanceReconciler{
+				Client:               client,
+				EnableManagedCluster: true,
+				EnableKlusterlet:     true,
+			}
+			_, err := reconciler.delete(ctx, cti)
+			Expect(err).ShouldNot(HaveOccurred())
+		})
+	})
 })
