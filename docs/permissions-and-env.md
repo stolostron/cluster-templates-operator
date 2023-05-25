@@ -2,7 +2,9 @@
 The CaaS operator configures the permissions and the environment in a way that it can be immediately used. If you require custom configuration, follow the instructions below.
 
 ## ArgoCD
-Cluster as a service operator uses the abilities of ArgoCD to deploy and manage cluster installation and cluster setup. The CaaS operator, by default, creates an ArgoCD instance with all the necessary configuration and permissions. However, we do not recommend using this instance in production environments. Instead create your own and use **claas-config** config map to point CaaS operator to it.
+Cluster as a service operator uses the abilities of ArgoCD to deploy and manage cluster installation and cluster setup. The CaaS operator, by default, creates an ArgoCD instance with all the necessary configuration and permissions. However, we do not recommend using this instance in production environments. Instead create your own and use **clustertemplateconfig** CR to point CaaS operator to it.
+
+If you decide to use default Argo CD instance, it will be deployed in namespace **cluster-aas-opertor** in case you don't modify **ArgoCDNamespace** in **clustertemplateconfig** CR. We must use Argo CD in cluster scope, so we also modify the Argo CD subscription to provision appropriate permissions. The default Argo CD instance is removed if you change the namespace in the **clustertemplateconfig** CR to different value then default one.
 
 ## Minimal set of permissions for ClusterTemplateInstance users
 Minimal permissions on the hub cluster are:
