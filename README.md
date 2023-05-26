@@ -69,7 +69,20 @@ stringData:
 
 ```
 
- 3. Create an instance of the hypershift template by creating the following yaml
+ 3. Allow to create the template in this namespace
+```
+apiVersion: clustertemplate.openshift.io/v1alpha1
+kind: ClusterTemplateQuota
+metadata:
+  name: quota
+  namespace: clusters
+spec:
+  allowedTemplates:
+    - name: hypershift-cluster
+```
+
+
+ 4. Create an instance of the hypershift template by creating the following yaml
 ```
 apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateInstance
@@ -130,7 +143,19 @@ stringData:
 
 ```
 
- 3. Create an instance of the hypershift template by creating the following yaml
+ 3. Allow to create the template in this namespace
+```
+apiVersion: clustertemplate.openshift.io/v1alpha1
+kind: ClusterTemplateQuota
+metadata:
+  name: quota
+  namespace: clusters
+spec:
+  allowedTemplates:
+    - name: hypershift-kubevirt-cluster
+```
+
+ 4. Create an instance of the hypershift template by creating the following yaml
 ```
 apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateInstance
