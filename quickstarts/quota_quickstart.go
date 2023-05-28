@@ -1,4 +1,4 @@
-package controllers
+package quickstarts
 
 import (
 	console "github.com/openshift/api/console/v1"

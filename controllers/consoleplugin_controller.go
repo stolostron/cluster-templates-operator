@@ -25,6 +25,8 @@ import (
 	console "github.com/openshift/api/console/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+
+	quickstarts "github.com/stolostron/cluster-templates-operator/quickstarts"
 )
 
 type ConsolePluginReconciler struct {
@@ -44,7 +46,7 @@ var (
 )
 
 func getQuickStarts() []*consoleV1.ConsoleQuickStart {
-	return []*consoleV1.ConsoleQuickStart{GetTemplateQuickStart(), GetQuotaQuickStart(), GetShareTemplateQuickStart()}
+	return []*consoleV1.ConsoleQuickStart{quickstarts.GetTemplateQuickStart(), quickstarts.GetQuotaQuickStart(), quickstarts.GetShareTemplateQuickStart()}
 }
 
 func getQuickStartClientObjects() []client.Object {
@@ -294,6 +296,7 @@ func (r *ConsolePluginReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups="",resources=configmaps;services,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=console.openshift.io,resources=consoleplugins,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=console.openshift.io,resources=consolequickstarts,verbs=get;list;watch;create;update;delete
 
 func (r *ConsolePluginReconciler) Reconcile(
 	ctx context.Context,
