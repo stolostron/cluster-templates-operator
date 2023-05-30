@@ -62,8 +62,10 @@ func (r *ConsolePluginReconciler) createOrUpdateQuickStarts(
 	ctx context.Context,
 	req ctrl.Request,
 ) error {
+	fmt.Println("creating quick stars")
 	quickStarts := getQuickStarts()
 	for _, qs := range quickStarts {
+		fmt.Println("creating quick start " + qs.Name)
 		originalQs := &consoleV1.ConsoleQuickStart{
 			ObjectMeta: qs.ObjectMeta,
 		}
@@ -71,6 +73,7 @@ func (r *ConsolePluginReconciler) createOrUpdateQuickStarts(
 			if !reflect.DeepEqual(originalQs.Spec, qs.Spec) {
 				originalQs.Spec = qs.Spec
 			}
+			fmt.Println("successfuly creating quick start " + qs.Name)
 			return nil
 		})
 		if err != nil {
