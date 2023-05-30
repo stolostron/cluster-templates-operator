@@ -213,6 +213,17 @@ rules:
   - update
   - watch
 - apiGroups:
+  - console.openshift.io
+  resources:
+  - consolequickstarts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
   - hive.openshift.io
   resources:
   - clusterclaims

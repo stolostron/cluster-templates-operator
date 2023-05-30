@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/event"
 
 	applicationset "github.com/argoproj/applicationset/pkg/utils"
+	consoleV1 "github.com/openshift/api/console/v1"
 	console "github.com/openshift/api/console/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
@@ -17,7 +18,7 @@ import (
 )
 
 var _ = Describe("ConsolePlugin controller", func() {
-
+	quickStarts := getQuickStarts()
 	AfterEach(func() {
 		EnableUI = false
 	})
@@ -48,6 +49,13 @@ var _ = Describe("ConsolePlugin controller", func() {
 			cm := &v1.ConfigMap{}
 			return k8sClient.Get(ctx, client.ObjectKeyFromObject(pluginCM), cm)
 		}, timeout, interval).Should(BeNil())
+
+		for _, quickStart := range quickStarts {
+			Eventually(func() error {
+				qs := &consoleV1.ConsoleQuickStart{}
+				return k8sClient.Get(ctx, client.ObjectKeyFromObject(quickStart), qs)
+			}, timeout, interval).Should(BeNil())
+		}
 	})
 
 	It("Recreates deployment", func() {
@@ -77,5 +85,6 @@ var _ = Describe("ConsolePlugin controller", func() {
 			Expect(err).Should(BeNil())
 			return *deployment.Spec.Replicas == *pluginDeployment.Spec.Replicas
 		}, timeout, interval).Should(BeTrue())
+
 	})
 })

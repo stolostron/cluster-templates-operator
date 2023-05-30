@@ -21,9 +21,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	applicationset "github.com/argoproj/applicationset/pkg/utils"
+	consoleV1 "github.com/openshift/api/console/v1"
 	console "github.com/openshift/api/console/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
+
+	quickstarts "github.com/stolostron/cluster-templates-operator/quickstarts"
 )
 
 type ConsolePluginReconciler struct {
@@ -41,6 +44,44 @@ var (
 		"clustertemplates.openshift.io/component": "console-plugin",
 	}
 )
+
+func getQuickStarts() []*consoleV1.ConsoleQuickStart {
+	return []*consoleV1.ConsoleQuickStart{quickstarts.GetTemplateQuickStart(), quickstarts.GetQuotaQuickStart(), quickstarts.GetShareTemplateQuickStart()}
+}
+
+func getQuickStartClientObjects() []client.Object {
+	quickStarts := getQuickStarts()
+	objects := make([]client.Object, len(quickStarts))
+	for i, c := range quickStarts {
+		objects[i] = (client.Object)(c)
+	}
+	return objects
+}
+
+func (r *ConsolePluginReconciler) createOrUpdateQuickStarts(
+	ctx context.Context,
+	req ctrl.Request,
+) error {
+	fmt.Println("creating quick stars")
+	quickStarts := getQuickStarts()
+	for _, qs := range quickStarts {
+		fmt.Println("creating quick start " + qs.Name)
+		originalQs := &consoleV1.ConsoleQuickStart{
+			ObjectMeta: qs.ObjectMeta,
+		}
+		_, err := applicationset.CreateOrUpdate(ctx, r.Client, originalQs, func() error {
+			if !reflect.DeepEqual(originalQs.Spec, qs.Spec) {
+				originalQs.Spec = qs.Spec
+			}
+			fmt.Println("successfuly creating quick start " + qs.Name)
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func getConsolePlugin() *console.ConsolePlugin {
 	return &console.ConsolePlugin{
@@ -258,6 +299,7 @@ func (r *ConsolePluginReconciler) SetupWithManager(mgr ctrl.Manager) error {
 // +kubebuilder:rbac:groups="",resources=configmaps;services,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=console.openshift.io,resources=consoleplugins,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups=console.openshift.io,resources=consolequickstarts,verbs=get;list;watch;create;update;delete
 
 func (r *ConsolePluginReconciler) Reconcile(
 	ctx context.Context,
@@ -319,13 +361,20 @@ func (r *ConsolePluginReconciler) Reconcile(
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+		err = r.createOrUpdateQuickStarts(ctx, req)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 	} else {
+		quickStartClientObjects := getQuickStartClientObjects()
 		objects := []client.Object{
 			getConsolePlugin(),
 			GetPluginDeployment(),
 			getPluginService(),
 			getPluginCM(),
 		}
+		objects = append(objects, quickStartClientObjects...)
+
 		for _, obj := range objects {
 			if err := r.Client.Delete(ctx, obj); err != nil {
 				if !apierrors.IsNotFound(err) {

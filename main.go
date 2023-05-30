@@ -33,6 +33,7 @@ import (
 
 	argooperator "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	consoleV1 "github.com/openshift/api/console/v1"
 	console "github.com/openshift/api/console/v1alpha1"
 	openshiftAPI "github.com/openshift/api/helm/v1beta1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
@@ -61,6 +62,7 @@ func init() {
 	utilruntime.Must(openshiftAPI.AddToScheme(scheme))
 	utilruntime.Must(apiextensions.AddToScheme(scheme))
 	utilruntime.Must(console.AddToScheme(scheme))
+	utilruntime.Must(consoleV1.AddToScheme(scheme))
 	utilruntime.Must(ocmv1.AddToScheme(scheme))
 	utilruntime.Must(agent.AddToScheme(scheme))
 	utilruntime.Must(argooperator.AddToScheme(scheme))

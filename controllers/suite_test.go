@@ -38,6 +38,7 @@ import (
 
 	argooperator "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
+	consoleV1 "github.com/openshift/api/console/v1"
 	console "github.com/openshift/api/console/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
@@ -82,6 +83,7 @@ var _ = BeforeSuite(func() {
 			filepath.Join("..", "testutils", "testcrds", "optional", "hypershift"),
 			filepath.Join("..", "testutils", "testcrds", "optional", "hive"),
 			filepath.Join("..", "testutils", "testcrds", "optional", "console"),
+			filepath.Join("..", "testutils", "testcrds", "optional", "consoleV1"),
 		},
 		ErrorIfCRDPathMissing: true,
 	}
@@ -111,6 +113,8 @@ var _ = BeforeSuite(func() {
 	err = argooperator.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = operators.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = consoleV1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
