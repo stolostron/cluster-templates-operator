@@ -32,9 +32,9 @@ metadata:
     categories: Integration & Delivery,OpenShift Optional
     certified: "false"
     containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-8a5d0ce2db589cdbee3c4b0fa86051b3daa2ee74
-    createdAt: "2023-04-27T08:45:54Z"
+    createdAt: "2022-11-25T12:00:00+00:00"
     description: Easily install fully configured clusters with guard-rails.
-    operators.operatorframework.io/builder: operator-sdk-v1.27.0
+    operators.operatorframework.io/builder: operator-sdk-v1.23.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
     repository: https://github.com/stolostron/cluster-templates-operator
   name: cluster-aas-operator.v0.0.3
@@ -117,6 +117,9 @@ spec:
     - kind: ClusterTemplateSetup
       name: clustertemplatesetup.clustertemplate.openshift.io
       version: v1alpha1
+    - kind: Config
+      name: config.clustertemplate.openshift.io
+      version: v1alpha1
   description: |
     **Self-service clusters with guardrails!**
     Cluster as a service operator provides an easy way to define clusters as templates and allows creating instances of those templates even for non-privileged developer/devops engineers. Cluster templates operator also allows specifing quotas for the developer/devops engineers.
@@ -134,14 +137,6 @@ spec:
     spec:
       clusterPermissions:
       - rules:
-        - apiGroups:
-          - ""
-          resources:
-          - configmaps
-          verbs:
-          - get
-          - list
-          - watch
         - apiGroups:
           - ""
           resources:
@@ -328,9 +323,31 @@ spec:
           - patch
           - update
         - apiGroups:
+          - clustertemplate.openshift.io
+          resources:
+          - config
+          verbs:
+          - create
+          - get
+          - list
+          - patch
+          - update
+          - watch
+        - apiGroups:
           - console.openshift.io
           resources:
           - consoleplugins
+          verbs:
+          - create
+          - delete
+          - get
+          - list
+          - update
+          - watch
+        - apiGroups:
+          - console.openshift.io
+          resources:
+          - consolequickstarts
           verbs:
           - create
           - delete
