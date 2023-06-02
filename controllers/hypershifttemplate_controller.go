@@ -92,8 +92,9 @@ var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 			Name: "hypershift-cluster",
 		},
 		Spec: v1alpha1.ClusterTemplateSpec{
-			Cost:              &cost,
-			ClusterDefinition: "hypershift-cluster",
+			SkipClusterRegistration: true,
+			Cost:                    &cost,
+			ClusterDefinition:       "hypershift-cluster",
 		},
 	},
 	"hypershift-kubevirt-cluster": {
