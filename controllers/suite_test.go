@@ -190,7 +190,13 @@ var _ = BeforeSuite(func() {
 			Name: "openshift-operators",
 		},
 	}
+	nsArgo := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "my-argocd-ns",
+		},
+	}
 	Expect(k8sClient.Create(ctx, ns)).Should(Succeed())
+	Expect(k8sClient.Create(ctx, nsArgo)).Should(Succeed())
 	Expect(k8sClient.Create(ctx, testutils.GetSubscription(nil))).Should(Succeed())
 }, 60)
 

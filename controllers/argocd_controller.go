@@ -24,11 +24,13 @@ import (
 
 	argo "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
+	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/utils"
 )
 
 const (
-	argoname = "class-argocd"
+	argoname   = "class-argocd"
+	secretName = "class-argocd-secret"
 )
 
 type ArgoCDReconciler struct {
@@ -60,6 +62,10 @@ func (r *ArgoCDReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
+	if err := r.ensureDefaultSecretExists(ctx); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if ArgoCDNamespace == defaultArgoCDNs {
 		if err := utils.EnsureResourceExists(ctx, r.Client, &argo.ArgoCD{
 			ObjectMeta: metav1.ObjectMeta{
@@ -200,4 +206,59 @@ func (r *ArgoCDReconciler) getSubscription(ctx context.Context) (*operators.Subs
 
 func selectArgo(obj client.Object) bool {
 	return obj.GetName() == argoname && obj.GetNamespace() == defaultArgoCDNs
+}
+
+func (r *ArgoCDReconciler) ensureDefaultSecretExists(ctx context.Context) error {
+	// Ensure secret exists:
+	secret := &corev1.Secret{}
+	if err := r.Get(ctx, types.NamespacedName{Name: secretName, Namespace: ArgoCDNamespace}, secret); err != nil {
+		if apierrors.IsNotFound(err) {
+			if err := r.Create(ctx, getDefaultSecret()); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	// Ensure secret is removed from other namespaces
+	ctiNameLabelReq, _ := labels.NewRequirement(
+		v1alpha1.CTRepoLabel,
+		selection.Exists,
+		[]string{},
+	)
+	selector := labels.NewSelector().Add(*ctiNameLabelReq)
+	secretList := &corev1.SecretList{}
+
+	if err := r.Client.List(ctx, secretList, &client.ListOptions{
+		LabelSelector: selector,
+	}); err != nil {
+		return err
+	}
+
+	for _, s := range secretList.Items {
+		if s.Namespace != ArgoCDNamespace {
+			if err := r.Client.Delete(ctx, &s); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func getDefaultSecret() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: ArgoCDNamespace,
+			Labels: map[string]string{
+				v1alpha1.CTRepoLabel:                   "",
+				"argocd.argoproj.io/secret-type":       "repository",
+				"clustertemplates.openshift.io/vendor": "community",
+			},
+		},
+		Data: map[string][]byte{"name": []byte("cluster-templates-manifests"), "type": []byte("helm"), "url": []byte("https://stolostron.github.io/cluster-templates-manifests")},
+		Type: corev1.SecretTypeOpaque,
+	}
 }

@@ -29,6 +29,7 @@ const (
 	CTINamespaceLabel      = "clustertemplateinstance.openshift.io/namespace"
 	CTISetupLabel          = "clustertemplate.openshift.io/cluster-setup"
 	CTISetupSecretLabel    = "clustertemplate.openshift.io/cluster-setup-secret"
+	CTRepoLabel            = "clustertemplate.openshift.io/repository"
 )
 
 type Parameter struct {
