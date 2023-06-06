@@ -288,7 +288,7 @@ func (r *ClusterTemplateInstanceReconciler) delete(
 						Namespace: mc.Name,
 					},
 				}
-				if err := r.Client.Delete(ctx, klusterlet); err != nil {
+				if err := r.Client.Delete(ctx, klusterlet); err != nil && !apierrors.IsNotFound(err) {
 					return ctrl.Result{}, err
 				}
 			}

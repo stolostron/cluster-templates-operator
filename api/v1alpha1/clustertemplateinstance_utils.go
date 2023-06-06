@@ -110,6 +110,9 @@ func (i *ClusterTemplateInstance) DeleteDay1Application(
 		types.NamespacedName{Name: clusterDefinition, Namespace: argoCDNamespace},
 		appSet,
 	); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 
@@ -132,7 +135,7 @@ func (i *ClusterTemplateInstance) DeleteDay2Application(
 	argoCDNamespace string,
 	clusterSetup []string,
 ) error {
-	appsets, err := getDay2Appsets(ctx, k8sClient, argoCDNamespace, clusterSetup)
+	appsets, err := getDay2Appsets(ctx, k8sClient, argoCDNamespace, clusterSetup, false)
 	if err != nil {
 		return err
 	}
@@ -305,7 +308,7 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 	labelNamespace bool,
 	clusterSetup []string,
 ) error {
-	appsets, err := getDay2Appsets(ctx, k8sClient, argoCDNamespace, clusterSetup)
+	appsets, err := getDay2Appsets(ctx, k8sClient, argoCDNamespace, clusterSetup, true)
 	if err != nil {
 		return err
 	}
@@ -346,6 +349,7 @@ func getDay2Appsets(
 	k8sClient client.Client,
 	argoCDNamespace string,
 	clusterSetup []string,
+	failOnMissing bool,
 ) ([]*argo.ApplicationSet, error) {
 	appSets := []*argo.ApplicationSet{}
 	appSet := &argo.ApplicationSet{}
@@ -355,6 +359,9 @@ func getDay2Appsets(
 			types.NamespacedName{Name: cs, Namespace: argoCDNamespace},
 			appSet,
 		); err != nil {
+			if !failOnMissing && apierrors.IsNotFound(err) {
+				continue
+			}
 			return nil, err
 		}
 		appSets = append(appSets, appSet)

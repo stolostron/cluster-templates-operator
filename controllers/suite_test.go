@@ -45,8 +45,8 @@ import (
 	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	testutils "github.com/stolostron/cluster-templates-operator/testutils"
+	agent "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	appsv1 "k8s.io/api/apps/v1"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ocmv1 "open-cluster-management.io/api/cluster/v1"
 	//+kubebuilder:scaffold:imports
@@ -104,7 +104,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	err = console.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
-	err = v1.AddToScheme(scheme.Scheme)
+	err = corev1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = appsv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
@@ -115,6 +115,7 @@ var _ = BeforeSuite(func() {
 	err = operators.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = consoleV1.AddToScheme(scheme.Scheme)
+	err = agent.SchemeBuilder.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
@@ -130,7 +131,7 @@ var _ = BeforeSuite(func() {
 
 	controllerCancel = StartCTIController(k8sManager, true, false, false, false)
 
-	claasNs := &v1.Namespace{
+	claasNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: pluginNamespace,
 		},
