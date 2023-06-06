@@ -71,6 +71,7 @@ func (r *ConfigReconciler) Reconcile(
 	}
 
 	if ArgoCDNamespace != config.Spec.ArgoCDNamespace {
+		// Provision/Deoprovison ArgoCD
 		ArgoCDNamespace = config.Spec.ArgoCDNamespace
 		EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argoname, Namespace: defaultArgoCDNs}}}
 	}

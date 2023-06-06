@@ -171,31 +171,33 @@ func containsEnvVar(subscription *operators.Subscription) bool {
 }
 
 func (r *ArgoCDReconciler) getSubscription(ctx context.Context) (*operators.Subscription, error) {
-	subLabel, _ := labels.NewRequirement(
-		fmt.Sprintf("%s/%s.%s", "operators.coreos.com", "argocd-operator", "openshift-operators"),
-		selection.Exists,
-		[]string{},
-	)
-	selector := labels.NewSelector().Add(*subLabel)
+	for _, subscriptionName := range []string{"argocd-operator", "openshift-gitops-operator"} {
+		subLabel, _ := labels.NewRequirement(
+			fmt.Sprintf("%s/%s.%s", "operators.coreos.com", subscriptionName, "openshift-operators"),
+			selection.Exists,
+			[]string{},
+		)
+		selector := labels.NewSelector().Add(*subLabel)
 
-	subscriptions := &operators.SubscriptionList{}
-	if err := r.List(
-		ctx,
-		subscriptions,
-		&client.ListOptions{
-			LabelSelector: selector,
-			Namespace:     "openshift-operators",
-		},
-	); err != nil {
-		return nil, err
+		subscriptions := &operators.SubscriptionList{}
+		if err := r.List(
+			ctx,
+			subscriptions,
+			&client.ListOptions{
+				LabelSelector: selector,
+				Namespace:     "openshift-operators",
+			},
+		); err != nil {
+			return nil, err
+		}
+
+		if len(subscriptions.Items) > 0 {
+			return &subscriptions.Items[0], nil
+		}
+
 	}
 
-	if len(subscriptions.Items) == 0 {
-		return nil, fmt.Errorf("subscription with argo label was not found")
-	}
-	subscription := subscriptions.Items[0]
-
-	return &subscription, nil
+	return nil, fmt.Errorf("subscription with argo label was not found")
 }
 
 func selectArgo(obj client.Object) bool {
