@@ -369,7 +369,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 
 		s, err := a.Items[0].Spec.Generators[0].List.Elements[0].MarshalJSON()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(string(s)).To(ContainSubstring("kubernetes.default.svc"))
+		Expect(string(s)).To(ContainSubstring("{\"instance_ns\":\"default\",\"url\":\"https://kubernetes.default.svc\"}"))
 	})
 
 	It("CreateDay2Applications", func() {

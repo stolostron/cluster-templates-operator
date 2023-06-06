@@ -174,9 +174,9 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 		name = name + "-" + appSet.Name
 	}
 
-	defaultUrl, _ := json.Marshal(map[string]string{"url": server})
+	elements, _ := json.Marshal(map[string]string{"url": server, "instance_ns": i.Namespace})
 	gen := argo.ApplicationSetGenerator{List: &argo.ListGenerator{
-		Elements: []apiextensionsv1.JSON{{Raw: defaultUrl}},
+		Elements: []apiextensionsv1.JSON{{Raw: elements}},
 		Template: argo.ApplicationSetTemplate{
 			ApplicationSetTemplateMeta: argo.ApplicationSetTemplateMeta{
 				Name: name,
