@@ -21,10 +21,23 @@
 The easiest option is to use an OCP cluster with Multicluster Engine (MCE) installed on it. This way you will get all the dependencies already prepared and configured.
 
 ## Installation
-**If you have an OCP cluster**, install the Cluster as a service operator from the OperatorHub (OCP console -> Operators -> OperatorHub -> search for “Cluster as a service operator -> install). This will install and configure the operator for your cluster so that it is immediately ready to use.
-**If you don't have an OCP cluster**, follow the instructions from the OperatorHub page (https://operatorhub.io/operator/cluster-aas-operator).
+### On OCP cluster
+Install the Cluster as a service operator from the OperatorHub:
 
-The easiest option is to use an OCP cluster with Multicluster Engine (MCE) installed on it. This way you will get all the dependencies already prepared and configured.
+1. Go to OCP console
+2. Pick `local-cluster` in the to left corner
+3. In the menu select Operators -> OperatorHub
+4. Search for `Cluster as a service operator`
+5. Select it and hit install button
+
+Note that ArgoCD is installed as dependency of the operator.
+
+### Non OCP cluster
+Please follow the instructions from the OperatorHub page (https://operatorhub.io/operator/cluster-aas-operator).
+
+## ArgoCD configuration
+As noted above ArgoCD is installed as a depency of the cluster as a service operator, but it's not configured to be used with the operator.
+Please follow [ArgoCD configuration](./docs/argo.md) to setup ArgoCD.
 
 # How to use
 Cluster as a service operator comes with a few ready-to-be-used templates.
@@ -39,7 +52,7 @@ Hypershift enabled and configured on your cluster:
 
 ### Steps
  1. Create a namespace “clusters” to store your clusters in
-```
+```yaml
 kind: Namespace
 apiVersion: v1
 metadata:
@@ -49,7 +62,7 @@ metadata:
 ```
 
  2. Create 2 secrets - one which contains the pull-secret and another one for the ssh public key
-```
+```yaml
 kind: Secret
 apiVersion: v1
 metadata:
@@ -70,7 +83,7 @@ stringData:
 ```
 
  3. Allow to create the template in this namespace
-```
+```yaml
 apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateQuota
 metadata:
@@ -83,7 +96,7 @@ spec:
 
 
  4. Create an instance of the hypershift template by creating the following yaml
-```
+```yaml
 apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateInstance
 metadata:
@@ -94,8 +107,8 @@ spec:
 ```
 
 ### Check the cluster
-Wait for the cluster to be ready.
- - `kubectl get ClusterTemplateInstance hsclsempty`
+Wait for the cluster to be ready. (please note the cluster will never actually import because it does not have any workers)
+ - `oc get ClusterTemplateInstance hsclsempty -n clusters`
  - When the “status.phase” is “Ready”, you can log into the cluster
  - The credentials are exposed as secrets and referenced from the status (**kubeconfig**, **adminPassword**, **apiServerURL**)
 
@@ -113,7 +126,7 @@ Kubevirt enabled and configured on your cluster:
 
 ### Steps
  1. Create a namespace “clusters” to store your clusters in
-```
+```yaml
 kind: Namespace
 apiVersion: v1
 metadata:
@@ -123,7 +136,7 @@ metadata:
 ```
 
  2. Create 2 secrets - one which contains the pull-secret and another one for the ssh public key
-```
+```yaml
 kind: Secret
 apiVersion: v1
 metadata:
@@ -144,7 +157,7 @@ stringData:
 ```
 
  3. Allow to create the template in this namespace
-```
+```yaml
 apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateQuota
 metadata:
@@ -156,7 +169,7 @@ spec:
 ```
 
  4. Create an instance of the hypershift template by creating the following yaml
-```
+```yaml
 apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateInstance
 metadata:
@@ -167,7 +180,7 @@ spec:
 ```
 ### Check the cluster
 Wait for the cluster to be ready.
- - `kubectl get ClusterTemplateInstance hsclskubevirt`
+ - `oc get ClusterTemplateInstance hsclsempty -n clusters`
  - When the “status.phase” is “Ready”, you can log into the cluster
  - The credentials are exposed as secrets and referenced from the status (**kubeconfig**, **adminPassword**, **apiServerURL**)
 
