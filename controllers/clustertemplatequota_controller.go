@@ -77,19 +77,18 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 		}
 
 		for _, instance := range clusterTemplateInstanceList.Items {
-			if instance.Spec.ClusterTemplateRef == template.Name && templateCost != -1 {
+			if instance.Spec.ClusterTemplateRef == template.Name {
 				count++
-				currentConst += templateCost
-				break
+				if templateCost != -1 {
+					currentConst += templateCost
+				}
 			}
 		}
 
-		if templateCost != -1 {
-			currentInstances = append(currentInstances, v1alpha1.AllowedTemplate{
-				Name:  template.Name,
-				Count: count,
-			})
-		}
+		currentInstances = append(currentInstances, v1alpha1.AllowedTemplate{
+			Name:  template.Name,
+			Count: count,
+		})
 	}
 
 	clusterTemplateQuota.Status = v1alpha1.ClusterTemplateQuotaStatus{

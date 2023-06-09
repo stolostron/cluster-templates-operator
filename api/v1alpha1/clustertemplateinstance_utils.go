@@ -196,7 +196,7 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 	}
 
 	if appSet.Spec.Template.Spec.Source.Chart != "" {
-		params, err := i.GetHelmParameters(appSet)
+		params, err := i.GetHelmParameters(appSet, isDay2)
 		if err != nil {
 			return err
 		}
@@ -214,19 +214,23 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 		gen.List.Template.ApplicationSetTemplateMeta.Labels[CTISetupLabel] = ""
 	}
 	appSet.Spec.Generators = append(appSet.Spec.Generators, gen)
-
 	return k8sClient.Update(ctx, appSet)
 }
 
-func labelDestionationNamespace(ctx context.Context, appSet *argo.ApplicationSet, k8sClient client.Client, argoCDNamespace string) error {
-	if appSet.Spec.Template.Spec.Destination.Namespace == "" {
+func (i *ClusterTemplateInstance) labelDestionationNamespace(ctx context.Context, appSet *argo.ApplicationSet, k8sClient client.Client, argoCDNamespace string) error {
+	appSetNS := appSet.Spec.Template.Spec.Destination.Namespace
+	if appSetNS == "{{ instance_ns }}" {
+		appSetNS = i.Namespace
+	}
+
+	if appSetNS == "" {
 		return nil
 	}
 	// Set the Argo label for the destination namespace:
 	ns := &corev1.Namespace{}
 	if err := k8sClient.Get(
 		ctx,
-		types.NamespacedName{Name: appSet.Spec.Template.Spec.Destination.Namespace},
+		types.NamespacedName{Name: appSetNS},
 		ns,
 	); err != nil {
 		return err
@@ -258,7 +262,7 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 	}
 
 	if labelNamespace {
-		if err := labelDestionationNamespace(ctx, appSet, k8sClient, argoCDNamespace); err != nil {
+		if err := i.labelDestionationNamespace(ctx, appSet, k8sClient, argoCDNamespace); err != nil {
 			return err
 		}
 	}
@@ -331,7 +335,7 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 
 	for _, appset := range appsets {
 		if labelNamespace {
-			if err := labelDestionationNamespace(ctx, appset, k8sClient, argoCDNamespace); err != nil {
+			if err := i.labelDestionationNamespace(ctx, appset, k8sClient, argoCDNamespace); err != nil {
 				return err
 			}
 		}
@@ -372,17 +376,19 @@ func getDay2Appsets(
 
 func (i *ClusterTemplateInstance) GetHelmParameters(
 	appset *argo.ApplicationSet,
+	isDay2 bool,
 ) ([]argo.HelmParameter, error) {
 	params := []argo.HelmParameter{}
 	if appset != nil && appset.Spec.Template.Spec.Source.Helm != nil {
 		params = appset.Spec.Template.Spec.Source.Helm.Parameters
 	}
 	for _, param := range i.Spec.Parameters {
-		if param.ApplicationSet == appset.Name {
+		if (!isDay2 && param.ApplicationSet == "") || param.ApplicationSet == appset.Name {
 			added := false
-			for _, ctParam := range params {
+			for idx, ctParam := range params {
 				if ctParam.Name == param.Name {
 					ctParam.Value = param.Value
+					params[idx] = ctParam
 					added = true
 				}
 			}

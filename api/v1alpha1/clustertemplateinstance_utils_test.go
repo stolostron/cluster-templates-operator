@@ -13,6 +13,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -72,7 +73,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 		appset := &argo.ApplicationSet{}
 
-		params, err := cti.GetHelmParameters(appset)
+		params, err := cti.GetHelmParameters(appset, false)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{}))
@@ -91,7 +92,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 		}
 
-		params, err = cti.GetHelmParameters(appset)
+		params, err = cti.GetHelmParameters(appset, false)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{
@@ -133,13 +134,13 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 		}
 
-		params, err = cti.GetHelmParameters(appset)
+		params, err = cti.GetHelmParameters(appset, false)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{
 			{
 				Name:  "foo",
-				Value: "baz",
+				Value: "bar",
 			},
 		}))
 
@@ -176,7 +177,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 		}
 
-		params, err = cti.GetHelmParameters(appset)
+		params, err = cti.GetHelmParameters(appset, false)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{
@@ -199,7 +200,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 		appset := &argo.ApplicationSet{}
 
-		params, err := cti.GetHelmParameters(appset)
+		params, err := cti.GetHelmParameters(appset, true)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{}))
@@ -233,7 +234,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				},
 			},
 		}
-		params, err = cti.GetHelmParameters(appset)
+		params, err = cti.GetHelmParameters(appset, true)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{
@@ -271,7 +272,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				},
 			},
 		}
-		params, err = cti.GetHelmParameters(appset)
+		params, err = cti.GetHelmParameters(appset, true)
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(params).Should(Equal([]argo.HelmParameter{
@@ -563,5 +564,47 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		client := fake.NewFakeClientWithScheme(scheme.Scheme)
 		err := cti.DeleteDay2Application(ctx, client, "default", []string{"foo", "bar"})
 		Expect(err).ShouldNot(HaveOccurred())
+	})
+
+	It("Label destionation namespace - same as CTI", func() {
+		cti := ClusterTemplateInstance{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "foo",
+				Namespace: "bar",
+			},
+			Spec: ClusterTemplateInstanceSpec{},
+		}
+		appset := &argo.ApplicationSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "baz",
+				Namespace: "cluster-aas-operator",
+			},
+			Spec: argo.ApplicationSetSpec{
+				Generators: []argo.ApplicationSetGenerator{{}},
+				Template: argo.ApplicationSetTemplate{
+					Spec: argo.ApplicationSpec{
+						Source: argo.ApplicationSource{},
+						Destination: argo.ApplicationDestination{
+							Namespace: "{{ instance_ns }}",
+						},
+					},
+				},
+			},
+		}
+		defns := &corev1.Namespace{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: cti.Namespace,
+			},
+		}
+		client := fake.NewFakeClientWithScheme(scheme.Scheme, defns)
+		cti.labelDestionationNamespace(ctx, appset, client, "argocdns")
+		ns := &corev1.Namespace{}
+		err := client.Get(
+			ctx,
+			types.NamespacedName{Name: cti.Namespace},
+			ns,
+		)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(ns.Labels["argocd.argoproj.io/managed-by"]).Should(Equal("argocdns"))
 	})
 })

@@ -22,13 +22,13 @@ const (
 	configName = "config"
 
 	defaultArgoCDNs = "cluster-aas-operator"
-	defaultEnableUI = false
+	defaultEnableUI = true
 	defaultUIImage  = "quay.io/stolostron/cluster-templates-console-plugin:latest"
 )
 
 var (
 	ArgoCDNamespace      = defaultArgoCDNs
-	EnableUI             = defaultEnableUI
+	EnableUI             = false
 	UIImage              = defaultUIImage
 	EnableUIconfigSync   = make(chan event.GenericEvent)
 	EnableArgoconfigSync = make(chan event.GenericEvent)
@@ -71,23 +71,14 @@ func (r *ConfigReconciler) Reconcile(
 	}
 
 	if ArgoCDNamespace != config.Spec.ArgoCDNamespace {
-		// Provision/Deoprovison ArgoCD
+		// Provision/Deprovison ArgoCD
 		ArgoCDNamespace = config.Spec.ArgoCDNamespace
 		EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argoname, Namespace: defaultArgoCDNs}}}
 	}
 
-	uiChanged := false
-	if EnableUI != config.Spec.UIEnabled {
+	if EnableUI != config.Spec.UIEnabled || UIImage != config.Spec.UIImage {
 		EnableUI = config.Spec.UIEnabled
-		uiChanged = true
-	}
-
-	if UIImage != config.Spec.UIImage {
 		UIImage = config.Spec.UIImage
-		uiChanged = true
-	}
-
-	if uiChanged {
 		EnableUIconfigSync <- event.GenericEvent{Object: GetPluginDeployment()}
 	}
 

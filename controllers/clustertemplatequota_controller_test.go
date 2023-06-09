@@ -88,7 +88,7 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 			testutils.DeleteResource(ctx, ct, k8sClient)
 			testutils.DeleteResource(ctx, appset, k8sClient)
 		})
-		It("Should not count the template if cost not specified", func() {
+		It("Should not add to budget spent if cost not specified", func() {
 			Expect(k8sClient.Create(ctx, cti)).Should(Succeed())
 			Eventually(func() bool {
 				err := k8sClient.Get(ctx, client.ObjectKeyFromObject(cti), cti)
@@ -107,7 +107,7 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(ctq), ctq)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(ctq.Status.BudgetSpent).Should(Equal(0))
-			Expect(len(ctq.Status.TemplateInstances)).Should(Equal(0))
+			Expect(len(ctq.Status.TemplateInstances)).Should(Equal(1))
 		})
 	})
 })
