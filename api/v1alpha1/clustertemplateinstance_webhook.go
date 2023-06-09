@@ -114,7 +114,7 @@ func (r *ClusterTemplateInstance) checkSecretIsValid() error {
 	secret := &corev1.Secret{}
 	if err := instanceControllerClient.Get(
 		context.TODO(),
-		client.ObjectKey{Name: *r.Spec.KubeconfigSecretRef},
+		client.ObjectKey{Name: *r.Spec.KubeconfigSecretRef, Namespace: r.Namespace},
 		secret,
 	); err != nil {
 		if apierrors.IsNotFound(err) {

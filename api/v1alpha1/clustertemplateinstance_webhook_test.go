@@ -372,7 +372,8 @@ var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
 		}
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
-				Name: "abc",
+				Name:      "abc",
+				Namespace: "foo",
 			},
 			Data: map[string][]byte{
 				"foo": []byte("bar"),
@@ -414,7 +415,8 @@ var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		secret := &corev1.Secret{
 			ObjectMeta: v1.ObjectMeta{
-				Name: "abc",
+				Name:      "abc",
+				Namespace: "foo",
 			},
 			Data: map[string][]byte{
 				"kubeconfig": kubeconfigFile,
