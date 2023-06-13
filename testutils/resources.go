@@ -8,7 +8,7 @@ import (
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	. "github.com/onsi/gomega"
-	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
 	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -294,15 +294,15 @@ func GetKubeadminSecret() (*corev1.Secret, error) {
 }
 
 func SetHostedClusterReady(
-	hostedCluster hypershiftv1alpha1.HostedCluster,
+	hostedCluster hypershiftv1beta1.HostedCluster,
 	kubeconfigName string,
 	kubeadminName string,
-) hypershiftv1alpha1.HostedCluster {
-	status := hypershiftv1alpha1.HostedClusterStatus{}
+) hypershiftv1beta1.HostedCluster {
+	status := hypershiftv1beta1.HostedClusterStatus{}
 
 	status.Conditions = []metav1.Condition{
 		{
-			Type:               string(hypershiftv1alpha1.HostedClusterAvailable),
+			Type:               string(hypershiftv1beta1.HostedClusterAvailable),
 			Status:             metav1.ConditionTrue,
 			Reason:             "Foo",
 			LastTransitionTime: metav1.Now(),

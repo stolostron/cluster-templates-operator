@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -326,7 +326,7 @@ func startTestEnv(crds []string) {
 
 	err = v1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
-	err = hypershiftv1alpha1.AddToScheme(scheme.Scheme)
+	err = hypershiftv1beta1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = hivev1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())

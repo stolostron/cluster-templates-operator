@@ -39,13 +39,13 @@ var (
 	HostedClusterGVK = schema.GroupVersionResource{
 		Group:    "hypershift.openshift.io",
 		Resource: "HostedCluster",
-		Version:  "v1alpha1",
+		Version:  "v1beta1",
 	}
 
 	NodePoolGVK = schema.GroupVersionResource{
 		Group:    "hypershift.openshift.io",
 		Resource: "NodePool",
-		Version:  "v1alpha1",
+		Version:  "v1beta1",
 	}
 
 	ClusterDeploymentGVK = schema.GroupVersionResource{

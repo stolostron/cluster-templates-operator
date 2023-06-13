@@ -41,7 +41,7 @@ import (
 	consoleV1 "github.com/openshift/api/console/v1"
 	console "github.com/openshift/api/console/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
 	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	testutils "github.com/stolostron/cluster-templates-operator/testutils"
@@ -96,7 +96,7 @@ var _ = BeforeSuite(func() {
 
 	err = v1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
-	err = hypershiftv1alpha1.AddToScheme(scheme.Scheme)
+	err = hypershiftv1beta1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = hivev1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())

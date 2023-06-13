@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,7 +22,8 @@ func (hc HostedClusterProvider) GetClusterStatus(
 	k8sClient client.Client,
 	templateInstance v1alpha1.ClusterTemplateInstance,
 ) (bool, string, error) {
-	hostedCluster := &hypershiftv1alpha1.HostedCluster{}
+	hostedCluster := &hypershiftv1beta1.HostedCluster{}
+
 	if err := k8sClient.Get(
 		ctx,
 		client.ObjectKey{Name: hc.HostedClusterName, Namespace: hc.HostedClusterNamespace},
@@ -34,7 +35,7 @@ func (hc HostedClusterProvider) GetClusterStatus(
 	availableCondition := metav1.Condition{}
 
 	for _, condition := range hostedCluster.Status.Conditions {
-		if condition.Type == string(hypershiftv1alpha1.HostedClusterAvailable) {
+		if condition.Type == string(hypershiftv1beta1.HostedClusterAvailable) {
 			availableCondition = condition
 		}
 	}
@@ -111,7 +112,7 @@ func (hc HostedClusterProvider) GetClusterStatus(
 	}
 
 	if len(hc.NodePoolNames) > 0 {
-		nodePools := &hypershiftv1alpha1.NodePoolList{}
+		nodePools := &hypershiftv1beta1.NodePoolList{}
 		if err := k8sClient.List(ctx, nodePools, &client.ListOptions{Namespace: hc.HostedClusterNamespace}); err != nil {
 			return false, "", err
 		}
@@ -122,7 +123,7 @@ func (hc HostedClusterProvider) GetClusterStatus(
 				conditionFound := false
 				for _, condition := range nodePool.Status.Conditions {
 					if condition.Type == string(
-						hypershiftv1alpha1.NodePoolReadyConditionType,
+						hypershiftv1beta1.NodePoolReadyConditionType,
 					) {
 						conditionFound = true
 						if condition.Status == corev1.ConditionFalse {
@@ -142,21 +143,21 @@ func (hc HostedClusterProvider) GetClusterStatus(
 	return true, "Available", nil
 }
 
-func getKubeAdminRef(hostedCluster hypershiftv1alpha1.HostedCluster) string {
+func getKubeAdminRef(hostedCluster hypershiftv1beta1.HostedCluster) string {
 	if hostedCluster.Status.KubeadminPassword != nil {
 		return hostedCluster.Status.KubeadminPassword.Name
 	}
 	return ""
 }
 
-func getKubeConfigRef(hostedCluster hypershiftv1alpha1.HostedCluster) string {
+func getKubeConfigRef(hostedCluster hypershiftv1beta1.HostedCluster) string {
 	if hostedCluster.Status.KubeConfig != nil {
 		return hostedCluster.Status.KubeConfig.Name
 	}
 	return ""
 }
 
-func hasIDPs(hostedCluster *hypershiftv1alpha1.HostedCluster) bool {
+func hasIDPs(hostedCluster *hypershiftv1beta1.HostedCluster) bool {
 	if hostedCluster.Spec.Configuration != nil && hostedCluster.Spec.Configuration.OAuth != nil && hostedCluster.Spec.Configuration.OAuth.IdentityProviders != nil {
 		return len(hostedCluster.Spec.Configuration.OAuth.IdentityProviders) > 0
 	}

@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
@@ -21,7 +21,7 @@ import (
 )
 
 var _ = Describe("Test cluster providers", func() {
-	err := hypershiftv1alpha1.AddToScheme(scheme.Scheme)
+	err := hypershiftv1beta1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	cti := v1alpha1.ClusterTemplateInstance{
@@ -76,7 +76,7 @@ var _ = Describe("Test cluster providers", func() {
 				Resources: []argo.ResourceStatus{
 					{
 						Kind:      "HostedCluster",
-						Version:   "v1alpha1",
+						Version:   "v1beta1",
 						Group:     "hypershift.openshift.io",
 						Name:      "foo",
 						Namespace: "bar",
@@ -113,14 +113,14 @@ var _ = Describe("Test cluster providers", func() {
 				Resources: []argo.ResourceStatus{
 					{
 						Kind:      "HostedCluster",
-						Version:   "v1alpha1",
+						Version:   "v1beta1",
 						Group:     "hypershift.openshift.io",
 						Name:      "foo",
 						Namespace: "bar",
 					},
 					{
 						Kind:      "NodePool",
-						Version:   "v1alpha1",
+						Version:   "v1beta1",
 						Group:     "hypershift.openshift.io",
 						Name:      "np-foo",
 						Namespace: "bar",
@@ -351,15 +351,15 @@ func getHostedCluster(opts ResourceOpts) []runtime.Object {
 	if opts.isReady {
 		conditionStatus = metav1.ConditionTrue
 	}
-	hostedCluster := &hypershiftv1alpha1.HostedCluster{
+	hostedCluster := &hypershiftv1beta1.HostedCluster{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "foo",
 			Namespace: "bar",
 		},
-		Status: hypershiftv1alpha1.HostedClusterStatus{
+		Status: hypershiftv1beta1.HostedClusterStatus{
 			Conditions: []metav1.Condition{
 				{
-					Type:               string(hypershiftv1alpha1.HostedClusterAvailable),
+					Type:               string(hypershiftv1beta1.HostedClusterAvailable),
 					Status:             conditionStatus,
 					Reason:             "foo",
 					LastTransitionTime: metav1.Now(),
@@ -429,18 +429,18 @@ func getHostedClusterWithNodePools(opts ResourceOpts) []runtime.Object {
 	if opts.isReady {
 		conditionStatus = corev1.ConditionTrue
 	}
-	np := hypershiftv1alpha1.NodePool{
+	np := hypershiftv1beta1.NodePool{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "np1",
 			Namespace: "bar",
 		},
-		Spec: hypershiftv1alpha1.NodePoolSpec{
+		Spec: hypershiftv1beta1.NodePoolSpec{
 			ClusterName: "foo",
 		},
-		Status: hypershiftv1alpha1.NodePoolStatus{
-			Conditions: []hypershiftv1alpha1.NodePoolCondition{
+		Status: hypershiftv1beta1.NodePoolStatus{
+			Conditions: []hypershiftv1beta1.NodePoolCondition{
 				{
-					Type:               hypershiftv1alpha1.NodePoolReadyConditionType,
+					Type:               hypershiftv1beta1.NodePoolReadyConditionType,
 					Status:             conditionStatus,
 					Reason:             "foo",
 					LastTransitionTime: metav1.Now(),
