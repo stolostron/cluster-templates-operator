@@ -22,7 +22,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	synccommon "github.com/argoproj/gitops-engine/pkg/sync/common"
-	hypershift "github.com/openshift/hypershift/api/v1alpha1"
+	"github.com/openshift/hypershift/api/util/ipnet"
+	hypershift "github.com/openshift/hypershift/api/v1beta1"
 
 	"github.com/kubernetes-client/go-base/config/api"
 	ocm "github.com/stolostron/cluster-templates-operator/ocm"
@@ -361,7 +362,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			app.Status.Resources = []argo.ResourceStatus{
 				{
 					Group:     "hypershift.openshift.io",
-					Version:   "v1alpha1",
+					Version:   "v1beta1",
 					Kind:      "HostedCluster",
 					Name:      "foo",
 					Namespace: "bar",
@@ -390,7 +391,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			hc := &hypershift.HostedCluster{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "HostedCluster",
-					APIVersion: "hypershift.openshift.io/v1alpha1",
+					APIVersion: "hypershift.openshift.io/v1beta1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
@@ -405,6 +406,9 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					},
 					Networking: hypershift.ClusterNetworking{
 						NetworkType: hypershift.OpenShiftSDN,
+						ClusterNetwork: []hypershift.ClusterNetworkEntry{
+							{CIDR: *ipnet.MustParseCIDR("10.132.0.0/14"), HostPrefix: 14},
+						},
 					},
 					Etcd: hypershift.EtcdSpec{
 						ManagementType: hypershift.Managed,
@@ -447,7 +451,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				Resources: []argo.ResourceStatus{
 					{
 						Group:     "hypershift.openshift.io",
-						Version:   "v1alpha1",
+						Version:   "v1beta1",
 						Kind:      "HostedCluster",
 						Name:      "foo",
 						Namespace: "default",
@@ -478,7 +482,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			hc := &hypershift.HostedCluster{
 				TypeMeta: metav1.TypeMeta{
 					Kind:       "HostedCluster",
-					APIVersion: "hypershift.openshift.io/v1alpha1",
+					APIVersion: "hypershift.openshift.io/v1beta1",
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "foo",
@@ -493,6 +497,9 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					},
 					Networking: hypershift.ClusterNetworking{
 						NetworkType: hypershift.OpenShiftSDN,
+						ClusterNetwork: []hypershift.ClusterNetworkEntry{
+							{CIDR: *ipnet.MustParseCIDR("10.132.0.0/14"), HostPrefix: 14},
+						},
 					},
 					Etcd: hypershift.EtcdSpec{
 						ManagementType: hypershift.Managed,
@@ -577,7 +584,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				Resources: []argo.ResourceStatus{
 					{
 						Group:     "hypershift.openshift.io",
-						Version:   "v1alpha1",
+						Version:   "v1beta1",
 						Kind:      "HostedCluster",
 						Name:      "foo",
 						Namespace: "default",

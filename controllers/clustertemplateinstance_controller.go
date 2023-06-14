@@ -45,7 +45,7 @@ import (
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
 	agent "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -1132,13 +1132,13 @@ func (r *ClusterTemplateInstanceReconciler) SetupWatches(ctrl controller.Control
 
 	if r.EnableHypershift {
 		ctrl.Watch(
-			&source.Kind{Type: &hypershiftv1alpha1.HostedCluster{}},
+			&source.Kind{Type: &hypershiftv1beta1.HostedCluster{}},
 			handler.EnqueueRequestsFromMapFunc(
 				r.MapArgoResourceToInstance(v1alpha1.HostedClusterGVK),
 			),
 		)
 		ctrl.Watch(
-			&source.Kind{Type: &hypershiftv1alpha1.NodePool{}},
+			&source.Kind{Type: &hypershiftv1beta1.NodePool{}},
 			handler.EnqueueRequestsFromMapFunc(r.MapArgoResourceToInstance(v1alpha1.NodePoolGVK)))
 	}
 

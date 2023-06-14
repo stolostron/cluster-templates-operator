@@ -29,7 +29,7 @@ import (
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1alpha1 "github.com/openshift/hypershift/api/v1alpha1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
@@ -56,7 +56,7 @@ var _ = BeforeSuite(func() {
 	var err error
 	err = v1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
-	err = hypershiftv1alpha1.AddToScheme(scheme.Scheme)
+	err = hypershiftv1beta1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = hivev1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
