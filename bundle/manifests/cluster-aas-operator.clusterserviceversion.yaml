@@ -124,6 +124,9 @@ spec:
     **Self-service clusters with guardrails!**
     Cluster as a service operator provides an easy way to define clusters as templates and allows creating instances of those templates even for non-privileged developer/devops engineers. Cluster templates operator also allows specifing quotas for the developer/devops engineers.
 
+    ### User Interface
+    The User interface is installed but is not enabled by default. To enable go to `Home` -> `Overview` -> in the status card click `Dynamic Plugins` -> click `View all` -> click the `pencil` icon -> pick `Enable` and hit `Save`. You can access the UI in the `All Clusters` perspective under `Infrastructure` -> `Cluster Templates`.
+
     ### Documentation
     Documentation can be found on our [website](https://github.com/stolostron/cluster-templates-operator).
 
