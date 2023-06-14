@@ -309,7 +309,6 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 	ctx context.Context,
 	k8sClient client.Client,
 	argoCDNamespace string,
-	labelNamespace bool,
 	clusterSetup []string,
 ) error {
 	appsets, err := getDay2Appsets(ctx, k8sClient, argoCDNamespace, clusterSetup, true)
@@ -334,12 +333,6 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 	}
 
 	for _, appset := range appsets {
-		if labelNamespace {
-			if err := i.labelDestionationNamespace(ctx, appset, k8sClient, argoCDNamespace); err != nil {
-				return err
-			}
-		}
-
 		if err := i.UpdateApplicationSet(ctx, k8sClient, appset, kubeconfig.Clusters[0].Cluster.Server, true); err != nil {
 			return err
 		}

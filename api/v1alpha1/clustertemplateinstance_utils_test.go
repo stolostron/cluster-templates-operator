@@ -426,7 +426,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret, &appset)
-		err = cti.CreateDay2Applications(ctx, client, "cluster-aas-operator", false, []string{"foo"})
+		err = cti.CreateDay2Applications(ctx, client, "cluster-aas-operator", []string{"foo"})
 		Expect(err).ShouldNot(HaveOccurred())
 
 		appsets := argo.ApplicationSetList{}

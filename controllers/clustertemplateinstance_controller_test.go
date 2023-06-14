@@ -909,7 +909,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			app := testutils.GetAppDay2()
 			appset2 := testutils.GetAppset2()
 			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, appset2, app)
-			err = cti.CreateDay2Applications(ctx, client, defaultArgoCDNs, false, []string{"appset2"})
+			err = cti.CreateDay2Applications(ctx, client, defaultArgoCDNs, []string{"appset2"})
 			Expect(err).Should(BeNil())
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client: client,
