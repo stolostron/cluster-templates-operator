@@ -924,7 +924,6 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetupCreate(
 		ctx,
 		r.Client,
 		ArgoCDNamespace,
-		ArgoCDNamespace == defaultArgoCDNs,
 		clusterSetup,
 	); err != nil {
 		clusterTemplateInstance.SetClusterSetupCreatedCondition(
