@@ -20,92 +20,17 @@ import (
 	applicationset "github.com/argoproj/applicationset/pkg/utils"
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
+	"github.com/stolostron/cluster-templates-operator/templates"
 )
 
-// default cost of default templates
-var cost int = 1
-
 var defaultApplicationSets = map[string]*argo.ApplicationSet{
-	"hypershift-cluster": {
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "hypershift-cluster",
-			Namespace: ArgoCDNamespace,
-			Labels: map[string]string{
-				"clustertemplates.openshift.io/vendor": "community",
-			},
-		},
-		Spec: argo.ApplicationSetSpec{
-			Generators: []argo.ApplicationSetGenerator{{}},
-			Template: argo.ApplicationSetTemplate{
-				Spec: argo.ApplicationSpec{
-					Destination: argo.ApplicationDestination{
-						Namespace: "clusters",
-						Server:    "{{ url }}",
-					},
-					Project: "default",
-					Source: argo.ApplicationSource{
-						RepoURL:        "https://stolostron.github.io/cluster-templates-manifests",
-						TargetRevision: "0.0.1",
-						Chart:          "hypershift-template",
-					},
-					SyncPolicy: &argo.SyncPolicy{
-						Automated: &argo.SyncPolicyAutomated{},
-					},
-				},
-			},
-		},
-	},
-	"hypershift-kubevirt-cluster": {
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "hypershift-kubevirt-cluster",
-			Namespace: ArgoCDNamespace,
-			Labels: map[string]string{
-				"clustertemplates.openshift.io/vendor": "community",
-			},
-		},
-		Spec: argo.ApplicationSetSpec{
-			Generators: []argo.ApplicationSetGenerator{{}},
-			Template: argo.ApplicationSetTemplate{
-				Spec: argo.ApplicationSpec{
-					Destination: argo.ApplicationDestination{
-						Namespace: "clusters",
-						Server:    "{{ url }}",
-					},
-					Project: "default",
-					Source: argo.ApplicationSource{
-						RepoURL:        "https://stolostron.github.io/cluster-templates-manifests",
-						TargetRevision: "0.0.1",
-						Chart:          "hypershift-kubevirt-template",
-					},
-					SyncPolicy: &argo.SyncPolicy{
-						Automated: &argo.SyncPolicyAutomated{},
-					},
-				},
-			},
-		},
-	},
+	"hypershift-cluster":          templates.HypershiftClusterAppSet,
+	"hypershift-kubevirt-cluster": templates.HypershiftKubevirtClusterAppSet,
 }
 
 var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
-	"hypershift-cluster": {
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "hypershift-cluster",
-		},
-		Spec: v1alpha1.ClusterTemplateSpec{
-			SkipClusterRegistration: true,
-			Cost:                    &cost,
-			ClusterDefinition:       "hypershift-cluster",
-		},
-	},
-	"hypershift-kubevirt-cluster": {
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "hypershift-kubevirt-cluster",
-		},
-		Spec: v1alpha1.ClusterTemplateSpec{
-			Cost:              &cost,
-			ClusterDefinition: "hypershift-kubevirt-cluster",
-		},
-	},
+	"hypershift-cluster":          templates.HypershiftClusterCT,
+	"hypershift-kubevirt-cluster": templates.HypershiftKubevirtClusterCT,
 }
 
 type HypershiftTemplateReconciler struct {
@@ -152,8 +77,10 @@ func (r *HypershiftTemplateReconciler) Reconcile(
 		},
 	}
 	if _, err := applicationset.CreateOrUpdate(ctx, r.Client, template, func() error {
-		if !reflect.DeepEqual(template.Spec, defaultTemplate.Spec) {
+		if !reflect.DeepEqual(template.Spec, defaultTemplate.Spec) || !reflect.DeepEqual(template.Labels, defaultTemplate.Labels) || !reflect.DeepEqual(template.Annotations, defaultTemplate.Annotations) {
 			template.Spec = defaultTemplate.Spec
+			template.Labels = defaultTemplate.Labels
+			template.Annotations = defaultTemplate.Annotations
 		}
 		return nil
 	}); err != nil {

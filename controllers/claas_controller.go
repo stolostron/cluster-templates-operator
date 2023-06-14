@@ -76,14 +76,6 @@ func (r *CLaaSReconciler) Reconcile(
 			r.enableManagedCluster,
 			r.enableKlusterlet,
 		)
-
-		if err := (&HypershiftTemplateReconciler{
-			Client: r.Manager.GetClient(),
-			Scheme: r.Manager.GetScheme(),
-		}).SetupWithManager(r.Manager); err != nil {
-			CLaaSlog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
-			os.Exit(1)
-		}
 	}
 
 	if !r.enableHive && isCRDSupported(crd, v1alpha1.ClusterDeploymentGVK) {

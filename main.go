@@ -143,6 +143,14 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err := (&controllers.HypershiftTemplateReconciler{
+		Client: mgr.GetClient(),
+		Scheme: mgr.GetScheme(),
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
+		os.Exit(1)
+	}
+
 	if err = (&controllers.CLaaSReconciler{
 		Client:  mgr.GetClient(),
 		Manager: mgr,

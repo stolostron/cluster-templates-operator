@@ -21,6 +21,7 @@ COPY bridge/ bridge/
 COPY ocm/ ocm/
 COPY utils/ utils/
 COPY quickstarts quickstarts/
+COPY templates templates/
 
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager main.go

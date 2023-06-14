@@ -29,8 +29,9 @@ import (
 )
 
 const (
-	argoname   = "class-argocd"
-	secretName = "class-argocd-secret"
+	argoname     = "class-argocd"
+	secretName   = "class-argocd-secret"
+	argoCDEnvVar = "ARGOCD_CLUSTER_CONFIG_NAMESPACES"
 )
 
 type ArgoCDReconciler struct {
@@ -98,12 +99,12 @@ func (r *ArgoCDReconciler) Reconcile(
 		}
 		if !containsEnvVar(subscription) {
 			subscription.Spec.Config.Env = append(subscription.Spec.Config.Env, corev1.EnvVar{
-				Name:  "ARGOCD_CLUSTER_CONFIG_NAMESPACES",
+				Name:  argoCDEnvVar,
 				Value: defaultArgoCDNs,
 			})
 		} else {
 			for i, env := range subscription.Spec.Config.Env {
-				if env.Name == "ARGOCD_CLUSTER_CONFIG_NAMESPACES" {
+				if env.Name == argoCDEnvVar {
 					if !slices.Contains(strings.Split(env.Value, ","), defaultArgoCDNs) {
 						if env.Value == "" {
 							subscription.Spec.Config.Env[i].Value = defaultArgoCDNs
@@ -116,55 +117,53 @@ func (r *ArgoCDReconciler) Reconcile(
 			}
 		}
 
-		if err := r.Update(ctx, subscription); err != nil {
+		err = r.Update(ctx, subscription)
+		return reconcile.Result{}, err
+	}
+
+	argocd := &argo.ArgoCD{}
+	if err := r.Get(ctx, types.NamespacedName{Name: argoname, Namespace: defaultArgoCDNs}, argocd); err != nil {
+		if !apierrors.IsNotFound(err) {
+			return reconcile.Result{}, err
+		}
+	} else {
+		if err := r.Client.Delete(ctx, argocd); err != nil {
 			return reconcile.Result{}, err
 		}
 	}
 
-	// Remove ArgoCD instance only if on upstream
-	if ArgoCDNamespace != defaultArgoCDNs {
-		argocd := &argo.ArgoCD{}
-		if err := r.Get(ctx, types.NamespacedName{Name: argoname, Namespace: defaultArgoCDNs}, argocd); err != nil {
-			if !apierrors.IsNotFound(err) {
-				return reconcile.Result{}, err
-			}
-		} else {
-			if err := r.Client.Delete(ctx, argocd); err != nil {
-				return reconcile.Result{}, err
-			}
-		}
-
-		// Remove namespace from subscription
-		subscription, err := r.getSubscription(ctx)
-		if err != nil {
+	// Remove namespace from subscription
+	subscription, err := r.getSubscription(ctx)
+	if err != nil {
+		if !apierrors.IsNotFound(err) {
 			return reconcile.Result{}, err
-		}
-		if subscription.Spec.Config == nil {
+		} else {
 			return reconcile.Result{}, nil
 		}
+	}
+	if subscription.Spec.Config == nil {
+		return reconcile.Result{}, nil
+	}
 
-		newSlice := []corev1.EnvVar{}
-		for _, n := range subscription.Spec.Config.Env {
-			if n.Name != "ARGOCD_CLUSTER_CONFIG_NAMESPACES" {
-				newSlice = append(newSlice, n)
-			} else {
-				values := strings.Split(n.Value, ",")
-				index := slices.Index(values, defaultArgoCDNs)
-				if index != -1 {
-					newValues := append(values[:index], values[index+1:]...)
-					n.Value = strings.Join(newValues, ",")
-				}
-				newSlice = append(newSlice, n)
+	newSlice := []corev1.EnvVar{}
+	for _, n := range subscription.Spec.Config.Env {
+		if n.Name != argoCDEnvVar {
+			newSlice = append(newSlice, n)
+		} else {
+			values := strings.Split(n.Value, ",")
+			index := slices.Index(values, defaultArgoCDNs)
+			if index != -1 {
+				newValues := append(values[:index], values[index+1:]...)
+				n.Value = strings.Join(newValues, ",")
 			}
-		}
-
-		subscription.Spec.Config.Env = newSlice
-
-		if err := r.Update(ctx, subscription); err != nil {
-			return reconcile.Result{}, err
+			newSlice = append(newSlice, n)
 		}
 	}
-	return reconcile.Result{}, nil
+
+	subscription.Spec.Config.Env = newSlice
+
+	err = r.Update(ctx, subscription)
+	return reconcile.Result{}, err
 }
 
 func containsEnvVar(subscription *operators.Subscription) bool {
@@ -177,30 +176,15 @@ func containsEnvVar(subscription *operators.Subscription) bool {
 }
 
 func (r *ArgoCDReconciler) getSubscription(ctx context.Context) (*operators.Subscription, error) {
-	for _, subscriptionName := range []string{"argocd-operator", "openshift-gitops-operator"} {
-		subLabel, _ := labels.NewRequirement(
-			fmt.Sprintf("%s/%s.%s", "operators.coreos.com", subscriptionName, "openshift-operators"),
-			selection.Exists,
-			[]string{},
-		)
-		selector := labels.NewSelector().Add(*subLabel)
+	subscriptions := &operators.SubscriptionList{}
+	if err := r.List(ctx, subscriptions); err != nil {
+		return nil, err
+	}
 
-		subscriptions := &operators.SubscriptionList{}
-		if err := r.List(
-			ctx,
-			subscriptions,
-			&client.ListOptions{
-				LabelSelector: selector,
-				Namespace:     "openshift-operators",
-			},
-		); err != nil {
-			return nil, err
+	for _, sub := range subscriptions.Items {
+		if sub.Spec.Package == "argocd-operator" || sub.Spec.Package == "openshift-gitops-operator" {
+			return &sub, nil
 		}
-
-		if len(subscriptions.Items) > 0 {
-			return &subscriptions.Items[0], nil
-		}
-
 	}
 
 	return nil, fmt.Errorf("subscription with argo label was not found")
@@ -260,7 +244,11 @@ func getDefaultSecret() *corev1.Secret {
 				"clustertemplates.openshift.io/vendor": "community",
 			},
 		},
-		Data: map[string][]byte{"name": []byte("cluster-templates-manifests"), "type": []byte("helm"), "url": []byte("https://stolostron.github.io/cluster-templates-manifests")},
+		StringData: map[string]string{
+			"name": "cluster-templates-manifests",
+			"type": "helm",
+			"url":  "https://stolostron.github.io/cluster-templates-manifests",
+		},
 		Type: corev1.SecretTypeOpaque,
 	}
 }
