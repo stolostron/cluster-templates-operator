@@ -15,7 +15,7 @@ func getNamespaceRoleBindingTask() console.ConsoleQuickStartTask {
 3. Choose **cluster-templates-user** role from the list.
 4. Go to the **RoleBindings** tab.
 5. Click **Create RoleBinding**.
-6. Enter a name, select a namespace, and enter a subject (user, group, or service account).
+6. Enter a name (for example my-role-binding), select a namespace in which you want to let the user create the clusters, and enter a subject (user, group, or service account).
 7. Click **Create**.
 8. If needed, add more subjects using the YAML tab or the CLI.`,
 		Review: &console.ConsoleQuickStartTaskReview{
