@@ -23,7 +23,7 @@ const (
 
 	defaultArgoCDNs = "cluster-aas-operator"
 	defaultEnableUI = true
-	defaultUIImage  = "quay.io/stolostron/cluster-templates-console-plugin:latest"
+	defaultUIImage  = "quay.io/stolostron/cluster-templates-console-plugin:2.8.0-70d540ca8c30c8b0c46cf635eb3553a0f53a6d0f"
 )
 
 var (

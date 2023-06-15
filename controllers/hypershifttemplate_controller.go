@@ -23,16 +23,24 @@ import (
 	"github.com/stolostron/cluster-templates-operator/templates"
 )
 
-var defaultApplicationSets = map[string]*argo.ApplicationSet{
-	"hypershift-cluster":          templates.HypershiftClusterAppSet,
-	"hypershift-kubevirt-cluster": templates.HypershiftKubevirtClusterAppSet,
-	"hypershift-agent-cluster":    templates.HypershiftAgentClusterAppSet,
+type Template struct {
+	ClusterTemplate *v1alpha1.ClusterTemplate
+	AppSets         []*argo.ApplicationSet
 }
 
-var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
-	"hypershift-cluster":          templates.HypershiftClusterCT,
-	"hypershift-kubevirt-cluster": templates.HypershiftKubevirtClusterCT,
-	"hypershift-agent-cluster":    templates.HypershiftAgentClusterCT,
+var defaultTemplates = map[string]Template{
+	"hypershift-cluster": {
+		ClusterTemplate: templates.HypershiftClusterCT,
+		AppSets:         []*argo.ApplicationSet{templates.HypershiftClusterAppSet},
+	},
+	"hypershift-kubevirt-cluster": {
+		ClusterTemplate: templates.HypershiftKubevirtClusterCT,
+		AppSets:         []*argo.ApplicationSet{templates.HypershiftKubevirtClusterAppSet},
+	},
+	"hypershift-agent-cluster": {
+		ClusterTemplate: templates.HypershiftAgentClusterCT,
+		AppSets:         []*argo.ApplicationSet{templates.HypershiftAgentClusterAppSet, templates.Day2AppSet},
+	},
 }
 
 type HypershiftTemplateReconciler struct {
@@ -58,7 +66,7 @@ func (r *HypershiftTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error 
 	}
 	go func() {
 		for template := range defaultTemplates {
-			initialSync <- event.GenericEvent{Object: defaultTemplates[template]}
+			initialSync <- event.GenericEvent{Object: defaultTemplates[template].ClusterTemplate}
 		}
 	}()
 	return nil
@@ -72,7 +80,7 @@ func (r *HypershiftTemplateReconciler) Reconcile(
 	req ctrl.Request,
 ) (ctrl.Result, error) {
 	// Template
-	defaultTemplate := defaultTemplates[req.NamespacedName.Name]
+	defaultTemplate := defaultTemplates[req.NamespacedName.Name].ClusterTemplate
 	template := &v1alpha1.ClusterTemplate{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: defaultTemplate.Name,
@@ -90,29 +98,30 @@ func (r *HypershiftTemplateReconciler) Reconcile(
 	}
 
 	// AppSet
-	defaultAppSet := defaultApplicationSets[req.NamespacedName.Name]
-	appSetTemplate := &argo.ApplicationSet{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      defaultAppSet.Name,
-			Namespace: ArgoCDNamespace,
-		},
-	}
-	if _, err := applicationset.CreateOrUpdate(ctx, r.Client, appSetTemplate, func() error {
-		// We need to re(set) generators only in case the appset don't exist:
-		key := client.ObjectKeyFromObject(appSetTemplate)
-		if err := r.Client.Get(ctx, key, appSetTemplate); err != nil {
-			if !errors.IsNotFound(err) {
-				return err
+	for _, defaultAppSet := range defaultTemplates[req.NamespacedName.Name].AppSets {
+		appSetTemplate := &argo.ApplicationSet{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      defaultAppSet.Name,
+				Namespace: ArgoCDNamespace,
+			},
+		}
+		if _, err := applicationset.CreateOrUpdate(ctx, r.Client, appSetTemplate, func() error {
+			// We need to re(set) generators only in case the appset don't exist:
+			key := client.ObjectKeyFromObject(appSetTemplate)
+			if err := r.Client.Get(ctx, key, appSetTemplate); err != nil {
+				if !errors.IsNotFound(err) {
+					return err
+				}
+				appSetTemplate.Spec.Generators = []argo.ApplicationSetGenerator{{}}
 			}
-			appSetTemplate.Spec.Generators = []argo.ApplicationSetGenerator{{}}
-		}
 
-		if !reflect.DeepEqual(appSetTemplate.Spec.Template, defaultAppSet.Spec.Template) {
-			appSetTemplate.Spec.Template = defaultAppSet.Spec.Template
+			if !reflect.DeepEqual(appSetTemplate.Spec.Template, defaultAppSet.Spec.Template) {
+				appSetTemplate.Spec.Template = defaultAppSet.Spec.Template
+			}
+			return nil
+		}); err != nil {
+			return reconcile.Result{}, err
 		}
-		return nil
-	}); err != nil {
-		return reconcile.Result{}, err
 	}
 
 	return reconcile.Result{}, nil
