@@ -8,28 +8,29 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-//go:embed hypershift-kubevirt-cluster-description.md
-var hypershiftKubevirtClusterDescription string
+//go:embed hypershift-agent-cluster-description.md
+var hypershiftAgentClusterDescription string
 
-var HypershiftKubevirtClusterCT = &v1alpha1.ClusterTemplate{
+var HypershiftAgentClusterCT = &v1alpha1.ClusterTemplate{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "hypershift-kubevirt-cluster",
+		Name: "hypershift-agent-cluster",
 		Labels: map[string]string{
 			"clustertemplates.openshift.io/vendor": "community",
 		},
 		Annotations: map[string]string{
-			"clustertemplates.openshift.io/description": hypershiftKubevirtClusterDescription,
+			"clustertemplates.openshift.io/description": hypershiftAgentClusterDescription,
 		},
 	},
 	Spec: v1alpha1.ClusterTemplateSpec{
-		Cost:              &cost,
-		ClusterDefinition: "hypershift-kubevirt-cluster",
+		SkipClusterRegistration: true,
+		Cost:                    &cost,
+		ClusterDefinition:       "hypershift-agent-cluster",
 	},
 }
 
-var HypershiftKubevirtClusterAppSet = &argo.ApplicationSet{
+var HypershiftAgentClusterAppSet = &argo.ApplicationSet{
 	ObjectMeta: metav1.ObjectMeta{
-		Name: "hypershift-kubevirt-cluster",
+		Name: "hypershift-agent-cluster",
 		Labels: map[string]string{
 			"clustertemplates.openshift.io/vendor": "community",
 		},
@@ -45,8 +46,8 @@ var HypershiftKubevirtClusterAppSet = &argo.ApplicationSet{
 				Project: "default",
 				Source: argo.ApplicationSource{
 					RepoURL:        "https://stolostron.github.io/cluster-templates-manifests",
-					TargetRevision: "0.0.3",
-					Chart:          "hypershift-kubevirt-template",
+					TargetRevision: "0.0.1",
+					Chart:          "hypershift-agent-template",
 				},
 				SyncPolicy: &argo.SyncPolicy{
 					Automated: &argo.SyncPolicyAutomated{},

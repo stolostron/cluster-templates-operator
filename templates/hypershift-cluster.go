@@ -49,7 +49,7 @@ var HypershiftClusterAppSet = &argo.ApplicationSet{
 				Project: "default",
 				Source: argo.ApplicationSource{
 					RepoURL:        "https://stolostron.github.io/cluster-templates-manifests",
-					TargetRevision: "0.0.1",
+					TargetRevision: "0.0.2",
 					Chart:          "hypershift-template",
 				},
 				SyncPolicy: &argo.SyncPolicy{
