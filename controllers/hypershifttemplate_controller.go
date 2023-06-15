@@ -26,11 +26,13 @@ import (
 var defaultApplicationSets = map[string]*argo.ApplicationSet{
 	"hypershift-cluster":          templates.HypershiftClusterAppSet,
 	"hypershift-kubevirt-cluster": templates.HypershiftKubevirtClusterAppSet,
+	"hypershift-agent-cluster":    templates.HypershiftAgentClusterAppSet,
 }
 
 var defaultTemplates = map[string]*v1alpha1.ClusterTemplate{
 	"hypershift-cluster":          templates.HypershiftClusterCT,
 	"hypershift-kubevirt-cluster": templates.HypershiftKubevirtClusterCT,
+	"hypershift-agent-cluster":    templates.HypershiftAgentClusterCT,
 }
 
 type HypershiftTemplateReconciler struct {
