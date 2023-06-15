@@ -44,7 +44,10 @@ stringData:
 ```
 
 ## Usage
-Create an instance by creating the following yaml:
+
+- If you are using the UI, continue by following the Getting started on top of the page.
+
+- If you are not using the UI, create an instance by creating the following yaml:
 
 ```yaml
 apiVersion: clustertemplate.openshift.io/v1alpha1

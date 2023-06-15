@@ -29,9 +29,10 @@ import (
 )
 
 const (
-	argoname     = "class-argocd"
-	secretName   = "class-argocd-secret"
-	argoCDEnvVar = "ARGOCD_CLUSTER_CONFIG_NAMESPACES"
+	argoname       = "class-argocd"
+	secretName     = "class-argocd-secret"
+	day2SecretName = "class-argocd-secret-day2"
+	argoCDEnvVar   = "ARGOCD_CLUSTER_CONFIG_NAMESPACES"
 )
 
 type ArgoCDReconciler struct {
@@ -207,6 +208,18 @@ func (r *ArgoCDReconciler) ensureDefaultSecretExists(ctx context.Context) error 
 		}
 	}
 
+	// Ensure secret exists:
+	day2Secret := &corev1.Secret{}
+	if err := r.Get(ctx, types.NamespacedName{Name: day2SecretName, Namespace: ArgoCDNamespace}, day2Secret); err != nil {
+		if apierrors.IsNotFound(err) {
+			if err := r.Create(ctx, getDefaultGitSecret()); err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
 	// Ensure secret is removed from other namespaces
 	ctiNameLabelReq, _ := labels.NewRequirement(
 		v1alpha1.CTRepoLabel,
@@ -248,6 +261,26 @@ func getDefaultSecret() *corev1.Secret {
 			"name": "cluster-templates-manifests",
 			"type": "helm",
 			"url":  "https://stolostron.github.io/cluster-templates-manifests",
+		},
+		Type: corev1.SecretTypeOpaque,
+	}
+}
+
+func getDefaultGitSecret() *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      day2SecretName,
+			Namespace: ArgoCDNamespace,
+			Labels: map[string]string{
+				v1alpha1.CTRepoLabel:                   "",
+				"argocd.argoproj.io/secret-type":       "repository",
+				"clustertemplates.openshift.io/vendor": "community",
+			},
+		},
+		StringData: map[string]string{
+			"name": "cluster-templates-day2-manifests",
+			"type": "git",
+			"url":  "https://github.com/stolostron/cluster-templates-manifests",
 		},
 		Type: corev1.SecretTypeOpaque,
 	}

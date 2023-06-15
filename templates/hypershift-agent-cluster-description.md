@@ -1,10 +1,10 @@
 # Hypershift Cluster with Agent Based Workers
 
 ## Description
-A hypershift template with worker nodes taken from an infrastructure environment managed by the infrastructure operator. It has one worker node only, but is capable of running real workload.
+A hypershift template with worker nodes taken from an infrastructure environment managed by the infrastructure operator. It has one worker node only, but is capable of running real workload. Strimzi kafka operator is installed in day2 and Kafka instance is running in `kafka` namespace.
 
 ## Features
-- The spoke cluster installed from this template is fully co-located on this hub cluster
+- The spoke cluster installed from this template is running Kafka instance.
 
 ## Prerequisites
 - Enable hypershift ([docs](https://access.redhat.com/documentation/en-us/red_hat_advanced_cluster_management_for_kubernetes/2.7/html-single/clusters/index#hosted-enable-feature-aws))
@@ -40,7 +40,9 @@ stringData:
 ```
 
 ## Usage
-Create an instance by creating the following yaml:
+- If you are using the UI, continue by following the Getting started on top of the page.
+
+- If you are not using the UI, create an instance by creating the following yaml:
 
 ```yaml
 apiVersion: clustertemplate.openshift.io/v1alpha1
