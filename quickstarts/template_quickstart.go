@@ -53,11 +53,11 @@ func getPackageAndPushTask() console.ConsoleQuickStartTask {
 	description := "1. Update the .tgz package file of the chosen chart.\n\n"
 	description += "`helm package hypershift-template`\n\n"
 	description += "2. Update the helm repo index file.\n\n"
-	description += "`helm repo index . --url https://<github user name>.github.io/cluster-templates-operator`\n\n"
+	description += "`helm repo index . --url https://<github user name>.github.io/cluster-templates-manifests`\n\n"
 	description += "3. Push the changes.\n\n"
 	description += "`git add -A && git commit -m changes && git push`"
 	instructions := "Verify the URL gives the helm index - it might take a few minutes until GitHub publishes the changes.\n\n"
-	instructions += "`curl https://<github user name>.github.io/cluster-templates-operator/index.yaml`"
+	instructions += "`curl https://<github user name>.github.io/cluster-templates-manifests/index.yaml`"
 	return console.ConsoleQuickStartTask{
 		Title:       "Package and and push the changes",
 		Description: description,
