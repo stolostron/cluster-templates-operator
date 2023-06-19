@@ -28,7 +28,9 @@ Install the Cluster as a service operator from the OperatorHub:
 2. Pick `local-cluster` in the to left corner
 3. In the menu select Operators -> OperatorHub
 4. Search for `Cluster as a service operator`
-5. Select it and hit install button
+6. Select it and hit install button
+7. To use the Cluster templates console, select "Enable" under the "Console plugin" section.
+8. Click on Install.
 
 Note that ArgoCD is installed as dependency of the operator.
 
@@ -183,6 +185,16 @@ Wait for the cluster to be ready.
  - `oc get ClusterTemplateInstance hsclsempty -n clusters`
  - When the “status.phase” is “Ready”, you can log into the cluster
  - The credentials are exposed as secrets and referenced from the status (**kubeconfig**, **adminPassword**, **apiServerURL**)
+  
+# Using the Console
+
+1. Navigate to **Home** and click on **Overview**.
+2. In the **Status** card, click on **Dynamic plugins**, and then select **View all**.
+3. If the clustertemplates-plugin isn't enabled, click on **Disabled**, and in the modal click on **Enable**.  
+Wait for the popup that notifies you about the new console availability and refresh the page.
+5. Navigate to **All clusters**.
+6. Under **Infrastructure**, click on **Cluster templates**.
+7. Follow the Quick Starts available from the **Getting started** card to create and manage Cluster templates.
 
 # Documentation
 ## Learn about CRDs
