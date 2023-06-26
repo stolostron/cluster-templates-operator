@@ -734,7 +734,16 @@ func (r *ClusterTemplateInstanceReconciler) reconcileCreateManagedCluster(
 		return nil
 	}
 
-	if !(r.EnableManagedCluster && !skipClusterRegistration) {
+	if skipClusterRegistration {
+		clusterTemplateInstance.SetManagedClusterCreatedCondition(
+			metav1.ConditionTrue,
+			v1alpha1.MCSkipped,
+			"ManagedCluster skipped per ClusterTemplate spec",
+		)
+		return nil
+	}
+
+	if !r.EnableManagedCluster {
 		clusterTemplateInstance.SetManagedClusterCreatedCondition(
 			metav1.ConditionTrue,
 			v1alpha1.MCSkipped,
@@ -777,7 +786,16 @@ func (r *ClusterTemplateInstanceReconciler) reconcileImportManagedCluster(
 		return nil
 	}
 
-	if !(r.EnableManagedCluster && !skipClusterRegistration) {
+	if skipClusterRegistration {
+		clusterTemplateInstance.SetManagedClusterImportedCondition(
+			metav1.ConditionTrue,
+			v1alpha1.MCImportSkipped,
+			"ManagedCluster skipped per ClusterTemplate spec",
+		)
+		return nil
+	}
+
+	if !r.EnableManagedCluster {
 		clusterTemplateInstance.SetManagedClusterImportedCondition(
 			metav1.ConditionTrue,
 			v1alpha1.MCImportSkipped,
