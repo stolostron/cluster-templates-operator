@@ -22,10 +22,9 @@ var HypershiftAgentClusterCT = &v1alpha1.ClusterTemplate{
 		},
 	},
 	Spec: v1alpha1.ClusterTemplateSpec{
-		SkipClusterRegistration: true,
-		Cost:                    &cost,
-		ClusterDefinition:       "hypershift-agent-cluster",
-		ClusterSetup:            []string{"day2-kafka"},
+		Cost:              &cost,
+		ClusterDefinition: "hypershift-agent-cluster",
+		ClusterSetup:      []string{"day2-kafka"},
 	},
 }
 

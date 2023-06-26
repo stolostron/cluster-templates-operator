@@ -29,7 +29,7 @@ type ClusterTemplateSpec struct {
 	// ArgoCD applicationset name which is used for installation of the cluster
 	ClusterDefinition string `json:"clusterDefinition"`
 
-	// Skip the registeration of the cluster to the hub cluster
+	// Skip the registration of the cluster to the hub cluster
 	SkipClusterRegistration bool `json:"skipClusterRegistration,omitempty"`
 
 	// +optional
