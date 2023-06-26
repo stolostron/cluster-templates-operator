@@ -59,11 +59,16 @@ func (r *ArgoCDReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // +kubebuilder:rbac:groups=argoproj.io,resources=argocds,verbs=get;list;watch;create;update;delete
 // +kubebuilder:rbac:groups=operators.coreos.com,resources=subscriptions,verbs=get;list;watch;update;patch
+// +kubebuilder:rbac:groups="",resources=namespaces,verbs=get;list;watch;create
 
 func (r *ArgoCDReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
+	if err := r.ensureDefaultNamespaceExists(ctx); err != nil {
+		return reconcile.Result{}, err
+	}
+
 	if err := r.ensureDefaultSecretExists(ctx); err != nil {
 		return reconcile.Result{}, err
 	}
@@ -283,5 +288,25 @@ func getDefaultGitSecret() *corev1.Secret {
 			"url":  "https://github.com/stolostron/cluster-templates-manifests",
 		},
 		Type: corev1.SecretTypeOpaque,
+	}
+}
+
+func (r *ArgoCDReconciler) ensureDefaultNamespaceExists(ctx context.Context) error {
+	ns := &corev1.Namespace{}
+	if err := r.Get(ctx, types.NamespacedName{Name: defaultArgoCDNs}, ns); err != nil {
+		if apierrors.IsNotFound(err) {
+			return r.Create(ctx, getDefaultNamespace())
+		} else {
+			return err
+		}
+	}
+	return nil
+}
+
+func getDefaultNamespace() *corev1.Namespace {
+	return &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: defaultArgoCDNs,
+		},
 	}
 }
