@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"reflect"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -36,11 +37,11 @@ type ConsolePluginReconciler struct {
 
 const (
 	pluginResourceName = "claas-console-plugin"
-	pluginNamespace    = "cluster-aas-operator"
 )
 
 var (
-	pluginLabels = map[string]string{
+	pluginNamespace = "cluster-aas-operator"
+	pluginLabels    = map[string]string{
 		"clustertemplates.openshift.io/component": "console-plugin",
 	}
 )
@@ -280,6 +281,11 @@ http {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ConsolePluginReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	// set the plugin namspace
+	if ns, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
+		pluginNamespace = string(ns)
+	}
+
 	// A channel is used to generate an initial sync event.
 	// Afterwards, the controller syncs on the plugin resources.
 	initialSync := make(chan event.GenericEvent)

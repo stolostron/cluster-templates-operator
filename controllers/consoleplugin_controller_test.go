@@ -19,6 +19,9 @@ import (
 
 var _ = Describe("ConsolePlugin controller", func() {
 	quickStarts := getQuickStarts()
+	BeforeEach(func() {
+		pluginNamespace = "cluster-aas-operator"
+	})
 	AfterEach(func() {
 		EnableUI = false
 	})
