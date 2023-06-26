@@ -29,15 +29,14 @@ Install the Cluster as a service operator from the OperatorHub:
 3. In the menu select Operators -> OperatorHub
 4. Search for `Cluster as a service operator`
 5. Select it and hit install button
+6. The UI is installed but not enabled by default. To enable go to `Home` -> `Overview` -> in the status card click `Dynamic Plugins` -> click `View all` -> click the `pencil` icon -> pick `Enable` and hit `Save`
+7. Wait until the UI notifies you to refresh the web console. 
+8. You can access the UI by picking `All Clusters` in the top left corner and go to `Infrastructure` -> `Cluster templates`
 
 Note that ArgoCD is installed as dependency of the operator.
 
 ### Non OCP cluster
 Please follow the instructions from the OperatorHub page (https://operatorhub.io/operator/cluster-aas-operator).
-
-## ArgoCD configuration
-As noted above ArgoCD is installed as a depency of the cluster as a service operator, but it's not configured to be used with the operator.
-Please follow [ArgoCD configuration](./docs/argo.md) to setup ArgoCD.
 
 # How to use
 Cluster as a service operator comes with a few ready-to-be-used templates.
@@ -82,7 +81,7 @@ stringData:
 
 ```
 
- 3. Allow to create the template in this namespace
+ 3. (Optional) Allow to create the template in this namespace
 ```yaml
 apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateQuota
@@ -156,7 +155,7 @@ stringData:
 
 ```
 
- 3. Allow to create the template in this namespace
+ 3. (Optional) Allow to create the template in this namespace
 ```yaml
 apiVersion: clustertemplate.openshift.io/v1alpha1
 kind: ClusterTemplateQuota

@@ -14,6 +14,10 @@ Resource Types:
 
 - [ClusterTemplate](#clustertemplate)
 
+- [ClusterTemplateSetup](#clustertemplatesetup)
+
+- [Config](#config)
+
 
 
 
@@ -94,6 +98,13 @@ Represents instance of a cluster
           A reference to ClusterTemplate which will be used for installing and setting up the cluster<br/>
         </td>
         <td>true</td>
+      </tr><tr>
+        <td><b>kubeconfigSecretRef</b></td>
+        <td>string</td>
+        <td>
+          A reference to a secret which contains kubeconfig of the cluster. If specified day1 operation won't be executed.<br/>
+        </td>
+        <td>false</td>
       </tr><tr>
         <td><b><a href="#clustertemplateinstancespecparametersindex">parameters</a></b></td>
         <td>[]object</td>
@@ -205,17 +216,10 @@ Represents instance of a cluster
         </td>
         <td>false</td>
       </tr><tr>
-        <td><b>clusterTemplateLabels</b></td>
-        <td>map[string]string</td>
+        <td><b><a href="#clustertemplateinstancestatusclustersetupsecretsindex">clusterSetupSecrets</a></b></td>
+        <td>[]object</td>
         <td>
-          <br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b><a href="#clustertemplateinstancestatusclustertemplatespec">clusterTemplateSpec</a></b></td>
-        <td>object</td>
-        <td>
-          <br/>
+          Secrets create by cluster setup which provide crenderntials for applications created by cluster setup<br/>
         </td>
         <td>false</td>
       </tr><tr>
@@ -367,12 +371,12 @@ A reference for secret which contains username and password under keys "username
 </table>
 
 
-### ClusterTemplateInstance.status.clusterTemplateSpec
+### ClusterTemplateInstance.status.clusterSetupSecrets[index]
 <sup><sup>[↩ Parent](#clustertemplateinstancestatus)</sup></sup>
 
 
 
-
+LocalObjectReference contains enough information to let you locate the referenced object inside the same namespace.
 
 <table>
     <thead>
@@ -384,33 +388,10 @@ A reference for secret which contains username and password under keys "username
         </tr>
     </thead>
     <tbody><tr>
-        <td><b>clusterDefinition</b></td>
+        <td><b>name</b></td>
         <td>string</td>
         <td>
-          ArgoCD applicationset name which is used for installation of the cluster<br/>
-        </td>
-        <td>true</td>
-      </tr><tr>
-        <td><b>clusterSetup</b></td>
-        <td>[]string</td>
-        <td>
-          Array of ArgoCD applicationset names which are used for post installation setup of the cluster<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>cost</b></td>
-        <td>integer</td>
-        <td>
-          Cost of the cluster, used for quotas<br/>
-          <br/>
-            <i>Minimum</i>: 0<br/>
-        </td>
-        <td>false</td>
-      </tr><tr>
-        <td><b>skipClusterRegistration</b></td>
-        <td>boolean</td>
-        <td>
-          Skip the registeration of the cluster to the hub cluster<br/>
+          Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?<br/>
         </td>
         <td>false</td>
       </tr></tbody>
@@ -873,6 +854,255 @@ Describes helm chart properties and their schema
         <td>string</td>
         <td>
           Content of helm chart values.yaml<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+## ClusterTemplateSetup
+<sup><sup>[↩ Parent](#clustertemplateopenshiftiov1alpha1 )</sup></sup>
+
+
+
+
+
+
+Template of a cluster - post-install setup are defined as ArgoCD application set refs.
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>clustertemplate.openshift.io/v1alpha1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>ClusterTemplateSetup</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#clustertemplatesetupspec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b><a href="#clustertemplatesetupstatus">status</a></b></td>
+        <td>object</td>
+        <td>
+          ClusterTemplateStatus defines the observed state of ClusterTemplateSetup<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### ClusterTemplateSetup.spec
+<sup><sup>[↩ Parent](#clustertemplatesetup)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>clusterSetup</b></td>
+        <td>[]string</td>
+        <td>
+          Array of ArgoCD applicationset names which are used for post installation setup of the cluster<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>skipClusterRegistration</b></td>
+        <td>boolean</td>
+        <td>
+          Skip the registeration of the cluster to the hub cluster<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### ClusterTemplateSetup.status
+<sup><sup>[↩ Parent](#clustertemplatesetup)</sup></sup>
+
+
+
+ClusterTemplateStatus defines the observed state of ClusterTemplateSetup
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b><a href="#clustertemplatesetupstatusclustersetupindex">clusterSetup</a></b></td>
+        <td>[]object</td>
+        <td>
+          Describes helm chart properties and schema for every cluster setup step<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+
+### ClusterTemplateSetup.status.clusterSetup[index]
+<sup><sup>[↩ Parent](#clustertemplatesetupstatus)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>name</b></td>
+        <td>string</td>
+        <td>
+          Name of the cluster setup step<br/>
+        </td>
+        <td>true</td>
+      </tr><tr>
+        <td><b>error</b></td>
+        <td>string</td>
+        <td>
+          Contain information about failure during fetching helm chart<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>schema</b></td>
+        <td>string</td>
+        <td>
+          Content of helm chart values.schema.json<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>values</b></td>
+        <td>string</td>
+        <td>
+          Content of helm chart values.yaml<br/>
+        </td>
+        <td>false</td>
+      </tr></tbody>
+</table>
+
+## Config
+<sup><sup>[↩ Parent](#clustertemplateopenshiftiov1alpha1 )</sup></sup>
+
+
+
+
+
+
+Configuration of the cluster operator
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+      <td><b>apiVersion</b></td>
+      <td>string</td>
+      <td>clustertemplate.openshift.io/v1alpha1</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b>kind</b></td>
+      <td>string</td>
+      <td>Config</td>
+      <td>true</td>
+      </tr>
+      <tr>
+      <td><b><a href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.20/#objectmeta-v1-meta">metadata</a></b></td>
+      <td>object</td>
+      <td>Refer to the Kubernetes API documentation for the fields of the `metadata` field.</td>
+      <td>true</td>
+      </tr><tr>
+        <td><b><a href="#configspec">spec</a></b></td>
+        <td>object</td>
+        <td>
+          <br/>
+        </td>
+        <td>true</td>
+      </tr></tbody>
+</table>
+
+
+### Config.spec
+<sup><sup>[↩ Parent](#config)</sup></sup>
+
+
+
+
+
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Required</th>
+        </tr>
+    </thead>
+    <tbody><tr>
+        <td><b>argoCDNamespace</b></td>
+        <td>string</td>
+        <td>
+          ArgoCd namespace where the ArgoCD instance is running<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>uiEnabled</b></td>
+        <td>boolean</td>
+        <td>
+          Flag that indicate if UI console plugin should be deployed<br/>
+        </td>
+        <td>false</td>
+      </tr><tr>
+        <td><b>uiImage</b></td>
+        <td>string</td>
+        <td>
+          Custom UI image<br/>
         </td>
         <td>false</td>
       </tr></tbody>
