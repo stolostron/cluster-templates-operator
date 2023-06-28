@@ -131,15 +131,13 @@ var _ = BeforeSuite(func() {
 
 	controllerCancel = StartCTIController(k8sManager, true, false, false, false)
 
-	claasNs := &corev1.Namespace{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: pluginNamespace,
-		},
-	}
-	err = k8sManager.GetClient().Create(ctx, claasNs)
+	err = (&ConfigReconciler{
+		Client: k8sManager.GetClient(),
+		Scheme: k8sManager.GetScheme(),
+	}).SetupWithManager(k8sManager)
 	Expect(err).ToNot(HaveOccurred())
 
-	err = (&ConfigReconciler{
+	err = (&ArgoCDReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
@@ -170,12 +168,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&HypershiftTemplateReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&ArgoCDReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
