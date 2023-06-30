@@ -59,7 +59,7 @@ spec:
                 minimum: 0
                 type: integer
               skipClusterRegistration:
-                description: Skip the registeration of the cluster to the hub cluster
+                description: Skip the registration of the cluster to the hub cluster
                 type: boolean
             required:
             - clusterDefinition
