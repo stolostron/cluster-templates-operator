@@ -18,7 +18,7 @@ const (
 	ApplicationHealthy     ApplicationStatus = "ApplicationHealthy"
 )
 
-func GetApplicationHealth(application *argo.Application) (ApplicationStatus, string) {
+func GetApplicationHealth(application *argo.Application, includeResourceHealth bool) (ApplicationStatus, string) {
 	for _, condition := range application.Status.Conditions {
 		if strings.HasSuffix(condition.Type, "Error") {
 			return ApplicationError, condition.Message
@@ -43,6 +43,14 @@ func GetApplicationHealth(application *argo.Application) (ApplicationStatus, str
 		}
 
 		return ApplicationSyncRunning, msg
+	}
+
+	if includeResourceHealth {
+		for _, res := range application.Status.Resources {
+			if res.Health.Status != argoHealth.HealthStatusHealthy {
+				return ApplicationSyncRunning, "Resource sync is running"
+			}
+		}
 	}
 
 	return ApplicationHealthy, "Application is synced"

@@ -500,7 +500,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 		return err
 	}
 
-	appHealth, msg := argocd.GetApplicationHealth(application)
+	appHealth, msg := argocd.GetApplicationHealth(application, false)
 	if appHealth == argocd.ApplicationSyncRunning {
 		clusterTemplateInstance.SetClusterInstallCondition(
 			metav1.ConditionFalse,
@@ -1014,7 +1014,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 	degradedSetups := []string{}
 	for _, app := range applications.Items {
 		setupName := app.Labels[v1alpha1.CTISetupLabel]
-		status, msg := argocd.GetApplicationHealth(&app)
+		status, msg := argocd.GetApplicationHealth(&app, true)
 
 		clusterSetupStatus = append(clusterSetupStatus, v1alpha1.ClusterSetupStatus{
 			Name:    setupName,

@@ -14,7 +14,7 @@ var _ = Describe("Application health", func() {
 		app := &argo.Application{
 			Status: argo.ApplicationStatus{},
 		}
-		status, msg := GetApplicationHealth(app)
+		status, msg := GetApplicationHealth(app, false)
 		Expect(status).Should(Equal(ApplicationSyncRunning))
 		Expect(msg).Should(Equal("Application sync is running"))
 	})
@@ -29,7 +29,7 @@ var _ = Describe("Application health", func() {
 				},
 			},
 		}
-		status, msg := GetApplicationHealth(app)
+		status, msg := GetApplicationHealth(app, false)
 		Expect(status).Should(Equal(ApplicationError))
 		Expect(msg).Should(Equal("foo msg"))
 	})
@@ -41,7 +41,7 @@ var _ = Describe("Application health", func() {
 				},
 			},
 		}
-		status, msg := GetApplicationHealth(app)
+		status, msg := GetApplicationHealth(app, false)
 		Expect(status).Should(Equal(ApplicationDegraded))
 		Expect(msg).Should(Equal("Application is degraded"))
 	})
@@ -53,7 +53,7 @@ var _ = Describe("Application health", func() {
 				},
 			},
 		}
-		status, msg := GetApplicationHealth(app)
+		status, msg := GetApplicationHealth(app, false)
 		Expect(status).Should(Equal(ApplicationSyncRunning))
 		Expect(msg).Should(Equal("Application sync is running"))
 	})
@@ -69,7 +69,7 @@ var _ = Describe("Application health", func() {
 				},
 			},
 		}
-		status, msg := GetApplicationHealth(app)
+		status, msg := GetApplicationHealth(app, false)
 		Expect(status).Should(Equal(ApplicationSyncRunning))
 		Expect(msg).Should(Equal("foo msg"))
 	})
@@ -85,7 +85,53 @@ var _ = Describe("Application health", func() {
 				},
 			},
 		}
-		status, msg := GetApplicationHealth(app)
+		status, msg := GetApplicationHealth(app, false)
+		Expect(status).Should(Equal(ApplicationHealthy))
+		Expect(msg).Should(Equal("Application is synced"))
+	})
+	It("Day2 resources - not healthy", func() {
+		app := &argo.Application{
+			Status: argo.ApplicationStatus{
+				Health: argo.HealthStatus{
+					Status: argoHealth.HealthStatusHealthy,
+				},
+				OperationState: &argo.OperationState{
+					Phase:   common.OperationSucceeded,
+					Message: "foo msg",
+				},
+				Resources: []argo.ResourceStatus{
+					{
+						Health: &argo.HealthStatus{
+							Status: argoHealth.HealthStatusDegraded,
+						},
+					},
+				},
+			},
+		}
+		status, msg := GetApplicationHealth(app, true)
+		Expect(status).Should(Equal(ApplicationSyncRunning))
+		Expect(msg).Should(Equal("Resource sync is running"))
+	})
+	It("Day2 resources - healthy", func() {
+		app := &argo.Application{
+			Status: argo.ApplicationStatus{
+				Health: argo.HealthStatus{
+					Status: argoHealth.HealthStatusHealthy,
+				},
+				OperationState: &argo.OperationState{
+					Phase:   common.OperationSucceeded,
+					Message: "foo msg",
+				},
+				Resources: []argo.ResourceStatus{
+					{
+						Health: &argo.HealthStatus{
+							Status: argoHealth.HealthStatusHealthy,
+						},
+					},
+				},
+			},
+		}
+		status, msg := GetApplicationHealth(app, true)
 		Expect(status).Should(Equal(ApplicationHealthy))
 		Expect(msg).Should(Equal("Application is synced"))
 	})
