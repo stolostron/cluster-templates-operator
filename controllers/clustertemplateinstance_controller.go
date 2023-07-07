@@ -827,6 +827,8 @@ func (r *ClusterTemplateInstanceReconciler) reconcileImportManagedCluster(
 			"ManagedCluster imported successfully",
 		)
 	} else {
+		clusterTemplateInstance.Status.Phase = v1alpha1.ManagedClusterImportingPhase
+		clusterTemplateInstance.Status.Message = "ManagedCluster is importing"
 		clusterTemplateInstance.SetManagedClusterImportedCondition(
 			metav1.ConditionFalse,
 			v1alpha1.MCImporting,

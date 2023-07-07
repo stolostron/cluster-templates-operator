@@ -809,6 +809,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionFalse))
 			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCImporting)))
+			Expect(cti.Status.Phase).Should(Equal(v1alpha1.ManagedClusterImportingPhase))
 		})
 	})
 
