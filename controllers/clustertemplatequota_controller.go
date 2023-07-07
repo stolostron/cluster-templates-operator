@@ -63,7 +63,7 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 		return ctrl.Result{}, err
 	}
 
-	currentInstances := []v1alpha1.AllowedTemplate{}
+	currentInstances := []v1alpha1.AllowedTemplateStatus{}
 	currentConst := 0
 	for _, template := range clusterTemplateQuota.Spec.AllowedTemplates {
 		count := 0
@@ -85,7 +85,7 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 			}
 		}
 
-		currentInstances = append(currentInstances, v1alpha1.AllowedTemplate{
+		currentInstances = append(currentInstances, v1alpha1.AllowedTemplateStatus{
 			Name:  template.Name,
 			Count: count,
 		})
