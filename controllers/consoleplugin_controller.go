@@ -15,8 +15,10 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
@@ -44,6 +46,7 @@ var (
 	pluginLabels    = map[string]string{
 		"clustertemplates.openshift.io/component": "console-plugin",
 	}
+	ConsolePluginLog = logf.Log.WithName("consoleplugin-controller")
 )
 
 func getQuickStarts() []*consoleV1.ConsoleQuickStart {
@@ -59,26 +62,23 @@ func getQuickStartClientObjects() []client.Object {
 	return objects
 }
 
-func (r *ConsolePluginReconciler) createOrUpdateQuickStarts(
-	ctx context.Context,
-	req ctrl.Request,
-) error {
-	fmt.Println("creating quick stars")
+func (r *ConsolePluginReconciler) createOrUpdateQuickStarts(ctx context.Context) error {
 	quickStarts := getQuickStarts()
 	for _, qs := range quickStarts {
-		fmt.Println("creating quick start " + qs.Name)
 		originalQs := &consoleV1.ConsoleQuickStart{
 			ObjectMeta: qs.ObjectMeta,
 		}
-		_, err := applicationset.CreateOrUpdate(ctx, r.Client, originalQs, func() error {
+		res, err := applicationset.CreateOrUpdate(ctx, r.Client, originalQs, func() error {
 			if !reflect.DeepEqual(originalQs.Spec, qs.Spec) {
 				originalQs.Spec = qs.Spec
 			}
-			fmt.Println("successfuly creating quick start " + qs.Name)
 			return nil
 		})
 		if err != nil {
 			return err
+		}
+		if res == controllerutil.OperationResultCreated {
+			ConsolePluginLog.Info("Quickstart created", "name", originalQs.Name)
 		}
 	}
 	return nil
@@ -367,8 +367,7 @@ func (r *ConsolePluginReconciler) Reconcile(
 		if err != nil {
 			return reconcile.Result{}, err
 		}
-		err = r.createOrUpdateQuickStarts(ctx, req)
-		if err != nil {
+		if err := r.createOrUpdateQuickStarts(ctx); err != nil {
 			return reconcile.Result{}, err
 		}
 	} else {
