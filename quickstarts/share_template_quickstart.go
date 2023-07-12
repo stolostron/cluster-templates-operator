@@ -58,8 +58,32 @@ func getClusterWideRoleBindingTask() console.ConsoleQuickStartTask {
 	}
 }
 
+func getCreateInstanceAsUser() console.ConsoleQuickStartTask {
+	description := `1. In the navigation menu, click **Infrastructure > Cluster templates**
+2. Select **Download instance YAML** from the **kebab menu** of the template you want to share.
+3. Edit the namespace in the downloaded YAML file to match the one specified in the RoleBindings above.
+4. From the CLI, log into the cluster using the user whose permissions were configured in the previous steps.
+4. Create the cluster`
+	description += "\n\n`oc create -f <downloaded file>`\n\n"
+	instructions := `Is the cluster ready? To check its status run following command:`
+	instructions += "\n\n`oc get clustertemplateinstance example -n <namespace> -o yaml`"
+
+	return console.ConsoleQuickStartTask{
+		Title:       "Create a cluster using minimum permissions",
+		Description: description,
+		Review: &console.ConsoleQuickStartTaskReview{
+			FailedTaskHelp: "This task isn’t verified yet. Try the task again.",
+			Instructions:   instructions,
+		},
+		Summary: &console.ConsoleQuickStartTaskSummary{
+			Failed:  "Try the steps again.",
+			Success: "You successfully created a cluster using minimum permissions",
+		},
+	}
+}
+
 func getShareTemplateQuickStartTasks() []console.ConsoleQuickStartTask {
-	return []console.ConsoleQuickStartTask{getNamespaceRoleBindingTask(), getClusterWideRoleBindingTask()}
+	return []console.ConsoleQuickStartTask{getNamespaceRoleBindingTask(), getClusterWideRoleBindingTask(), getCreateInstanceAsUser()}
 }
 
 func GetShareTemplateQuickStart() *console.ConsoleQuickStart {
