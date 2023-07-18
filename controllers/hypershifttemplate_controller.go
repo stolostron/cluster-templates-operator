@@ -43,6 +43,10 @@ var defaultTemplates = map[string]Template{
 	},
 }
 
+// A channel is used to generate an initial sync event.
+// Afterwards, the controller syncs on the Hypershift ClusterTemplate.
+var initialSync = make(chan event.GenericEvent)
+
 type HypershiftTemplateReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
@@ -50,17 +54,15 @@ type HypershiftTemplateReconciler struct {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HypershiftTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// A channel is used to generate an initial sync event.
-	// Afterwards, the controller syncs on the Hypershift ClusterTemplate.
-	initialSync := make(chan event.GenericEvent)
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.ClusterTemplate{}, builder.WithPredicates(predicate.NewPredicateFuncs(r.selectHypershiftTemplate))).
 		Watches(&source.Channel{Source: initialSync}, &handler.EnqueueRequestForObject{}).
 		Watches(
 			&source.Kind{Type: &argo.ApplicationSet{}},
 			&handler.EnqueueRequestForObject{},
-			builder.WithPredicates(predicate.NewPredicateFuncs(r.selectHypershiftTemplate)),
+			builder.WithPredicates(predicate.NewPredicateFuncs(r.selectHypershiftTemplateAppSet)),
 		).
+		Watches(&source.Channel{Source: EnableArgoconfigSync}, &handler.EnqueueRequestForObject{}).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to construct controller: %w", err)
 	}
@@ -79,48 +81,66 @@ func (r *HypershiftTemplateReconciler) Reconcile(
 	ctx context.Context,
 	req ctrl.Request,
 ) (ctrl.Result, error) {
-	// Template
-	defaultTemplate := defaultTemplates[req.NamespacedName.Name].ClusterTemplate
-	template := &v1alpha1.ClusterTemplate{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: defaultTemplate.Name,
-		},
-	}
-	if _, err := applicationset.CreateOrUpdate(ctx, r.Client, template, func() error {
-		if !reflect.DeepEqual(template.Spec, defaultTemplate.Spec) || !reflect.DeepEqual(template.Labels, defaultTemplate.Labels) || !reflect.DeepEqual(template.Annotations, defaultTemplate.Annotations) {
-			template.Spec = defaultTemplate.Spec
-			template.Labels = defaultTemplate.Labels
-			template.Annotations = defaultTemplate.Annotations
+	// argocd config changed
+	if req.NamespacedName.Name == argosyncNamePlaceholder {
+		for _, template := range defaultTemplates {
+			for _, defaultAppSet := range template.AppSets {
+				appSetTemplate := &argo.ApplicationSet{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      defaultAppSet.Name,
+						Namespace: req.NamespacedName.Namespace,
+					},
+				}
+				if err := r.Client.Delete(ctx, appSetTemplate); err != nil && !errors.IsNotFound(err) {
+					return reconcile.Result{}, err
+				}
+			}
+			initialSync <- event.GenericEvent{Object: template.ClusterTemplate}
 		}
-		return nil
-	}); err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// AppSet
-	for _, defaultAppSet := range defaultTemplates[req.NamespacedName.Name].AppSets {
-		appSetTemplate := &argo.ApplicationSet{
+	} else {
+		// Template
+		defaultTemplate := defaultTemplates[req.NamespacedName.Name].ClusterTemplate
+		template := &v1alpha1.ClusterTemplate{
 			ObjectMeta: metav1.ObjectMeta{
-				Name:      defaultAppSet.Name,
-				Namespace: ArgoCDNamespace,
+				Name: defaultTemplate.Name,
 			},
 		}
-		if _, err := applicationset.CreateOrUpdate(ctx, r.Client, appSetTemplate, func() error {
-			// We need to re(set) generators only in case the appset don't exist:
-			key := client.ObjectKeyFromObject(appSetTemplate)
-			if err := r.Client.Get(ctx, key, appSetTemplate); err != nil {
-				if !errors.IsNotFound(err) {
-					return err
-				}
-				appSetTemplate.Spec.Generators = []argo.ApplicationSetGenerator{{}}
-			}
-
-			if !reflect.DeepEqual(appSetTemplate.Spec.Template, defaultAppSet.Spec.Template) {
-				appSetTemplate.Spec.Template = defaultAppSet.Spec.Template
+		if _, err := applicationset.CreateOrUpdate(ctx, r.Client, template, func() error {
+			if !reflect.DeepEqual(template.Spec, defaultTemplate.Spec) || !reflect.DeepEqual(template.Labels, defaultTemplate.Labels) || !reflect.DeepEqual(template.Annotations, defaultTemplate.Annotations) {
+				template.Spec = defaultTemplate.Spec
+				template.Labels = defaultTemplate.Labels
+				template.Annotations = defaultTemplate.Annotations
 			}
 			return nil
 		}); err != nil {
 			return reconcile.Result{}, err
+		}
+
+		// AppSet
+		for _, defaultAppSet := range defaultTemplates[req.NamespacedName.Name].AppSets {
+			appSetTemplate := &argo.ApplicationSet{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      defaultAppSet.Name,
+					Namespace: ArgoCDNamespace,
+				},
+			}
+			if _, err := applicationset.CreateOrUpdate(ctx, r.Client, appSetTemplate, func() error {
+				// We need to re(set) generators only in case the appset don't exist:
+				key := client.ObjectKeyFromObject(appSetTemplate)
+				if err := r.Client.Get(ctx, key, appSetTemplate); err != nil {
+					if !errors.IsNotFound(err) {
+						return err
+					}
+					appSetTemplate.Spec.Generators = []argo.ApplicationSetGenerator{{}}
+				}
+
+				if !reflect.DeepEqual(appSetTemplate.Spec.Template, defaultAppSet.Spec.Template) {
+					appSetTemplate.Spec.Template = defaultAppSet.Spec.Template
+				}
+				return nil
+			}); err != nil {
+				return reconcile.Result{}, err
+			}
 		}
 	}
 
@@ -130,4 +150,9 @@ func (r *HypershiftTemplateReconciler) Reconcile(
 func (r *HypershiftTemplateReconciler) selectHypershiftTemplate(obj client.Object) bool {
 	_, found := defaultTemplates[obj.GetName()]
 	return found
+}
+
+func (r *HypershiftTemplateReconciler) selectHypershiftTemplateAppSet(obj client.Object) bool {
+	_, found := defaultTemplates[obj.GetName()]
+	return found && (obj.GetNamespace() == ArgoCDNamespace)
 }

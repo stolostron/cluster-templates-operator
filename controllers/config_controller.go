@@ -21,9 +21,10 @@ import (
 const (
 	configName = "config"
 
-	defaultArgoCDNs = "cluster-aas-operator"
-	defaultEnableUI = true
-	defaultUIImage  = "quay.io/stolostron/cluster-templates-console-plugin:2.8.0-70d540ca8c30c8b0c46cf635eb3553a0f53a6d0f"
+	defaultArgoCDNs         = "cluster-aas-operator"
+	defaultEnableUI         = true
+	defaultUIImage          = "quay.io/stolostron/cluster-templates-console-plugin:2.8.0-70d540ca8c30c8b0c46cf635eb3553a0f53a6d0f"
+	argosyncNamePlaceholder = "~~argosync~~"
 )
 
 var (
@@ -71,9 +72,10 @@ func (r *ConfigReconciler) Reconcile(
 	}
 
 	if ArgoCDNamespace != config.Spec.ArgoCDNamespace {
-		// Provision/Deprovison ArgoCD
+		// Provision/Deprovison ArgoCD, recreate AppSets
+		prevNs := ArgoCDNamespace
 		ArgoCDNamespace = config.Spec.ArgoCDNamespace
-		EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argoname, Namespace: defaultArgoCDNs}}}
+		EnableArgoconfigSync <- event.GenericEvent{Object: &argo.ArgoCD{ObjectMeta: metav1.ObjectMeta{Name: argosyncNamePlaceholder, Namespace: prevNs}}}
 	}
 
 	if EnableUI != config.Spec.UIEnabled || UIImage != config.Spec.UIImage {
