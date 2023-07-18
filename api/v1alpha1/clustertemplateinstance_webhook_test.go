@@ -144,7 +144,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				},
 			},
 			Status: ClusterTemplateQuotaStatus{
-				TemplateInstances: []AllowedTemplate{
+				TemplateInstances: []AllowedTemplateStatus{
 					{
 						Name:  "foo-tmp",
 						Count: 1,
@@ -195,7 +195,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				},
 			},
 			Status: ClusterTemplateQuotaStatus{
-				TemplateInstances: []AllowedTemplate{
+				TemplateInstances: []AllowedTemplateStatus{
 					{
 						Name:  "foo-tmp",
 						Count: 0,

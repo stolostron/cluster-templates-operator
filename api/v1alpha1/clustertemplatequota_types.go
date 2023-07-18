@@ -20,10 +20,17 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type AllowedTemplateStatus struct {
+	// Name of the ClusterTemplate
+	Name string `json:"name"`
+	// Defines how many instances of the ClusterTemplate exist
+	Count int `json:"count"`
+}
+
 type AllowedTemplate struct {
 	// Name of the ClusterTemplate
 	Name string `json:"name"`
-	//+kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Minimum=1
 	// +optional
 	// Defines how many instances of the ClusterTemplate can exist
 	Count int `json:"count,omitempty"`
@@ -55,7 +62,7 @@ type ClusterTemplateQuotaStatus struct {
 	BudgetSpent int `json:"budgetSpent"`
 	// Which instances are in use
 	// +operator-sdk:csv:customresourcedefinitions:type=status
-	TemplateInstances []AllowedTemplate `json:"templateInstances"`
+	TemplateInstances []AllowedTemplateStatus `json:"templateInstances"`
 }
 
 //+kubebuilder:object:root=true

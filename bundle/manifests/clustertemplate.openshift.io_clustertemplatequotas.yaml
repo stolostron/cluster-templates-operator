@@ -92,22 +92,13 @@ spec:
                   properties:
                     count:
                       description: Defines how many instances of the ClusterTemplate
-                        can exist
-                      minimum: 1
+                        exist
                       type: integer
-                    deleteAfter:
-                      description: 'Template instance will be removed after specified
-                        time This is a Duration value; see https://pkg.go.dev/time#ParseDuration
-                        for accepted formats. Note: due to discrepancies in validation
-                        vs parsing, we use a Pattern instead of `Format=duration`.
-                        See https://bugzilla.redhat.com/show_bug.cgi?id=2050332 https://github.com/kubernetes/apimachinery/issues/131
-                        https://github.com/kubernetes/apiextensions-apiserver/issues/56'
-                      pattern: ^([0-9]+(\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$
-                      type: string
                     name:
                       description: Name of the ClusterTemplate
                       type: string
                   required:
+                  - count
                   - name
                   type: object
                 type: array
