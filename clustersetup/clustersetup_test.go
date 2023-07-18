@@ -1,6 +1,8 @@
 package clustersetup
 
 import (
+	"time"
+
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/kubernetes-client/go-base/config/api"
 	. "github.com/onsi/ginkgo"
@@ -36,7 +38,7 @@ var _ = Describe("Test cluster setup", func() {
 	It("AddClusterToArgo", func() {
 		cti, kubeconfigSecret, app := getResources()
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, app)
-		err := AddClusterToArgo(ctx, client, cti, GetNewClient, "argocd", false)
+		err := AddClusterToArgo(ctx, client, cti, GetNewClient, "argocd", false, time.Minute)
 		Expect(err).Should(BeNil())
 
 		argoClusterSecret := &corev1.Secret{}
@@ -62,7 +64,7 @@ var _ = Describe("Test cluster setup", func() {
 			},
 		}
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, app, mc)
-		err = AddClusterToArgo(ctx, client, cti, GetNewClient, "argocd", true)
+		err = AddClusterToArgo(ctx, client, cti, GetNewClient, "argocd", true, time.Minute)
 		Expect(err).Should(BeNil())
 
 		argoClusterSecret := &corev1.Secret{}

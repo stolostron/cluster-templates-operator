@@ -25,6 +25,11 @@ type ConfigSpec struct {
 	UIImage string `json:"uiImage,omitempty"`
 	// Flag that indicate if UI console plugin should be deployed
 	UIEnabled bool `json:"uiEnabled,omitempty"`
+	// Override default timeout for logging into the new cluster. The default is set to 10 minutes
+	// +optional
+	// +kubebuilder:validation:Type=string
+	// +kubebuilder:validation:Pattern="^([0-9]+(\\.[0-9]+)?(ns|us|µs|ms|s|m|h))+$"
+	LoginAttemptTimeoutOverride *metav1.Duration `json:"loginAttemptTimeoutOverride,omitempty"`
 }
 
 //+kubebuilder:object:root=true

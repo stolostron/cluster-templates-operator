@@ -72,12 +72,12 @@ const (
 	ManagedClusterImportFailedPhase Phase  = "ManagedClusterImportFailed"
 	KlusterletCreateFailedPhase     Phase  = "KlusterletCreateFailed"
 	ArgoClusterFailedPhase          Phase  = "ArgoClusterFailed"
+	ClusterLoginPendingPhase        Phase  = "ClusterLoginPending"
 	AddingArgoClusterPhase          Phase  = "AddingArgoCluster"
-	ClusterSetupCreateFailedPhase   Phase  = "ClusterSetupCreateFailedPhase"
+	ClusterSetupCreateFailedPhase   Phase  = "ClusterSetupCreateFailed"
 	CreatingClusterSetupPhase       Phase  = "CreatingClusterSetup"
-	ClusterSetupDegradedPhase       Phase  = "ClusterSetupDegradedPhase"
-	ClusterSetupErrorPhase          Phase  = "ClusterSetupErrorPhase"
-	ClusterSetupFailedPhase         Phase  = "ClusterSetupFailedPhase"
+	ClusterSetupDegradedPhase       Phase  = "ClusterSetupDegraded"
+	ClusterSetupFailedPhase         Phase  = "ClusterSetupFailed"
 	ClusterSetupRunningPhase        Phase  = "ClusterSetupRunning"
 	ReadyPhase                      Phase  = "Ready"
 	CredentialsFailedPhase          Phase  = "CredentialsFailed"
@@ -115,6 +115,9 @@ type ClusterTemplateInstanceStatus struct {
 	// Additional message for Phase
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Message string `json:"message"`
+	// Time of first attempt of login to a new cluster
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	FirstLoginAttempt *metav1.Time `json:"firstLoginAttempt,omitempty"`
 }
 
 //+kubebuilder:object:root=true

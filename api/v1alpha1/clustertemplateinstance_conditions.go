@@ -81,9 +81,10 @@ const (
 type ArgoClusterAddedReason string
 
 const (
-	ArgoClusterFailed  ArgoClusterAddedReason = "ArgoClusterFailed"
-	ArgoClusterCreated ArgoClusterAddedReason = "ArgoClusterCreated"
-	ArgoClusterPending ArgoClusterAddedReason = "ArgoClusterPending"
+	ArgoClusterFailed       ArgoClusterAddedReason = "ArgoClusterFailed"
+	ArgoClusterCreated      ArgoClusterAddedReason = "ArgoClusterCreated"
+	ArgoClusterPending      ArgoClusterAddedReason = "ArgoClusterPending"
+	ArgoClusterLoginPending ArgoClusterAddedReason = "ArgoClusterLoginPending"
 )
 
 type ClusterSetupCreatedReason string
