@@ -403,6 +403,10 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 		return fmt.Errorf(errMsg)
 	}
 
+	if err := r.reconcileConsoleURL(ctx, clusterTemplateInstance, skipClusterRegistration); err != nil {
+		return fmt.Errorf("failed to retrieve Console URL - %q", err)
+	}
+
 	//
 
 	if err := r.reconcileAddClusterToArgo(ctx, clusterTemplateInstance, skipClusterRegistration); err != nil {
@@ -766,6 +770,16 @@ func (r *ClusterTemplateInstanceReconciler) reconcileCreateManagedCluster(
 		)
 		return err
 	}
+	mc, err := ocm.GetManagedCluster(ctx, r.Client, clusterTemplateInstance)
+	if err != nil {
+		_, ok := err.(*ocm.MCNotFoundError)
+		if !ok {
+			return err
+		}
+	}
+	clusterTemplateInstance.Status.ManagedCluster = corev1.LocalObjectReference{
+		Name: mc.Name,
+	}
 	clusterTemplateInstance.SetManagedClusterCreatedCondition(
 		metav1.ConditionTrue,
 		v1alpha1.MCCreated,
@@ -873,6 +887,49 @@ func (r *ClusterTemplateInstanceReconciler) reconcileCreateKlusterlet(
 		v1alpha1.KlusterletCreated,
 		"KlusterletAddonConfig created successfully",
 	)
+	return nil
+}
+
+func (r *ClusterTemplateInstanceReconciler) reconcileConsoleURL(
+	ctx context.Context,
+	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
+	skipClusterRegistration bool,
+) error {
+	if !clusterTemplateInstance.PhaseCanExecute(v1alpha1.ManagedClusterImported) {
+		return nil
+	}
+	if skipClusterRegistration || !r.EnableManagedCluster {
+		clusterTemplateInstance.SetConsoleURLCondition(
+			metav1.ConditionTrue,
+			v1alpha1.ConsoleURLSkipped,
+			"ManagedCluster will not be created, skipping",
+		)
+		return nil
+	}
+	mc, err := ocm.GetManagedCluster(ctx, r.Client, clusterTemplateInstance)
+	if err != nil {
+		_, ok := err.(*ocm.MCNotFoundError)
+		if !ok {
+			clusterTemplateInstance.SetConsoleURLCondition(
+				metav1.ConditionFalse,
+				v1alpha1.ConsoleURLFailed,
+				err.Error(),
+			)
+		}
+		return err
+	}
+	if mc.Status.ClusterClaims != nil {
+		for _, cc := range mc.Status.ClusterClaims {
+			if cc.Name == "consoleurl.cluster.open-cluster-management.io" {
+				clusterTemplateInstance.Status.ConsoleURL = cc.Value
+				clusterTemplateInstance.SetConsoleURLCondition(
+					metav1.ConditionTrue,
+					v1alpha1.ConsoleURLSucceeded,
+					"Console URL retrieved",
+				)
+			}
+		}
+	}
 	return nil
 }
 

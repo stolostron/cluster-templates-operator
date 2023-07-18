@@ -6,6 +6,7 @@ import (
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	testutils "github.com/stolostron/cluster-templates-operator/testutils"
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 
 	. "github.com/onsi/ginkgo"
@@ -40,7 +41,11 @@ var _ = Describe("ArgoCD controller", func() {
 
 var _ = Describe("ArgoCD controller with cm", func() {
 	argo := &argooperator.ArgoCD{}
-	c := &v1alpha1.Config{}
+	c := &v1alpha1.Config{
+		ObjectMeta: v1.ObjectMeta{
+			Name: configName,
+		},
+	}
 	s := &corev1.Secret{}
 
 	AfterEach(func() {
