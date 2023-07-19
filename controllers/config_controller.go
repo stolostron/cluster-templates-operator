@@ -24,7 +24,7 @@ const (
 
 	defaultArgoCDNs         = "cluster-aas-operator"
 	defaultEnableUI         = true
-	defaultUIImage          = "quay.io/stolostron/cluster-templates-console-plugin:2.8.0-70d540ca8c30c8b0c46cf635eb3553a0f53a6d0f"
+	defaultUIImage          = "quay.io/stolostron/cluster-templates-console-plugin:2.8.1-5ad79eb6b4d9533754364d19c6ef2b91e11807a7"
 	argosyncNamePlaceholder = "~~argosync~~"
 )
 
