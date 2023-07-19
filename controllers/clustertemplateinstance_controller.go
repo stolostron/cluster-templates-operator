@@ -348,9 +348,12 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 			ctx,
 			clusterTemplateInstance,
 		); err != nil {
-			clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
 			errMsg := fmt.Sprintf("failed to reconcile cluster status - %q", err)
-			clusterTemplateInstance.Status.Message = errMsg
+			_, ok := err.(*AppNotFoundError)
+			if !ok {
+				clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
+				clusterTemplateInstance.Status.Message = errMsg
+			}
 			return fmt.Errorf(errMsg)
 		}
 	} else {
@@ -410,9 +413,15 @@ func (r *ClusterTemplateInstanceReconciler) reconcile(
 	//
 
 	if err := r.reconcileAddClusterToArgo(ctx, clusterTemplateInstance, skipClusterRegistration); err != nil {
-		clusterTemplateInstance.Status.Phase = v1alpha1.ArgoClusterFailedPhase
 		errMsg := fmt.Sprintf("failed to add cluster to argo - %q", err)
-		clusterTemplateInstance.Status.Message = errMsg
+		_, ok := err.(*clustersetup.LoginError)
+		if ok {
+			clusterTemplateInstance.Status.Phase = v1alpha1.ClusterLoginPendingPhase
+			clusterTemplateInstance.Status.Message = "Logging into the new cluster"
+		} else {
+			clusterTemplateInstance.Status.Phase = v1alpha1.ArgoClusterFailedPhase
+			clusterTemplateInstance.Status.Message = errMsg
+		}
 		return fmt.Errorf(errMsg)
 	}
 
@@ -468,6 +477,14 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterCreate(
 	return nil
 }
 
+type AppNotFoundError struct {
+	Msg string
+}
+
+func (m *AppNotFoundError) Error() string {
+	return m.Msg
+}
+
 func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	ctx context.Context,
 	clusterTemplateInstance *v1alpha1.ClusterTemplateInstance,
@@ -493,14 +510,15 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterStatus(
 	application, err := clusterTemplateInstance.GetDay1Application(ctx, r.Client, ArgoCDNamespace)
 
 	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return &AppNotFoundError{Msg: err.Error()}
+		}
 		failedMsg := fmt.Sprintf("Failed to fetch application - %q", err)
 		clusterTemplateInstance.SetClusterInstallCondition(
 			metav1.ConditionFalse,
 			v1alpha1.ApplicationFetchFailed,
 			failedMsg,
 		)
-		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterInstallFailedPhase
-		clusterTemplateInstance.Status.Message = failedMsg
 		return err
 	}
 
@@ -954,7 +972,19 @@ func (r *ClusterTemplateInstanceReconciler) reconcileAddClusterToArgo(
 		clustersetup.GetClientForCluster,
 		ArgoCDNamespace,
 		r.EnableManagedCluster && !skipClusterRegistration,
+		LoginAttemptTimeout.Duration,
 	); err != nil {
+		_, ok := err.(*clustersetup.LoginError)
+
+		if ok {
+			clusterTemplateInstance.SetArgoClusterAddedCondition(
+				metav1.ConditionFalse,
+				v1alpha1.ArgoClusterLoginPending,
+				fmt.Sprintf("Waiting for login to be successful - %q", err),
+			)
+			return err
+		}
+
 		clusterTemplateInstance.SetArgoClusterAddedCondition(
 			metav1.ConditionFalse,
 			v1alpha1.ArgoClusterFailed,
@@ -1109,7 +1139,7 @@ func (r *ClusterTemplateInstanceReconciler) reconcileClusterSetup(
 			v1alpha1.ClusterSetupError,
 			msg,
 		)
-		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupErrorPhase
+		clusterTemplateInstance.Status.Phase = v1alpha1.ClusterSetupFailedPhase
 		clusterTemplateInstance.Status.Message = msg
 	} else if len(degradedSetups) > 0 {
 		msg := fmt.Sprintf("Following cluster setups are in degraded state - %v", degradedSetups)

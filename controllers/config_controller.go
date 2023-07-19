@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,6 +34,7 @@ var (
 	UIImage              = defaultUIImage
 	EnableUIconfigSync   = make(chan event.GenericEvent)
 	EnableArgoconfigSync = make(chan event.GenericEvent)
+	LoginAttemptTimeout  = &metav1.Duration{Duration: time.Minute * 10}
 )
 
 type ConfigReconciler struct {
@@ -82,6 +84,12 @@ func (r *ConfigReconciler) Reconcile(
 		EnableUI = config.Spec.UIEnabled
 		UIImage = config.Spec.UIImage
 		EnableUIconfigSync <- event.GenericEvent{Object: GetPluginDeployment()}
+	}
+
+	if config.Spec.LoginAttemptTimeoutOverride != nil {
+		LoginAttemptTimeout = config.Spec.LoginAttemptTimeoutOverride
+	} else {
+		LoginAttemptTimeout = &metav1.Duration{Duration: time.Minute * 10}
 	}
 
 	return ctrl.Result{}, nil

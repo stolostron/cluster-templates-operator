@@ -32,7 +32,7 @@ metadata:
     categories: Integration & Delivery,OpenShift Optional
     certified: "false"
     containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-8a5d0ce2db589cdbee3c4b0fa86051b3daa2ee74
-    createdAt: "2023-07-07T12:03:41Z"
+    createdAt: "2023-07-19T07:40:40Z"
     description: Easily install fully configured clusters with guard-rails.
     operators.operatorframework.io/builder: operator-sdk-v1.27.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -62,16 +62,25 @@ spec:
       - description: Status of each cluster setup
         displayName: Cluster Setup
         path: clusterSetup
-      - description: Secrets create by cluster setup which provide crenderntials for
+      - description: Secrets create by cluster setup which provide credentials for
           applications created by cluster setup
         displayName: Cluster Setup Secrets
         path: clusterSetupSecrets
       - description: Resource conditions
         displayName: Conditions
         path: conditions
+      - description: Console URL of the new cluster. The value is taken from ManagedCluster.
+        displayName: Console URL
+        path: consoleURL
+      - description: Time of first attempt of login to a new cluster
+        displayName: First Login Attempt
+        path: firstLoginAttempt
       - description: A reference for secret which contains kubeconfig under key "kubeconfig"
         displayName: Kubeconfig
         path: kubeconfig
+      - description: A reference to ManagedCluster resource
+        displayName: Managed Cluster
+        path: managedCluster
       - description: Additional message for Phase
         displayName: Message
         path: message

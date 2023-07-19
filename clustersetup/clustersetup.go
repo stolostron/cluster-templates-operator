@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	"k8s.io/client-go/tools/clientcmd"
@@ -29,6 +30,14 @@ type TLSClientConfig struct {
 	CAData string `json:"caData"`
 }
 
+type LoginError struct {
+	Msg string
+}
+
+func (l *LoginError) Error() string {
+	return l.Msg
+}
+
 func AddClusterToArgo(
 	ctx context.Context,
 	k8sClient client.Client,
@@ -36,6 +45,7 @@ func AddClusterToArgo(
 	getNewClusterClient func(configBytes []byte) (client.Client, error),
 	argoCDNamespace string,
 	withManagedCluster bool,
+	loginAttemptTimeout time.Duration,
 ) error {
 	kubeconfigSecret := corev1.Secret{}
 
@@ -50,9 +60,17 @@ func AddClusterToArgo(
 		return err
 	}
 
+	if clusterTemplateInstance.Status.FirstLoginAttempt == nil {
+		time := metav1.Now()
+		clusterTemplateInstance.Status.FirstLoginAttempt = &time
+	}
 	newClusterClient, err := getNewClusterClient(kubeconfigSecret.Data["kubeconfig"])
 
 	if err != nil {
+		if time.Now().Before(clusterTemplateInstance.Status.FirstLoginAttempt.Add(loginAttemptTimeout)) {
+			loginError := &LoginError{Msg: err.Error()}
+			return loginError
+		}
 		return err
 	}
 

@@ -204,6 +204,10 @@ spec:
                 description: Console URL of the new cluster. The value is taken from
                   ManagedCluster.
                 type: string
+              firstLoginAttempt:
+                description: Time of first attempt of login to a new cluster
+                format: date-time
+                type: string
               kubeconfig:
                 description: A reference for secret which contains kubeconfig under
                   key "kubeconfig"
