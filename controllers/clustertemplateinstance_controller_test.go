@@ -93,7 +93,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					return 0
 				}
 				return len(cti.Status.Conditions)
-			}, timeout, interval).Should(Equal(8))
+			}, timeout, interval).Should(Equal(9))
 		})
 	})
 
@@ -642,7 +642,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
 			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCSkipped)))
-
 		})
 
 		It("Skips creating MC if MC CRD does not exist", func() {
@@ -664,7 +663,6 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
 			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCSkipped)))
-
 		})
 
 		It("Creates managed cluster", func() {
@@ -714,6 +712,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCCreated)))
 
 			mc, err := ocm.GetManagedCluster(ctx, client, cti)
+			Expect(cti.Status.ManagedCluster.Name).Should(Equal(mc.Name))
 			Expect(err).Should(BeNil())
 			Expect(mc).ShouldNot(BeNil())
 		})
@@ -738,6 +737,48 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
 			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCImportSkipped)))
 
+		})
+
+		It("Skips console URL if MC CRD does not exist", func() {
+			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:   string(v1alpha1.ManagedClusterImported),
+						Status: metav1.ConditionTrue,
+					},
+					{
+						Type:   string(v1alpha1.ConsoleURLRetrieved),
+						Status: metav1.ConditionFalse,
+					},
+				},
+			}
+			reconciler := &ClusterTemplateInstanceReconciler{}
+			err := reconciler.reconcileConsoleURL(ctx, cti, false)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
+			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.ConsoleURLSkipped)))
+		})
+
+		It("Skips console URL if SkipClusterRegistraion flag is set", func() {
+			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:   string(v1alpha1.ManagedClusterImported),
+						Status: metav1.ConditionTrue,
+					},
+					{
+						Type:   string(v1alpha1.ConsoleURLRetrieved),
+						Status: metav1.ConditionFalse,
+					},
+				},
+			}
+			reconciler := &ClusterTemplateInstanceReconciler{}
+			err := reconciler.reconcileConsoleURL(ctx, cti, false)
+			Expect(err).ShouldNot(HaveOccurred())
+
+			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
+			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.ConsoleURLSkipped)))
 		})
 
 		It("Imports managed cluster", func() {
@@ -810,6 +851,49 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionFalse))
 			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.MCImporting)))
 			Expect(cti.Status.Phase).Should(Equal(v1alpha1.ManagedClusterImportingPhase))
+		})
+
+		It("Retrieves Console URL from MC", func() {
+			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
+				Conditions: []metav1.Condition{
+					{
+						Type:   string(v1alpha1.ManagedClusterImported),
+						Status: metav1.ConditionTrue,
+					},
+					{
+						Type:   string(v1alpha1.ConsoleURLRetrieved),
+						Status: metav1.ConditionFalse,
+					},
+				},
+			}
+
+			mc := &ocmv1.ManagedCluster{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "cluster-mc",
+					Labels: map[string]string{
+						v1alpha1.CTINameLabel:      cti.Name,
+						v1alpha1.CTINamespaceLabel: cti.Namespace,
+					},
+				},
+				Status: ocmv1.ManagedClusterStatus{
+					ClusterClaims: []ocmv1.ManagedClusterClaim{
+						{
+							Name:  "consoleurl.cluster.open-cluster-management.io",
+							Value: "foo",
+						},
+					},
+				},
+			}
+			client := fake.NewFakeClientWithScheme(scheme.Scheme, mc)
+			reconciler := &ClusterTemplateInstanceReconciler{
+				Client:               client,
+				EnableManagedCluster: true,
+			}
+			err := reconciler.reconcileConsoleURL(ctx, cti, false)
+			Expect(err).ShouldNot(HaveOccurred())
+			Expect(cti.Status.Conditions[1].Status).Should(Equal(metav1.ConditionTrue))
+			Expect(cti.Status.Conditions[1].Reason).Should(Equal(string(v1alpha1.ConsoleURLSucceeded)))
+			Expect(cti.Status.ConsoleURL).Should(Equal("foo"))
 		})
 	})
 

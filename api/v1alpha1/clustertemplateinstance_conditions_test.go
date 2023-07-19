@@ -12,7 +12,7 @@ var _ = Describe("ClusterTemplateInstance conditions", func() {
 		cti := ClusterTemplateInstance{}
 		cti.SetDefaultConditions()
 
-		Expect(len(cti.Status.Conditions)).To(Equal(8))
+		Expect(len(cti.Status.Conditions)).To(Equal(9))
 	})
 
 	It("Updates condition", func() {
@@ -67,6 +67,13 @@ var _ = Describe("ClusterTemplateInstance conditions", func() {
 			"foo",
 		)
 		testCondition(cti, ClusterSetupSucceeded, string(ClusterSetupNotDefined))
+
+		cti.SetConsoleURLCondition(
+			metav1.ConditionTrue,
+			ConsoleURLFailed,
+			"foo",
+		)
+		testCondition(cti, ConsoleURLRetrieved, string(ConsoleURLFailed))
 	})
 
 	It("PhaseCanExecute", func() {

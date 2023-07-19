@@ -119,7 +119,7 @@ spec:
                   type: object
                 type: array
               clusterSetupSecrets:
-                description: Secrets create by cluster setup which provide crenderntials
+                description: Secrets create by cluster setup which provide credentials
                   for applications created by cluster setup
                 items:
                   description: LocalObjectReference contains enough information to
@@ -200,9 +200,21 @@ spec:
                   - type
                   type: object
                 type: array
+              consoleURL:
+                description: Console URL of the new cluster. The value is taken from
+                  ManagedCluster.
+                type: string
               kubeconfig:
                 description: A reference for secret which contains kubeconfig under
                   key "kubeconfig"
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
+              managedCluster:
+                description: A reference to ManagedCluster resource
                 properties:
                   name:
                     description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names

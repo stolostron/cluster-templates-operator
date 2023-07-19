@@ -100,9 +100,15 @@ type ClusterTemplateInstanceStatus struct {
 	// Status of each cluster setup
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	ClusterSetup *[]ClusterSetupStatus `json:"clusterSetup,omitempty"`
-	// Secrets create by cluster setup which provide crenderntials for applications created by cluster setup
+	// Secrets create by cluster setup which provide credentials for applications created by cluster setup
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	ClusterSetupSecrets []corev1.LocalObjectReference `json:"clusterSetupSecrets,omitempty"`
+	// A reference to ManagedCluster resource
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	ManagedCluster corev1.LocalObjectReference `json:"managedCluster,omitempty"`
+	// Console URL of the new cluster. The value is taken from ManagedCluster.
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	ConsoleURL string `json:"consoleURL,omitempty"`
 	// Represents instance installaton & setup phase
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	Phase Phase `json:"phase"`

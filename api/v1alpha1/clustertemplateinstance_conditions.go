@@ -17,6 +17,7 @@ const (
 	ClusterSetupCreated      ConditionType = "ClusterSetupCreated"
 	ClusterSetupSucceeded    ConditionType = "ClusterSetupSucceeded"
 	Ready                    ConditionType = "Ready"
+	ConsoleURLRetrieved      ConditionType = "ConsoleURLRetrieved"
 )
 
 type ClusterDefinitionReason string
@@ -38,6 +39,15 @@ const (
 	ClusterStatusFailed            ClusterInstallReason = "ClusterStatusFailed"
 	ClusterInstalled               ClusterInstallReason = "ClusterInstalled"
 	ClusterInstalling              ClusterInstallReason = "ClusterInstalling"
+)
+
+type ConsoleURLReason string
+
+const (
+	ConsoleURLFailed    ConsoleURLReason = "ConsoleURLFailed"
+	ConsoleURLSucceeded ConsoleURLReason = "ConsoleURLSucceeded"
+	ConsoleURLSkipped   ConsoleURLReason = "ConsoleURLSkipped"
+	ConsoleURLPending   ConsoleURLReason = "ConsoleURLPending"
 )
 
 type ManagedClusterCreatedReason string
@@ -119,6 +129,20 @@ func (clusterInstance *ClusterTemplateInstance) SetClusterInstallCondition(
 ) {
 	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
 		Type:               string(ClusterInstallSucceeded),
+		Status:             status,
+		Reason:             string(reason),
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	})
+}
+
+func (clusterInstance *ClusterTemplateInstance) SetConsoleURLCondition(
+	status metav1.ConditionStatus,
+	reason ConsoleURLReason,
+	message string,
+) {
+	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
+		Type:               string(ConsoleURLRetrieved),
 		Status:             status,
 		Reason:             string(reason),
 		Message:            message,
@@ -279,6 +303,14 @@ func (clusterInstance *ClusterTemplateInstance) SetDefaultConditions() {
 			metav1.ConditionFalse,
 			ClusterSetupNotCreated,
 			"Waiting for cluster setup to be created",
+		)
+	}
+
+	if !clusterInstance.hasCondition(ConsoleURLRetrieved) {
+		clusterInstance.SetConsoleURLCondition(
+			metav1.ConditionFalse,
+			ConsoleURLPending,
+			"Pending",
 		)
 	}
 }
