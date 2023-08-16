@@ -32,7 +32,7 @@ roleRef:
   kind: ClusterRole
   name: cluster-templates-user
 ```
- - **cluster-templates-user-ct** - You can use this ClusterRole to give permissions for ClusterTemplate. Since ClusterTemplate is cluster-scoped resource, you need to create ClusterRoleBinding. Following ClusterRoleBiding adds the permissions to foo-user:
+ - **cluster-templates-user-ct** - You can use this ClusterRole to give permissions to read ClusterTemplate. Since ClusterTemplate is cluster-scoped resource, you need to create ClusterRoleBinding. Following ClusterRoleBiding adds the permissions to foo-user:
 ```
 kind: ClusterRoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
