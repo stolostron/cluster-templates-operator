@@ -106,7 +106,7 @@ func getCreateClusterTask() console.ConsoleQuickStartTask {
 		Review: &console.ConsoleQuickStartTaskReview{
 			FailedTaskHelp: "This task isn’t verified yet. Try the task again.",
 			Instructions: `Verify that you can login to the cluster.
-1. Select **Show credentials** from the **kabab menu** of the cluster.
+1. Select **Show credentials** from the **kebab menu** of the cluster.
 2. Click **Copy login command**.
 3. Run the command in a terminal.
 4. Did you manage to login successfully?`,
