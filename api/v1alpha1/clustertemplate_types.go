@@ -62,6 +62,7 @@ type ClusterTemplateStatus struct {
 	ClusterSetup []ClusterSetupSchema `json:"clusterSetup,omitempty"`
 }
 
+//+genclient
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:path=clustertemplates,shortName=ct;cts,scope=Cluster

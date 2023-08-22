@@ -120,6 +120,7 @@ type ClusterTemplateInstanceStatus struct {
 	FirstLoginAttempt *metav1.Time `json:"firstLoginAttempt,omitempty"`
 }
 
+//+genclient
 //+kubebuilder:object:root=true
 //+kubebuilder:resource:path=clustertemplateinstances,shortName=cti;ctis,scope=Namespaced
 //+kubebuilder:subresource:status
