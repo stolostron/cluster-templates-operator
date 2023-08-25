@@ -1,13 +1,11 @@
 make --dry-run --always-make --keep-going --print-directory
-make: Entering directory '/home/rawagner/Redhat/git/forks/cluster-templates-operator'
+make: Entering directory '/home/omachace/go/src/github.com/stolostron/cluster-templates-operator'
  
-mkdir -p /home/rawagner/Redhat/git/forks/cluster-templates-operator/bin
- 
-GOBIN=/home/rawagner/Redhat/git/forks/cluster-templates-operator/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.0
- 
-/home/rawagner/Redhat/git/forks/cluster-templates-operator/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
+mkdir -p /home/omachace/go/src/github.com/stolostron/cluster-templates-operator/bin
+GOBIN=/home/omachace/go/src/github.com/stolostron/cluster-templates-operator/bin go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.9.0
+/home/omachace/go/src/github.com/stolostron/cluster-templates-operator/bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
 go fmt ./...
 go vet ./...
 go build -o bin/manager main.go
-make: Leaving directory '/home/rawagner/Redhat/git/forks/cluster-templates-operator'
+make: Leaving directory '/home/omachace/go/src/github.com/stolostron/cluster-templates-operator'
  
