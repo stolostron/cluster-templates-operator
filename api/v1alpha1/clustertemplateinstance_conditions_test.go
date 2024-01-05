@@ -10,35 +10,35 @@ import (
 var _ = Describe("ClusterTemplateInstance conditions", func() {
 	It("Sets default conditions", func() {
 		cti := ClusterTemplateInstance{}
-		cti.SetDefaultConditions()
+		cti.SetDefaultConditions(false)
 
 		Expect(len(cti.Status.Conditions)).To(Equal(9))
 	})
 
 	It("Updates condition", func() {
 		cti := ClusterTemplateInstance{}
-		cti.SetDefaultConditions()
+		cti.SetDefaultConditions(false)
 
-		cti.SetClusterDefinitionCreatedCondition(
+		cti.SetEnvironmentDefinitionCreatedCondition(
 			metav1.ConditionTrue,
-			ClusterDefinitionFailed,
+			EnvironmentDefinitionFailed,
 			"foo",
 		)
-		testCondition(cti, ClusterDefinitionCreated, string(ClusterDefinitionFailed))
+		testCondition(cti, EnvironmentDefinitionCreated, string(EnvironmentDefinitionFailed))
 
-		cti.SetClusterInstallCondition(
+		cti.SetEnvironmentInstallCondition(
 			metav1.ConditionTrue,
 			ApplicationFetchFailed,
 			"foo",
 		)
-		testCondition(cti, ClusterInstallSucceeded, string(ApplicationFetchFailed))
+		testCondition(cti, EnvironmentInstallSucceeded, string(ApplicationFetchFailed))
 
-		cti.SetClusterSetupCreatedCondition(
+		cti.SetEnvironmentSetupCreatedCondition(
 			metav1.ConditionTrue,
-			ClusterNotInstalled,
+			EnvironmentNotInstalled,
 			"foo",
 		)
-		testCondition(cti, ClusterSetupCreated, string(ClusterNotInstalled))
+		testCondition(cti, EnvironmentSetupCreated, string(EnvironmentNotInstalled))
 
 		cti.SetManagedClusterCreatedCondition(
 			metav1.ConditionTrue,
@@ -61,12 +61,12 @@ var _ = Describe("ClusterTemplateInstance conditions", func() {
 		)
 		testCondition(cti, ArgoClusterAdded, string(ArgoClusterFailed))
 
-		cti.SetClusterSetupSucceededCondition(
+		cti.SetEnvironmentSetupSucceededCondition(
 			metav1.ConditionTrue,
-			ClusterSetupNotDefined,
+			EnvironmentSetupNotDefined,
 			"foo",
 		)
-		testCondition(cti, ClusterSetupSucceeded, string(ClusterSetupNotDefined))
+		testCondition(cti, EnvironmentSetupSucceeded, string(EnvironmentSetupNotDefined))
 
 		cti.SetConsoleURLCondition(
 			metav1.ConditionTrue,
@@ -81,7 +81,7 @@ var _ = Describe("ClusterTemplateInstance conditions", func() {
 			Status: ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
 					{
-						Type:   string(ClusterInstallSucceeded),
+						Type:   string(EnvironmentInstallSucceeded),
 						Status: metav1.ConditionTrue,
 					},
 					{
@@ -92,14 +92,14 @@ var _ = Describe("ClusterTemplateInstance conditions", func() {
 			},
 		}
 		Expect(
-			cti.PhaseCanExecute(ClusterInstallSucceeded, ManagedClusterCreated),
+			cti.PhaseCanExecute(EnvironmentInstallSucceeded, ManagedClusterCreated),
 		).To(BeTrue())
 
 		cti = ClusterTemplateInstance{
 			Status: ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
 					{
-						Type:   string(ClusterInstallSucceeded),
+						Type:   string(EnvironmentInstallSucceeded),
 						Status: metav1.ConditionFalse,
 					},
 					{
@@ -110,14 +110,14 @@ var _ = Describe("ClusterTemplateInstance conditions", func() {
 			},
 		}
 		Expect(
-			cti.PhaseCanExecute(ClusterInstallSucceeded, ManagedClusterCreated),
+			cti.PhaseCanExecute(EnvironmentInstallSucceeded, ManagedClusterCreated),
 		).To(BeFalse())
 
 		cti = ClusterTemplateInstance{
 			Status: ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
 					{
-						Type:   string(ClusterInstallSucceeded),
+						Type:   string(EnvironmentInstallSucceeded),
 						Status: metav1.ConditionTrue,
 					},
 					{
@@ -128,14 +128,14 @@ var _ = Describe("ClusterTemplateInstance conditions", func() {
 			},
 		}
 		Expect(
-			cti.PhaseCanExecute(ClusterInstallSucceeded, ManagedClusterCreated),
+			cti.PhaseCanExecute(EnvironmentInstallSucceeded, ManagedClusterCreated),
 		).To(BeFalse())
 
 		cti = ClusterTemplateInstance{
 			Status: ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
 					{
-						Type:   string(ClusterInstallSucceeded),
+						Type:   string(EnvironmentInstallSucceeded),
 						Status: metav1.ConditionFalse,
 					},
 					{
@@ -146,7 +146,7 @@ var _ = Describe("ClusterTemplateInstance conditions", func() {
 			},
 		}
 		Expect(
-			cti.PhaseCanExecute(ClusterInstallSucceeded, ManagedClusterCreated),
+			cti.PhaseCanExecute(EnvironmentInstallSucceeded, ManagedClusterCreated),
 		).To(BeFalse())
 	})
 })

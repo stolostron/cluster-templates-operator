@@ -162,7 +162,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				}
 				clusterDefinitionCondition := meta.FindStatusCondition(
 					cti.Status.Conditions,
-					string(v1alpha1.ClusterInstallSucceeded),
+					string(v1alpha1.EnvironmentInstallSucceeded),
 				)
 				if clusterDefinitionCondition == nil {
 					return false
@@ -208,14 +208,14 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				}
 				clusterDefinitionCondition := meta.FindStatusCondition(
 					cti.Status.Conditions,
-					string(v1alpha1.ClusterDefinitionCreated),
+					string(v1alpha1.EnvironmentDefinitionCreated),
 				)
 				if clusterDefinitionCondition == nil {
 					return false
 				}
 				return clusterDefinitionCondition.Status == metav1.ConditionTrue
 			}, timeout, interval).Should(BeTrue())
-			Expect(cti.Status.Phase).Should(Equal(v1alpha1.ClusterInstallingPhase))
+			Expect(cti.Status.Phase).Should(Equal(v1alpha1.EnvironmentInstallingPhase))
 			a, err := cti.GetDay1Application(ctx, k8sClient, defaultArgoCDNs)
 			Expect(err).ShouldNot(HaveOccurred())
 			Expect(a).ShouldNot(BeNil())
@@ -277,7 +277,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				}
 				clusterCondition := meta.FindStatusCondition(
 					cti.Status.Conditions,
-					string(v1alpha1.ClusterInstallSucceeded),
+					string(v1alpha1.EnvironmentInstallSucceeded),
 				)
 				if clusterCondition == nil {
 					return false
@@ -312,7 +312,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				}
 				clusterCondition := meta.FindStatusCondition(
 					cti.Status.Conditions,
-					string(v1alpha1.ClusterInstallSucceeded),
+					string(v1alpha1.EnvironmentInstallSucceeded),
 				)
 				if clusterCondition == nil {
 					return false
@@ -340,7 +340,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				}
 				clusterCondition := meta.FindStatusCondition(
 					cti.Status.Conditions,
-					string(v1alpha1.ClusterInstallSucceeded),
+					string(v1alpha1.EnvironmentInstallSucceeded),
 				)
 				if clusterCondition == nil {
 					return false
@@ -377,7 +377,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				}
 				clusterCondition := meta.FindStatusCondition(
 					cti.Status.Conditions,
-					string(v1alpha1.ClusterInstallSucceeded),
+					string(v1alpha1.EnvironmentInstallSucceeded),
 				)
 				if clusterCondition == nil {
 					return false
@@ -468,13 +468,13 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				}
 				clusterCondition := meta.FindStatusCondition(
 					cti.Status.Conditions,
-					string(v1alpha1.ClusterInstallSucceeded),
+					string(v1alpha1.EnvironmentInstallSucceeded),
 				)
 				if clusterCondition == nil {
 					return false
 				}
 				return clusterCondition.Status == metav1.ConditionFalse &&
-					clusterCondition.Reason == string(v1alpha1.ClusterInstalling)
+					clusterCondition.Reason == string(v1alpha1.EnvironmentInstalling)
 			}, timeout, interval).Should(BeTrue())
 		})
 
@@ -601,13 +601,13 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				}
 				clusterCondition := meta.FindStatusCondition(
 					cti.Status.Conditions,
-					string(v1alpha1.ClusterInstallSucceeded),
+					string(v1alpha1.EnvironmentInstallSucceeded),
 				)
 				if clusterCondition == nil {
 					return false
 				}
 				return clusterCondition.Status == metav1.ConditionTrue &&
-					clusterCondition.Reason == string(v1alpha1.ClusterInstalled)
+					clusterCondition.Reason == string(v1alpha1.EnvironmentInstalled)
 			}, timeout, interval).Should(BeTrue())
 
 		})
@@ -623,7 +623,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
 					{
-						Type:   string(v1alpha1.ClusterInstallSucceeded),
+						Type:   string(v1alpha1.EnvironmentInstallSucceeded),
 						Status: metav1.ConditionTrue,
 					},
 					{
@@ -648,7 +648,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
 					{
-						Type:   string(v1alpha1.ClusterInstallSucceeded),
+						Type:   string(v1alpha1.EnvironmentInstallSucceeded),
 						Status: metav1.ConditionTrue,
 					},
 					{
@@ -669,7 +669,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
 					{
-						Type:   string(v1alpha1.ClusterInstallSucceeded),
+						Type:   string(v1alpha1.EnvironmentInstallSucceeded),
 						Status: metav1.ConditionTrue,
 					},
 					{
@@ -912,7 +912,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 						Status: metav1.ConditionTrue,
 					},
 					{
-						Type:   string(v1alpha1.ClusterSetupCreated),
+						Type:   string(v1alpha1.EnvironmentSetupCreated),
 						Status: metav1.ConditionFalse,
 					},
 				},
@@ -946,12 +946,12 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				Client: client,
 			}
 
-			err = reconciler.reconcileClusterSetupCreate(ctx, cti, []string{"appset2"})
+			err = reconciler.reconcileEnvironmentSetupCreate(ctx, cti, []string{"appset2"}, false)
 			Expect(err).Should(BeNil())
 
 			clusterSetupCreatedCondition := meta.FindStatusCondition(
 				cti.Status.Conditions,
-				string(v1alpha1.ClusterSetupCreated),
+				string(v1alpha1.EnvironmentSetupCreated),
 			)
 			Expect(clusterSetupCreatedCondition.Status).Should(Equal(metav1.ConditionTrue))
 		})
@@ -966,11 +966,11 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
 					{
-						Type:   string(v1alpha1.ClusterSetupCreated),
+						Type:   string(v1alpha1.EnvironmentSetupCreated),
 						Status: metav1.ConditionTrue,
 					},
 					{
-						Type:   string(v1alpha1.ClusterSetupSucceeded),
+						Type:   string(v1alpha1.EnvironmentSetupSucceeded),
 						Status: metav1.ConditionFalse,
 					},
 				},
@@ -1001,27 +1001,27 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			app := testutils.GetAppDay2()
 			appset2 := testutils.GetAppset2()
 			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, appset2, app)
-			err = cti.CreateDay2Applications(ctx, client, defaultArgoCDNs, []string{"appset2"})
+			err = cti.CreateDay2Applications(ctx, client, defaultArgoCDNs, []string{"appset2"}, false, "", "")
 			Expect(err).Should(BeNil())
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client: client,
 			}
-			err = reconciler.reconcileClusterSetup(ctx, cti, []string{"appset2"})
+			err = reconciler.reconcileEnvironmentSetup(ctx, cti, []string{"appset2"})
 			Expect(err).Should(BeNil())
 			clusterSetupSucceededCondition := meta.FindStatusCondition(
 				cti.Status.Conditions,
-				string(v1alpha1.ClusterSetupSucceeded),
+				string(v1alpha1.EnvironmentSetupSucceeded),
 			)
 			Expect(clusterSetupSucceededCondition.Status).Should(Equal(metav1.ConditionFalse))
 			Expect(
 				clusterSetupSucceededCondition.Reason,
-			).Should(Equal(string(v1alpha1.ClusterSetupRunning)))
+			).Should(Equal(string(v1alpha1.EnvironmentSetupRunning)))
 		})
 		It("Detects day2 secret credentials", func() {
 			cti.Status = v1alpha1.ClusterTemplateInstanceStatus{
 				Conditions: []metav1.Condition{
 					{
-						Type:   string(v1alpha1.ClusterSetupSucceeded),
+						Type:   string(v1alpha1.EnvironmentSetupSucceeded),
 						Status: metav1.ConditionTrue,
 					},
 				},

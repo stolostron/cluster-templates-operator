@@ -62,26 +62,30 @@ type ClusterSetupStatus struct {
 type Phase string
 
 const (
-	PendingPhase                    Phase  = "Pending"
-	PendingMessage                  string = "Pending"
-	ClusterDefinitionFailedPhase    Phase  = "ClusterDefinitionFailed"
-	ClusterInstallingPhase          Phase  = "ClusterInstalling"
-	ClusterInstallFailedPhase       Phase  = "ClusterInstallFailed"
-	ManagedClusterFailedPhase       Phase  = "ManagedClusterFailed"
-	ManagedClusterImportingPhase    Phase  = "ManagedClusterImportingPhase"
-	ManagedClusterImportFailedPhase Phase  = "ManagedClusterImportFailed"
-	KlusterletCreateFailedPhase     Phase  = "KlusterletCreateFailed"
-	ArgoClusterFailedPhase          Phase  = "ArgoClusterFailed"
-	ClusterLoginPendingPhase        Phase  = "ClusterLoginPending"
-	AddingArgoClusterPhase          Phase  = "AddingArgoCluster"
-	ClusterSetupCreateFailedPhase   Phase  = "ClusterSetupCreateFailed"
-	CreatingClusterSetupPhase       Phase  = "CreatingClusterSetup"
-	ClusterSetupDegradedPhase       Phase  = "ClusterSetupDegraded"
-	ClusterSetupFailedPhase         Phase  = "ClusterSetupFailed"
-	ClusterSetupRunningPhase        Phase  = "ClusterSetupRunning"
-	ReadyPhase                      Phase  = "Ready"
-	CredentialsFailedPhase          Phase  = "CredentialsFailed"
-	FailedPhase                     Phase  = "Failed"
+	PendingPhase                       Phase  = "Pending"
+	PendingMessage                     string = "Pending"
+	EnvironmentDefinitionFailedPhase   Phase  = "EnvironmentDefinitionFailed"
+	EnvironmentAccountFailedPhase      Phase  = "EnvironmentAccountFailedPhase"
+	EnvironmentRBACFailedPhase         Phase  = "EnvironmentRBACFailedPhase"
+	EnvironmentInstallingPhase         Phase  = "EnvironmentInstalling"
+	EnvironmentInstallFailedPhase      Phase  = "EnvironmentInstallFailed"
+	EnvironmentInstalledPhase          Phase  = "EnvironmentInstalled"
+	ManagedClusterFailedPhase          Phase  = "ManagedClusterFailed"
+	ManagedClusterImportingPhase       Phase  = "ManagedClusterImportingPhase"
+	ManagedClusterImportFailedPhase    Phase  = "ManagedClusterImportFailed"
+	KlusterletCreateFailedPhase        Phase  = "KlusterletCreateFailed"
+	ArgoClusterFailedPhase             Phase  = "ArgoClusterFailed"
+	ClusterLoginPendingPhase           Phase  = "ClusterLoginPending"
+	AddingArgoClusterPhase             Phase  = "AddingArgoCluster"
+	EnvironmentSetupCreateFailedPhase  Phase  = "EnvironmentSetupCreateFailedPhase"
+	EnvironmentClusterSetupPhase       Phase  = "EnvironmentClusterSetupPhase"
+	EnvironmentSetupDegradedPhase      Phase  = "EnvironmentSetupDegradedPhase"
+	EnvironmentSetupFailedPhase        Phase  = "EnvironmentSetupFailedPhase"
+	EnvironmentSetupRunningPhase       Phase  = "EnvironmentSetupRunningPhase"
+	EnvironmentCredentialsRunningPhase Phase  = "EnvironmentCredentialsRunningPhase"
+	ReadyPhase                         Phase  = "Ready"
+	CredentialsFailedPhase             Phase  = "CredentialsFailed"
+	FailedPhase                        Phase  = "Failed"
 )
 
 type ClusterTemplateInstanceStatus struct {
@@ -118,6 +122,10 @@ type ClusterTemplateInstanceStatus struct {
 	// Time of first attempt of login to a new cluster
 	// +operator-sdk:csv:customresourcedefinitions:type=status
 	FirstLoginAttempt *metav1.Time `json:"firstLoginAttempt,omitempty"`
+
+	// Links for any route associated with day2
+	// +operator-sdk:csv:customresourcedefinitions:type=status
+	AppLinks []string `json:"appLinks,omitempty"`
 }
 
 //+kubebuilder:object:root=true

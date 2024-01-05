@@ -36,6 +36,7 @@ import (
 	consoleV1 "github.com/openshift/api/console/v1"
 	console "github.com/openshift/api/console/v1alpha1"
 	openshiftAPI "github.com/openshift/api/helm/v1beta1"
+	routev1 "github.com/openshift/api/route/v1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
 	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
 	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
@@ -67,6 +68,7 @@ func init() {
 	utilruntime.Must(agent.AddToScheme(scheme))
 	utilruntime.Must(argooperator.AddToScheme(scheme))
 	utilruntime.Must(operators.AddToScheme(scheme))
+	utilruntime.Must(routev1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 

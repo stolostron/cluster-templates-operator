@@ -32,7 +32,7 @@ metadata:
     categories: Integration & Delivery,OpenShift Optional
     certified: "false"
     containerImage: quay.io/stolostron/cluster-templates-operator:2.7.0-8a5d0ce2db589cdbee3c4b0fa86051b3daa2ee74
-    createdAt: "2023-07-19T07:40:40Z"
+    createdAt: "2023-12-08T09:31:52Z"
     description: Easily install fully configured clusters with guard-rails.
     operators.operatorframework.io/builder: operator-sdk-v1.27.0
     operators.operatorframework.io/project_layout: go.kubebuilder.io/v3
@@ -59,6 +59,9 @@ spec:
       - description: API server URL of the new cluster
         displayName: APIserver URL
         path: apiServerURL
+      - description: Links for any route associated with day2
+        displayName: App Links
+        path: appLinks
       - description: Status of each cluster setup
         displayName: Cluster Setup
         path: clusterSetup
@@ -472,7 +475,7 @@ spec:
                 - --tls-private-key-file=/etc/certs/tls/tls.key
                 command:
                 - /manager
-                image: quay.io/stolostron/cluster-templates-operator:latest
+                image: quay.io/rawagner/cluster-templates-operator:eaas
                 livenessProbe:
                   httpGet:
                     path: /healthz

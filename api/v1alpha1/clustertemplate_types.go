@@ -25,7 +25,21 @@ var (
 	ClusterProviderExperimentalAnnotation = "clustertemplate.openshift.io/experimental-provider"
 )
 
+type EnvironmentTemplateType string
+
+const (
+	Namespace EnvironmentTemplateType = "namespace"
+	Cluster   EnvironmentTemplateType = "cluster"
+)
+
 type ClusterTemplateSpec struct {
+
+	// Type of environment template - namespace or cluster
+	Type EnvironmentTemplateType `json:"type"`
+
+	// A URL for a cluster where the day1 should be applied
+	TargetCluster string `json:"targetCluster,omitempty"`
+
 	// ArgoCD applicationset name which is used for installation of the cluster
 	ClusterDefinition string `json:"clusterDefinition"`
 

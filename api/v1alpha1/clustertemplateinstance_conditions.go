@@ -8,37 +8,73 @@ import (
 type ConditionType string
 
 const (
-	ClusterDefinitionCreated ConditionType = "ClusterDefinitionCreated"
-	ClusterInstallSucceeded  ConditionType = "ClusterInstallSucceeded"
-	ManagedClusterCreated    ConditionType = "ManagedClusterCreated"
-	ManagedClusterImported   ConditionType = "ManagedClusterImported"
-	KlusterletAddonCreated   ConditionType = "KlusterletAddonCreated"
-	ArgoClusterAdded         ConditionType = "ArgoClusterAdded"
-	ClusterSetupCreated      ConditionType = "ClusterSetupCreated"
-	ClusterSetupSucceeded    ConditionType = "ClusterSetupSucceeded"
-	Ready                    ConditionType = "Ready"
-	ConsoleURLRetrieved      ConditionType = "ConsoleURLRetrieved"
+	EnvironmentDefinitionCreated  ConditionType = "EnvironmentDefinitionCreated"
+	EnvironmentInstallSucceeded   ConditionType = "EnvironmentInstallSucceeded"
+	ManagedClusterCreated         ConditionType = "ManagedClusterCreated"
+	ManagedClusterImported        ConditionType = "ManagedClusterImported"
+	KlusterletAddonCreated        ConditionType = "KlusterletAddonCreated"
+	ArgoClusterAdded              ConditionType = "ArgoClusterAdded"
+	EnvironmentSetupCreated       ConditionType = "EnvironmentSetupCreated"
+	EnvironmentSetupSucceeded     ConditionType = "EnvironmentSetupSucceeded"
+	Ready                         ConditionType = "Ready"
+	ConsoleURLRetrieved           ConditionType = "ConsoleURLRetrieved"
+	NamespaceAccountCreated       ConditionType = "NamespaceAccountCreated"
+	EnvironmentRBACSucceeded      ConditionType = "EnvironmentRBACSucceeded"
+	NamespaceCredentialsSucceeded ConditionType = "NamespaceCredentialsSucceeded"
+	AppLinksCollected             ConditionType = "AppLinksCollected"
 )
 
-type ClusterDefinitionReason string
+type NamespaceCredentialsReason string
 
 const (
-	ClusterDefinitionPending ClusterDefinitionReason = "ClusterDefinitionPending"
-	ClusterDefinitionFailed  ClusterDefinitionReason = "ClusterDefinitionFailed"
-	ApplicationCreated       ClusterDefinitionReason = "ApplicationCreated"
+	NamespaceCredentialsPending    NamespaceCredentialsReason = "NamespaceCredentialsPending"
+	NamespaceCredentialsFailed     NamespaceCredentialsReason = "NamespaceCredentialsFailed"
+	NamespaceCredentialsSuccceeded NamespaceCredentialsReason = "NamespaceCredentialsSuccceeded"
 )
 
-type ClusterInstallReason string
+type EnvironmentDefinitionReason string
 
 const (
-	ApplicationFetchFailed         ClusterInstallReason = "ApplicationFetchFailed"
-	ApplicationDegraded            ClusterInstallReason = "ApplicationDegraded"
-	ApplicationError               ClusterInstallReason = "ApplicationError"
-	ClusterDefinitionNotCreated    ClusterInstallReason = "ClusterDefinitionNotCreated"
-	ClusterProviderDetectionFailed ClusterInstallReason = "ClusterProviderDetectionFailed"
-	ClusterStatusFailed            ClusterInstallReason = "ClusterStatusFailed"
-	ClusterInstalled               ClusterInstallReason = "ClusterInstalled"
-	ClusterInstalling              ClusterInstallReason = "ClusterInstalling"
+	EnvironmentDefinitionPending EnvironmentDefinitionReason = "EnvironmentDefinitionPending"
+	EnvironmentDefinitionFailed  EnvironmentDefinitionReason = "EnvironmentDefinitionFailed"
+	ApplicationCreated           EnvironmentDefinitionReason = "ApplicationCreated"
+)
+
+type EnvironmentInstallReason string
+
+const (
+	ApplicationFetchFailed          EnvironmentInstallReason = "ApplicationFetchFailed"
+	ApplicationDegraded             EnvironmentInstallReason = "ApplicationDegraded"
+	ApplicationError                EnvironmentInstallReason = "ApplicationError"
+	EnvironmentDefinitionNotCreated EnvironmentInstallReason = "EnvironmentDefinitionNotCreated"
+	ClusterProviderDetectionFailed  EnvironmentInstallReason = "ClusterProviderDetectionFailed"
+	ClusterStatusFailed             EnvironmentInstallReason = "ClusterStatusFailed"
+	EnvironmentInstalled            EnvironmentInstallReason = "EnvironmentInstalled"
+	EnvironmentInstalling           EnvironmentInstallReason = "EnvironmentInstalling"
+)
+
+type EnvironmentAccountReason string
+
+const (
+	EnvironmentAccountPending EnvironmentAccountReason = "EnvironmentAccountPending"
+	EnvironmentAccountFailed  EnvironmentAccountReason = "EnvironmentAccountFailed"
+	EnvironmentAccountCreated EnvironmentAccountReason = "EnvironmentAccountCreated"
+)
+
+type EnvironmentRBACReason string
+
+const (
+	EnvironmentRBACPending EnvironmentRBACReason = "EnvironmentRBACPending"
+	EnvironmentRBACFailed  EnvironmentRBACReason = "EnvironmentRBACFailed"
+	EnvironmentRBACCreated EnvironmentRBACReason = "EnvironmentRBACCreated"
+)
+
+type AppLinksReason string
+
+const (
+	AppLinksFailed    AppLinksReason = "AppLinksFailed"
+	AppLinksSucceeded AppLinksReason = "AppLinksSucceeded"
+	AppLinksPending   AppLinksReason = "AppLinksPending"
 )
 
 type ConsoleURLReason string
@@ -87,35 +123,35 @@ const (
 	ArgoClusterLoginPending ArgoClusterAddedReason = "ArgoClusterLoginPending"
 )
 
-type ClusterSetupCreatedReason string
+type EnvironmentSetupCreatedReason string
 
 const (
-	ClusterNotInstalled        ClusterSetupCreatedReason = "ClusterNotInstalled"
-	ClusterSetupNotSpecified   ClusterSetupCreatedReason = "ClusterSetupNotSpecified"
-	ClusterSetupCreationFailed ClusterSetupCreatedReason = "ClusterSetupCreationFailed"
-	SetupCreated               ClusterSetupCreatedReason = "ClusterSetupCreated"
+	EnvironmentNotInstalled        EnvironmentSetupCreatedReason = "EnvironmentNotInstalled"
+	EnvironmentSetupNotSpecified   EnvironmentSetupCreatedReason = "EnvironmentSetupNotSpecified"
+	EnvironmentSetupCreationFailed EnvironmentSetupCreatedReason = "EnvironmentSetupCreationFailed"
+	SetupCreated                   EnvironmentSetupCreatedReason = "EnvironmentSetupCreated"
 )
 
-type ClusterSetupSucceededReason string
+type EnvironmentSetupSucceededReason string
 
 const (
-	ClusterSetupNotDefined   ClusterSetupSucceededReason = "ClusterSetupNotDefined"
-	ClusterSetupFetchFailed  ClusterSetupSucceededReason = "ClusterSetupFetchFailed"
-	ClusterSetupAppsNotFound ClusterSetupSucceededReason = "ClusterSetupAppsNotFound"
-	ClusterSetupRunning      ClusterSetupSucceededReason = "ClusterSetupRunning"
-	SetupSucceeded           ClusterSetupSucceededReason = "ClusterSetupSucceeded"
-	ClusterSetupDegraded     ClusterSetupSucceededReason = "ClusterSetupDegraded"
-	ClusterSetupError        ClusterSetupSucceededReason = "ClusterSetupError"
-	ClusterSetupNotCreated   ClusterSetupSucceededReason = "ClusterSetupNotCreated"
+	EnvironmentSetupNotDefined   EnvironmentSetupSucceededReason = "EnvironmentSetupNotDefined"
+	EnvironmentSetupFetchFailed  EnvironmentSetupSucceededReason = "EnvironmentSetupFetchFailed"
+	EnvironmentSetupAppsNotFound EnvironmentSetupSucceededReason = "EnvironmentSetupAppsNotFound"
+	EnvironmentSetupRunning      EnvironmentSetupSucceededReason = "EnvironmentSetupRunning"
+	SetupSucceeded               EnvironmentSetupSucceededReason = "EnvironmentSetupSucceeded"
+	EnvironmentSetupDegraded     EnvironmentSetupSucceededReason = "EnvironmentSetupDegraded"
+	EnvironmentSetupError        EnvironmentSetupSucceededReason = "EnvironmentSetupError"
+	EnvironmentSetupNotCreated   EnvironmentSetupSucceededReason = "EnvironmentSetupNotCreated"
 )
 
-func (clusterInstance *ClusterTemplateInstance) SetClusterDefinitionCreatedCondition(
+func (clusterInstance *ClusterTemplateInstance) SetEnvironmentRBACCondition(
 	status metav1.ConditionStatus,
-	reason ClusterDefinitionReason,
+	reason EnvironmentRBACReason,
 	message string,
 ) {
 	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
-		Type:               string(ClusterDefinitionCreated),
+		Type:               string(EnvironmentRBACSucceeded),
 		Status:             status,
 		Reason:             string(reason),
 		Message:            message,
@@ -123,13 +159,55 @@ func (clusterInstance *ClusterTemplateInstance) SetClusterDefinitionCreatedCondi
 	})
 }
 
-func (clusterInstance *ClusterTemplateInstance) SetClusterInstallCondition(
+func (clusterInstance *ClusterTemplateInstance) SetEnvironmentAccountCondition(
 	status metav1.ConditionStatus,
-	reason ClusterInstallReason,
+	reason EnvironmentAccountReason,
 	message string,
 ) {
 	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
-		Type:               string(ClusterInstallSucceeded),
+		Type:               string(NamespaceAccountCreated),
+		Status:             status,
+		Reason:             string(reason),
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	})
+}
+
+func (clusterInstance *ClusterTemplateInstance) SetNamespaceCredentialsCondition(
+	status metav1.ConditionStatus,
+	reason NamespaceCredentialsReason,
+	message string,
+) {
+	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
+		Type:               string(NamespaceCredentialsSucceeded),
+		Status:             status,
+		Reason:             string(reason),
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	})
+}
+
+func (clusterInstance *ClusterTemplateInstance) SetEnvironmentDefinitionCreatedCondition(
+	status metav1.ConditionStatus,
+	reason EnvironmentDefinitionReason,
+	message string,
+) {
+	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
+		Type:               string(EnvironmentDefinitionCreated),
+		Status:             status,
+		Reason:             string(reason),
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	})
+}
+
+func (clusterInstance *ClusterTemplateInstance) SetEnvironmentInstallCondition(
+	status metav1.ConditionStatus,
+	reason EnvironmentInstallReason,
+	message string,
+) {
+	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
+		Type:               string(EnvironmentInstallSucceeded),
 		Status:             status,
 		Reason:             string(reason),
 		Message:            message,
@@ -151,13 +229,27 @@ func (clusterInstance *ClusterTemplateInstance) SetConsoleURLCondition(
 	})
 }
 
-func (clusterInstance *ClusterTemplateInstance) SetClusterSetupCreatedCondition(
+func (clusterInstance *ClusterTemplateInstance) SetAppLinksCollectedCondition(
 	status metav1.ConditionStatus,
-	reason ClusterSetupCreatedReason,
+	reason AppLinksReason,
 	message string,
 ) {
 	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
-		Type:               string(ClusterSetupCreated),
+		Type:               string(AppLinksCollected),
+		Status:             status,
+		Reason:             string(reason),
+		Message:            message,
+		LastTransitionTime: metav1.Now(),
+	})
+}
+
+func (clusterInstance *ClusterTemplateInstance) SetEnvironmentSetupCreatedCondition(
+	status metav1.ConditionStatus,
+	reason EnvironmentSetupCreatedReason,
+	message string,
+) {
+	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
+		Type:               string(EnvironmentSetupCreated),
 		Status:             status,
 		Reason:             string(reason),
 		Message:            message,
@@ -221,13 +313,13 @@ func (clusterInstance *ClusterTemplateInstance) SetArgoClusterAddedCondition(
 	})
 }
 
-func (clusterInstance *ClusterTemplateInstance) SetClusterSetupSucceededCondition(
+func (clusterInstance *ClusterTemplateInstance) SetEnvironmentSetupSucceededCondition(
 	status metav1.ConditionStatus,
-	reason ClusterSetupSucceededReason,
+	reason EnvironmentSetupSucceededReason,
 	message string,
 ) {
 	meta.SetStatusCondition(&clusterInstance.Status.Conditions, metav1.Condition{
-		Type:               string(ClusterSetupSucceeded),
+		Type:               string(EnvironmentSetupSucceeded),
 		Status:             status,
 		Reason:             string(reason),
 		Message:            message,
@@ -242,77 +334,143 @@ func (clusterInstance *ClusterTemplateInstance) hasCondition(condition Condition
 	) != nil
 }
 
-func (clusterInstance *ClusterTemplateInstance) SetDefaultConditions() {
-	if !clusterInstance.hasCondition(ClusterDefinitionCreated) {
-		clusterInstance.SetClusterDefinitionCreatedCondition(
-			metav1.ConditionFalse,
-			ClusterDefinitionPending,
-			"Pending",
-		)
-	}
+func (clusterInstance *ClusterTemplateInstance) SetDefaultConditions(isNsType bool) {
+	if isNsType {
+		if !clusterInstance.hasCondition(EnvironmentDefinitionCreated) {
+			clusterInstance.SetEnvironmentDefinitionCreatedCondition(
+				metav1.ConditionFalse,
+				EnvironmentDefinitionPending,
+				"Pending",
+			)
+		}
 
-	if !clusterInstance.hasCondition(ClusterInstallSucceeded) {
-		clusterInstance.SetClusterInstallCondition(
-			metav1.ConditionFalse,
-			ClusterDefinitionNotCreated,
-			"Waiting for cluster definition to be created",
-		)
-	}
+		if !clusterInstance.hasCondition(EnvironmentInstallSucceeded) {
+			clusterInstance.SetEnvironmentInstallCondition(
+				metav1.ConditionFalse,
+				EnvironmentDefinitionNotCreated,
+				"Waiting for environment definition to be created",
+			)
+		}
 
-	if !clusterInstance.hasCondition(ManagedClusterCreated) {
-		clusterInstance.SetManagedClusterCreatedCondition(
-			metav1.ConditionFalse,
-			MCPending,
-			"Waiting for cluster to be ready",
-		)
-	}
+		if !clusterInstance.hasCondition(NamespaceAccountCreated) {
+			clusterInstance.SetEnvironmentAccountCondition(
+				metav1.ConditionFalse,
+				EnvironmentAccountPending,
+				"Pending",
+			)
+		}
 
-	if !clusterInstance.hasCondition(ManagedClusterImported) {
-		clusterInstance.SetManagedClusterImportedCondition(
-			metav1.ConditionFalse,
-			MCImportPending,
-			"Waiting for managed cluster to be created",
-		)
-	}
+		if !clusterInstance.hasCondition(EnvironmentRBACSucceeded) {
+			clusterInstance.SetEnvironmentRBACCondition(
+				metav1.ConditionFalse,
+				EnvironmentRBACPending,
+				"Pending",
+			)
+		}
 
-	if !clusterInstance.hasCondition(KlusterletAddonCreated) {
-		clusterInstance.SetKlusterletCreatedCondition(
-			metav1.ConditionFalse,
-			KlusterletCreatePeding,
-			"Waiting for managed cluster to be imported",
-		)
-	}
+		if !clusterInstance.hasCondition(EnvironmentSetupCreated) {
+			clusterInstance.SetEnvironmentSetupCreatedCondition(
+				metav1.ConditionFalse,
+				EnvironmentNotInstalled,
+				"Waiting for argo cluster to be created",
+			)
+		}
 
-	if !clusterInstance.hasCondition(ArgoClusterAdded) {
-		clusterInstance.SetArgoClusterAddedCondition(
-			metav1.ConditionFalse,
-			ArgoClusterPending,
-			"Waiting for klusterlet to be created",
-		)
-	}
+		if !clusterInstance.hasCondition(EnvironmentSetupSucceeded) {
+			clusterInstance.SetEnvironmentSetupSucceededCondition(
+				metav1.ConditionFalse,
+				EnvironmentSetupNotCreated,
+				"Waiting for cluster setup to be created",
+			)
+		}
 
-	if !clusterInstance.hasCondition(ClusterSetupCreated) {
-		clusterInstance.SetClusterSetupCreatedCondition(
-			metav1.ConditionFalse,
-			ClusterNotInstalled,
-			"Waiting for argo cluster to be created",
-		)
-	}
+		if !clusterInstance.hasCondition(NamespaceCredentialsSucceeded) {
+			clusterInstance.SetNamespaceCredentialsCondition(
+				metav1.ConditionFalse,
+				NamespaceCredentialsPending,
+				"Waiting for cluster setup to finish",
+			)
+		}
 
-	if !clusterInstance.hasCondition(ClusterSetupSucceeded) {
-		clusterInstance.SetClusterSetupSucceededCondition(
-			metav1.ConditionFalse,
-			ClusterSetupNotCreated,
-			"Waiting for cluster setup to be created",
-		)
-	}
+		if !clusterInstance.hasCondition(AppLinksCollected) {
+			clusterInstance.SetAppLinksCollectedCondition(
+				metav1.ConditionFalse,
+				AppLinksPending,
+				"Pending",
+			)
+		}
+	} else {
+		if !clusterInstance.hasCondition(EnvironmentDefinitionCreated) {
+			clusterInstance.SetEnvironmentDefinitionCreatedCondition(
+				metav1.ConditionFalse,
+				EnvironmentDefinitionPending,
+				"Pending",
+			)
+		}
 
-	if !clusterInstance.hasCondition(ConsoleURLRetrieved) {
-		clusterInstance.SetConsoleURLCondition(
-			metav1.ConditionFalse,
-			ConsoleURLPending,
-			"Pending",
-		)
+		if !clusterInstance.hasCondition(EnvironmentInstallSucceeded) {
+			clusterInstance.SetEnvironmentInstallCondition(
+				metav1.ConditionFalse,
+				EnvironmentDefinitionNotCreated,
+				"Waiting for environment definition to be created",
+			)
+		}
+
+		if !clusterInstance.hasCondition(ManagedClusterCreated) {
+			clusterInstance.SetManagedClusterCreatedCondition(
+				metav1.ConditionFalse,
+				MCPending,
+				"Waiting for cluster to be ready",
+			)
+		}
+
+		if !clusterInstance.hasCondition(ManagedClusterImported) {
+			clusterInstance.SetManagedClusterImportedCondition(
+				metav1.ConditionFalse,
+				MCImportPending,
+				"Waiting for managed cluster to be created",
+			)
+		}
+
+		if !clusterInstance.hasCondition(KlusterletAddonCreated) {
+			clusterInstance.SetKlusterletCreatedCondition(
+				metav1.ConditionFalse,
+				KlusterletCreatePeding,
+				"Waiting for managed cluster to be imported",
+			)
+		}
+
+		if !clusterInstance.hasCondition(ArgoClusterAdded) {
+			clusterInstance.SetArgoClusterAddedCondition(
+				metav1.ConditionFalse,
+				ArgoClusterPending,
+				"Waiting for klusterlet to be created",
+			)
+		}
+
+		if !clusterInstance.hasCondition(EnvironmentSetupCreated) {
+			clusterInstance.SetEnvironmentSetupCreatedCondition(
+				metav1.ConditionFalse,
+				EnvironmentNotInstalled,
+				"Waiting for argo cluster to be created",
+			)
+		}
+
+		if !clusterInstance.hasCondition(EnvironmentSetupSucceeded) {
+			clusterInstance.SetEnvironmentSetupSucceededCondition(
+				metav1.ConditionFalse,
+				EnvironmentSetupNotCreated,
+				"Waiting for cluster setup to be created",
+			)
+		}
+
+		if !clusterInstance.hasCondition(ConsoleURLRetrieved) {
+			clusterInstance.SetConsoleURLCondition(
+				metav1.ConditionFalse,
+				ConsoleURLPending,
+				"Pending",
+			)
+		}
 	}
 }
 
