@@ -60,8 +60,15 @@ spec:
               skipClusterRegistration:
                 description: Skip the registration of the cluster to the hub cluster
                 type: boolean
+              targetCluster:
+                description: A URL for a cluster where the day1 should be applied
+                type: string
+              type:
+                description: Type of environment template - namespace or cluster
+                type: string
             required:
             - clusterDefinition
+            - type
             type: object
           status:
             description: ClusterTemplateStatus defines the observed state of ClusterTemplate
