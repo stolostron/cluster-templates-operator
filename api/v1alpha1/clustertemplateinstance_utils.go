@@ -237,6 +237,9 @@ func (i *ClusterTemplateInstance) labelDestionationNamespace(ctx context.Context
 	}
 
 	if l, lOk := ns.Labels["argocd.argoproj.io/managed-by"]; !lOk || l != argoCDNamespace {
+		if ns.Labels == nil {
+			ns.Labels = map[string]string{}
+		}
 		ns.Labels["argocd.argoproj.io/managed-by"] = argoCDNamespace
 		if err := k8sClient.Update(ctx, ns); err != nil {
 			return err
