@@ -20,6 +20,8 @@ import (
 	"context"
 	"encoding/json"
 
+	"golang.org/x/exp/slices"
+
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	"github.com/kubernetes-client/go-base/config/api"
 	"gopkg.in/yaml.v2"
@@ -183,9 +185,6 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 		Template: argo.ApplicationSetTemplate{
 			ApplicationSetTemplateMeta: argo.ApplicationSetTemplateMeta{
 				Name: name,
-				Finalizers: []string{
-					argo.ResourcesFinalizerName,
-				},
 				Labels: map[string]string{
 					CTINameLabel:      i.Name,
 					CTINamespaceLabel: i.Namespace,
@@ -193,6 +192,13 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 			},
 		},
 	},
+	}
+
+	// To guarantee App cleanup, add the resource finalizer to the generator's template if it's not already defined in the AppSet's template.
+	// Preserve any other finalizers the AppSet author may have included.
+	found := slices.Contains(appSet.Spec.Template.Finalizers, argo.ResourcesFinalizerName)
+	if !found {
+		gen.List.Template.ApplicationSetTemplateMeta.Finalizers = append(appSet.Spec.Template.Finalizers, argo.ResourcesFinalizerName)
 	}
 
 	if appSet.Spec.Template.Spec.Source.Chart != "" {

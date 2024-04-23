@@ -354,7 +354,13 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				Name:      "foo",
 				Namespace: "cluster-aas-operator",
 			},
-			Spec: argo.ApplicationSetSpec{},
+			Spec: argo.ApplicationSetSpec{
+				Template: argo.ApplicationSetTemplate{
+					ApplicationSetTemplateMeta: argo.ApplicationSetTemplateMeta{
+						Finalizers: []string{"fooFinalizer"},
+					},
+				},
+			},
 		}
 
 		client := fake.NewFakeClientWithScheme(scheme.Scheme, appset)
@@ -367,6 +373,8 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 
 		Expect(len(a.Items[0].Spec.Generators)).To(Equal(1))
 		Expect(len(a.Items[0].Spec.Generators[0].List.Elements)).To(Equal(1))
+		Expect(len(a.Items[0].Spec.Generators[0].List.Template.Finalizers)).To(Equal(2))
+		Expect(a.Items[0].Spec.Generators[0].List.Template.Finalizers).To(Equal([]string{"fooFinalizer", argo.ResourcesFinalizerName}))
 
 		s, err := a.Items[0].Spec.Generators[0].List.Elements[0].MarshalJSON()
 		Expect(err).ToNot(HaveOccurred())
@@ -418,6 +426,9 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			Spec: argo.ApplicationSetSpec{
 				Generators: []argo.ApplicationSetGenerator{{}},
 				Template: argo.ApplicationSetTemplate{
+					ApplicationSetTemplateMeta: argo.ApplicationSetTemplateMeta{
+						Finalizers: []string{argo.ResourcesFinalizerName},
+					},
 					Spec: argo.ApplicationSpec{
 						Source: argo.ApplicationSource{},
 					},
@@ -435,6 +446,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		//Expect(appsets.Items[0].Spec.Generators[0].String()).To(Equal(""))
 		Expect(len(appsets.Items[0].Spec.Generators)).To(Equal(2))
 		Expect(len(appsets.Items[0].Spec.Generators[1].List.Elements)).To(Equal(1))
+		Expect(len(appsets.Items[0].Spec.Generators[1].List.Template.Finalizers)).To(Equal(0))
 
 		data, err = appsets.Items[0].Spec.Generators[1].List.Elements[0].MarshalJSON()
 		Expect(err).ShouldNot(HaveOccurred())
