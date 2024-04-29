@@ -140,7 +140,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 		Expect(params).Should(Equal([]argo.HelmParameter{
 			{
 				Name:  "foo",
-				Value: "bar",
+				Value: "baz",
 			},
 		}))
 

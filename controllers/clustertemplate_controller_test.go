@@ -53,6 +53,12 @@ var _ = Describe("ClusterTemplate controller", func() {
 							RepoURL:        server.URL,
 							TargetRevision: "0.0.2",
 							Chart:          "hypershift-template-no-schema",
+							Helm: &argo.ApplicationSourceHelm{
+								Parameters: []argo.HelmParameter{{
+									Name:  "bar",
+									Value: "baz",
+								}},
+							},
 						},
 					},
 				},
@@ -137,6 +143,28 @@ var _ = Describe("ClusterTemplate controller", func() {
 
 			return len(foundCT.Status.ClusterDefinition.Values) > 0 &&
 				len(foundCT.Status.ClusterDefinition.Schema) > 0
+		}, timeout, interval).Should(BeTrue())
+	})
+
+	It("Should show param overrides in ClusterDefinition and ClusterSetup status", func() {
+		ct.Spec.ClusterSetup = []string{"foo"}
+		Expect(k8sClient.Update(ctx, appset)).Should(Succeed())
+		Expect(k8sClient.Create(ctx, ct)).Should(Succeed())
+
+		Eventually(func() bool {
+			foundCT := &v1alpha1.ClusterTemplate{}
+			err := k8sClient.Get(ctx, client.ObjectKeyFromObject(ct), foundCT)
+			if err != nil {
+				return false
+			}
+
+			return len(foundCT.Status.ClusterDefinition.Params) == 1 &&
+				foundCT.Status.ClusterDefinition.Params[0].Name == "bar" &&
+				foundCT.Status.ClusterDefinition.Params[0].Value == "baz" &&
+				len(foundCT.Status.ClusterSetup) == 1 &&
+				len(foundCT.Status.ClusterSetup[0].Params) == 1 &&
+				foundCT.Status.ClusterSetup[0].Params[0].Name == "bar" &&
+				foundCT.Status.ClusterSetup[0].Params[0].Value == "baz"
 		}, timeout, interval).Should(BeTrue())
 	})
 

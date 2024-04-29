@@ -386,15 +386,14 @@ func (i *ClusterTemplateInstance) GetHelmParameters(
 	}
 	for _, param := range i.Spec.Parameters {
 		if (!isDay2 && param.ApplicationSet == "") || param.ApplicationSet == appset.Name {
-			added := false
-			for idx, ctParam := range params {
+			found := false
+			for _, ctParam := range params {
 				if ctParam.Name == param.Name {
-					ctParam.Value = param.Value
-					params[idx] = ctParam
-					added = true
+					found = true
+					break
 				}
 			}
-			if !added {
+			if !found {
 				params = append(params, argo.HelmParameter{
 					Name:  param.Name,
 					Value: param.Value,
