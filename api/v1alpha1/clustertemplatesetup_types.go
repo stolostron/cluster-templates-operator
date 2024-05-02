@@ -36,6 +36,8 @@ type ClusterSetupSchema struct {
 	Values string `json:"values,omitempty"`
 	// Content of helm chart values.schema.json
 	Schema string `json:"schema,omitempty"`
+	// Helm chart param overrides from the ArgoCD ApplicationSet
+	Params []ClusterTemplateParams `json:"params,omitempty"`
 	// Contain information about failure during fetching helm chart
 	// +optional
 	Error *string `json:"error,omitempty"`

@@ -42,11 +42,20 @@ type ClusterTemplateSpec struct {
 	Cost *int `json:"cost,omitempty"`
 }
 
+type ClusterTemplateParams struct {
+	// Name of a helm chart param
+	Name string `json:"name"`
+	// Value of a helm chart param
+	Value string `json:"value"`
+}
+
 type ClusterDefinitionSchema struct {
 	// Content of helm chart values.yaml
 	Values string `json:"values,omitempty"`
 	// Content of helm chart values.schema.json
 	Schema string `json:"schema,omitempty"`
+	// Helm chart param overrides from the ArgoCD ApplicationSet
+	Params []ClusterTemplateParams `json:"params,omitempty"`
 	// Contain information about failure during fetching helm chart
 	// +optional
 	Error *string `json:"error,omitempty"`

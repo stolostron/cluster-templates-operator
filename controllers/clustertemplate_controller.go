@@ -55,7 +55,7 @@ func (r *ClusterTemplateReconciler) Reconcile(
 	} else {
 		clusterTemplate.Status.ClusterDefinition.Error = nil
 
-		cdValues, cdSchema, err := r.getValuesAndSchema(
+		cdValues, cdParams, cdSchema, err := r.getValuesParamsAndSchema(
 			ctx,
 			appSet.Spec.Template.Spec,
 		)
@@ -64,6 +64,7 @@ func (r *ClusterTemplateReconciler) Reconcile(
 			clusterTemplate.Status.ClusterDefinition.Error = pointer.String(err.Error())
 		} else {
 			clusterTemplate.Status.ClusterDefinition.Values = cdValues
+			clusterTemplate.Status.ClusterDefinition.Params = cdParams
 			clusterTemplate.Status.ClusterDefinition.Schema = cdSchema
 			clusterTemplate.Status.ClusterDefinition.Error = nil
 		}
@@ -87,7 +88,7 @@ func (r *ClusterTemplateReconciler) Reconcile(
 		} else {
 			css.Error = nil
 
-			values, schema, err := r.getValuesAndSchema(
+			values, params, schema, err := r.getValuesParamsAndSchema(
 				ctx,
 				appSet.Spec.Template.Spec,
 			)
@@ -97,6 +98,7 @@ func (r *ClusterTemplateReconciler) Reconcile(
 			} else {
 				css.Error = nil
 				css.Values = values
+				css.Params = params
 				css.Schema = schema
 			}
 		}
@@ -116,12 +118,23 @@ func (r *ClusterTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *ClusterTemplateReconciler) getValuesAndSchema(
+func (r *ClusterTemplateReconciler) getValuesParamsAndSchema(
 	ctx context.Context,
 	appSpec argo.ApplicationSpec,
-) (string, string, error) {
+) (string, []v1alpha1.ClusterTemplateParams, string, error) {
 	values := ""
 	schema := ""
+	params := []v1alpha1.ClusterTemplateParams{}
+
+	if appSpec.Source.Helm != nil {
+		for _, param := range appSpec.Source.Helm.Parameters {
+			params = append(params, v1alpha1.ClusterTemplateParams{
+				Name:  param.Name,
+				Value: param.Value,
+			})
+		}
+	}
+
 	if appSpec.Source.Chart != "" {
 		repoURL := appSpec.Source.RepoURL
 		chartName := appSpec.Source.Chart
@@ -135,7 +148,7 @@ func (r *ClusterTemplateReconciler) getValuesAndSchema(
 			ArgoCDNamespace,
 		)
 		if err != nil {
-			return values, schema, err
+			return values, params, schema, err
 		}
 		for _, file := range chart.Raw {
 			if file.Name == "values.yaml" {
@@ -145,7 +158,7 @@ func (r *ClusterTemplateReconciler) getValuesAndSchema(
 				schema = string(file.Data)
 			}
 		}
-		return values, schema, nil
+		return values, params, schema, nil
 	}
-	return values, schema, nil
+	return values, params, schema, nil
 }

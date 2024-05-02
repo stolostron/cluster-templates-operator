@@ -37,6 +37,11 @@ spec:
         chart: hypershift-template
         repoURL: https://stolostron.github.io/cluster-templates-operator
         targetRevision: 0.0.3
+        helm:
+          # Fixed parameters (cannot be overridden by the ClusterTemplateInstance)
+          parameters:
+          - name: ocpVersion
+            value: 4.15.0
       syncPolicy:
         automated: {}
 ```
