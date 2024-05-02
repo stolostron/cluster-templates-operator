@@ -3,8 +3,8 @@ kind: Kustomization
 
 images:
 - name: controller
-  newName: quay.io/stolostron/cluster-templates-operator
-  newTag: latest
+  newName: quay.io/rawagner/cluster-templates-operator
+  newTag: eaas
 
 resources:
 - manager.yaml
