@@ -32,7 +32,6 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -41,7 +40,7 @@ import (
 	consoleV1 "github.com/openshift/api/console/v1"
 	console "github.com/openshift/api/console/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	testutils "github.com/stolostron/cluster-templates-operator/testutils"
@@ -49,6 +48,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ocmv1 "open-cluster-management.io/api/cluster/v1"
+	controllerCfg "sigs.k8s.io/controller-runtime/pkg/config"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -57,6 +57,7 @@ import (
 
 var cfg *rest.Config
 var k8sClient client.Client
+var k8sApiReader client.Reader
 var testEnv *envtest.Environment
 var ctx context.Context
 var cancel context.CancelFunc
@@ -65,9 +66,7 @@ var controllerCancel context.CancelFunc
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Controller Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	RunSpecs(t, "Controller Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -115,6 +114,7 @@ var _ = BeforeSuite(func() {
 	err = operators.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 	err = consoleV1.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 	err = agent.SchemeBuilder.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
@@ -124,11 +124,16 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
+	skipNameValidation := true
 	k8sManager, err := ctrl.NewManager(cfg, ctrl.Options{
 		Scheme: scheme.Scheme,
+		Controller: controllerCfg.Controller{
+			SkipNameValidation: &skipNameValidation,
+		},
 	})
 	Expect(err).ToNot(HaveOccurred())
 
+	k8sApiReader = k8sManager.GetAPIReader()
 	controllerCancel = StartCTIController(k8sManager, true, false, false, false)
 
 	err = (&ConfigReconciler{
@@ -156,12 +161,6 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 
 	err = (&ConsolePluginReconciler{
-		Client: k8sManager.GetClient(),
-		Scheme: k8sManager.GetScheme(),
-	}).SetupWithManager(k8sManager)
-	Expect(err).ToNot(HaveOccurred())
-
-	err = (&ConfigReconciler{
 		Client: k8sManager.GetClient(),
 		Scheme: k8sManager.GetScheme(),
 	}).SetupWithManager(k8sManager)
@@ -198,8 +197,8 @@ var keyDataFileName string
 var caDataFileName string
 
 var _ = AfterSuite(func() {
-	controllerCancel()
 	cancel()
+	controllerCancel()
 	defer os.Remove(certDataFileName)
 	defer os.Remove(keyDataFileName)
 	defer os.Remove(caDataFileName)

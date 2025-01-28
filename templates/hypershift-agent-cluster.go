@@ -44,7 +44,7 @@ var HypershiftAgentClusterAppSet = &argo.ApplicationSet{
 					Server:    "{{ url }}",
 				},
 				Project: "default",
-				Source: argo.ApplicationSource{
+				Source: &argo.ApplicationSource{
 					RepoURL:        "https://stolostron.github.io/cluster-templates-manifests",
 					TargetRevision: "0.0.1",
 					Chart:          "hypershift-agent-template",
@@ -73,7 +73,7 @@ var Day2AppSet = &argo.ApplicationSet{
 					Server:    "{{ url }}",
 				},
 				Project: "default",
-				Source: argo.ApplicationSource{
+				Source: &argo.ApplicationSource{
 					Path:           "day2-gitops/kafka",
 					RepoURL:        "https://github.com/stolostron/cluster-templates-manifests",
 					TargetRevision: "main",

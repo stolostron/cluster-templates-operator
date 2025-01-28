@@ -30,14 +30,15 @@ func GetNewClient(configBytes []byte) (client.Client, error) {
 			"ca.crt": []byte("ca.crt"),
 		},
 	}
-	client := fake.NewFakeClientWithScheme(scheme.Scheme, tokenSecret)
+
+	client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(tokenSecret).Build()
 	return client, nil
 }
 
 var _ = Describe("Test cluster setup", func() {
 	It("AddClusterToArgo", func() {
 		cti, kubeconfigSecret, app := getResources()
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, app)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(kubeconfigSecret, app).Build()
 		err := AddClusterToArgo(ctx, client, cti, GetNewClient, "argocd", false, time.Minute)
 		Expect(err).Should(BeNil())
 
@@ -63,7 +64,7 @@ var _ = Describe("Test cluster setup", func() {
 				},
 			},
 		}
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, app, mc)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(kubeconfigSecret, app, mc).Build()
 		err = AddClusterToArgo(ctx, client, cti, GetNewClient, "argocd", true, time.Minute)
 		Expect(err).Should(BeNil())
 

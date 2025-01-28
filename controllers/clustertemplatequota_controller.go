@@ -25,7 +25,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 )
@@ -106,7 +105,7 @@ func (r *ClusterTemplateQuotaReconciler) Reconcile(
 // SetupWithManager sets up the controller with the Manager.
 func (r *ClusterTemplateQuotaReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
-	mapInstanceToQuota := func(instance client.Object) []reconcile.Request {
+	mapInstanceToQuota := func(ctx context.Context, instance client.Object) []reconcile.Request {
 		quotas := &v1alpha1.ClusterTemplateQuotaList{}
 
 		listOpts := []client.ListOption{
@@ -132,7 +131,7 @@ func (r *ClusterTemplateQuotaReconciler) SetupWithManager(mgr ctrl.Manager) erro
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.ClusterTemplateQuota{}).
 		Watches(
-			&source.Kind{Type: &v1alpha1.ClusterTemplateInstance{}},
+			&v1alpha1.ClusterTemplateInstance{},
 			handler.EnqueueRequestsFromMapFunc(mapInstanceToQuota)).
 		Complete(r)
 }

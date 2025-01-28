@@ -30,6 +30,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	argooperator "github.com/argoproj-labs/argocd-operator/api/v1alpha1"
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
@@ -37,7 +39,7 @@ import (
 	console "github.com/openshift/api/console/v1alpha1"
 	openshiftAPI "github.com/openshift/api/helm/v1beta1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	v1alpha1 "github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/bridge"
@@ -105,8 +107,8 @@ func main() {
 
 	mgr, err := ctrl.NewManager(config, ctrl.Options{
 		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Metrics:                server.Options{BindAddress: metricsAddr},
+		WebhookServer:          webhook.NewServer(webhook.Options{Port: 9443}),
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "135184d5.openshift.io",
@@ -140,14 +142,6 @@ func main() {
 		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "ClusterTemplate")
-		os.Exit(1)
-	}
-
-	if err := (&controllers.HypershiftTemplateReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "HypershiftTemplate")
 		os.Exit(1)
 	}
 

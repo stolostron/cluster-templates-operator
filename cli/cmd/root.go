@@ -65,9 +65,6 @@ func CreateK8sClient() (client.Client, string) {
 
 	k8sClient, err := client.New(config, client.Options{
 		Scheme: scheme,
-		Opts: client.WarningHandlerOptions{
-			SuppressWarnings: true,
-		},
 	})
 	if err != nil {
 		os.Exit(1)

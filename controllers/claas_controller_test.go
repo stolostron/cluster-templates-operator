@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	apiextensions "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,8 +16,10 @@ import (
 	ocmv1 "open-cluster-management.io/api/cluster/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	controllerCfg "sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
 var claasCtx context.Context
@@ -315,14 +317,16 @@ func startTestEnv(crds []string) {
 		filepath.Join("..", "testutils", "testcrds", "required"),
 	}
 	crdPaths = append(crdPaths, crds...)
+	useExistingCluster := false
 	claasTestEnv = &envtest.Environment{
 		CRDDirectoryPaths:     crdPaths,
 		ErrorIfCRDPathMissing: true,
+		UseExistingCluster:    &useExistingCluster,
 	}
 	// cfg is defined in this file globally.
-	cfg, err := claasTestEnv.Start()
+	cfgClaas, err := claasTestEnv.Start()
 	Expect(err).NotTo(HaveOccurred())
-	Expect(cfg).NotTo(BeNil())
+	Expect(cfgClaas).NotTo(BeNil())
 
 	err = v1alpha1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
@@ -335,22 +339,20 @@ func startTestEnv(crds []string) {
 	err = ocmv1.AddToScheme(scheme.Scheme)
 	Expect(err).NotTo(HaveOccurred())
 
-	claasK8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	claasK8sClient, err = client.New(cfgClaas, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(claasK8sClient).NotTo(BeNil())
 
-	claasK8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:             scheme.Scheme,
-		Port:               9000,
-		MetricsBindAddress: "0",
+	skipNameValidation := true
+	claasK8sManager, err = ctrl.NewManager(cfgClaas, ctrl.Options{
+		Scheme:  scheme.Scheme,
+		Metrics: server.Options{BindAddress: "0"},
+		//WebhookServer: webhook.NewServer(webhook.Options{Port: 9000}),
+		Controller: controllerCfg.Controller{
+			SkipNameValidation: &skipNameValidation,
+		},
 	})
 	Expect(err).ToNot(HaveOccurred())
-
-	go func() {
-		//defer GinkgoRecover()
-		err = claasK8sManager.Start(claasCtx)
-		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
-	}()
 
 	claasReconciler = &CLaaSReconciler{
 		Client:  claasK8sManager.GetClient(),
@@ -358,4 +360,10 @@ func startTestEnv(crds []string) {
 	}
 	err = claasReconciler.SetupWithManager()
 	Expect(err).ToNot(HaveOccurred())
+
+	go func() {
+		defer GinkgoRecover()
+		err = claasK8sManager.Start(claasCtx)
+		Expect(err).ToNot(HaveOccurred(), "failed to run manager")
+	}()
 }

@@ -63,7 +63,7 @@ var (
 	ConsolePluginGVK = schema.GroupVersionResource{
 		Group:    "console.openshift.io",
 		Resource: "ConsolePlugin",
-		Version:  "v1alpha1",
+		Version:  "v1",
 	}
 
 	ManagedClusterGVK = schema.GroupVersionResource{

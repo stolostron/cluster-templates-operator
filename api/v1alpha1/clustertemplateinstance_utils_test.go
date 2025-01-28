@@ -12,9 +12,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
@@ -122,7 +122,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			Spec: argo.ApplicationSetSpec{
 				Template: argo.ApplicationSetTemplate{
 					Spec: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{
+						Source: &argo.ApplicationSource{
 							Helm: &argo.ApplicationSourceHelm{
 								Parameters: []argo.HelmParameter{
 									{Name: "foo", Value: "baz"},
@@ -165,7 +165,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			Spec: argo.ApplicationSetSpec{
 				Template: argo.ApplicationSetTemplate{
 					Spec: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{
+						Source: &argo.ApplicationSource{
 							Helm: &argo.ApplicationSourceHelm{
 								Parameters: []argo.HelmParameter{
 									{Name: "foo1", Value: "baz"},
@@ -223,7 +223,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			Spec: argo.ApplicationSetSpec{
 				Template: argo.ApplicationSetTemplate{
 					Spec: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{
+						Source: &argo.ApplicationSource{
 							Helm: &argo.ApplicationSourceHelm{
 								Parameters: []argo.HelmParameter{
 									{Name: "foo", Value: "baz"},
@@ -261,7 +261,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			Spec: argo.ApplicationSetSpec{
 				Template: argo.ApplicationSetTemplate{
 					Spec: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{
+						Source: &argo.ApplicationSource{
 							Helm: &argo.ApplicationSourceHelm{
 								Parameters: []argo.HelmParameter{
 									{Name: "foo1", Value: "baz"},
@@ -313,21 +313,19 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				},
 			},
 			Spec: argo.ApplicationSpec{
-				Source:      argo.ApplicationSource{},
+				Source:      &argo.ApplicationSource{},
 				Destination: argo.ApplicationDestination{},
 				Project:     "",
 			},
 		}
 
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, argoApp)
-
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(argoApp).Build()
 		app, err := cti.GetDay1Application(ctx, client, "cluster-aas-operator")
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(app).ShouldNot(BeNil())
 
-		clientWithoutApps := fake.NewFakeClientWithScheme(scheme.Scheme)
-
+		clientWithoutApps := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 		app, err = cti.GetDay1Application(ctx, clientWithoutApps, "cluster-aas-operator")
 
 		Expect(err).Should(HaveOccurred())
@@ -363,7 +361,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 		}
 
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, appset)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(appset).Build()
 		err := cti.CreateDay1Application(ctx, client, "cluster-aas-operator", false, "foo")
 
 		Expect(err).ShouldNot(HaveOccurred())
@@ -430,13 +428,13 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 						Finalizers: []string{argo.ResourcesFinalizerName},
 					},
 					Spec: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{},
+						Source: &argo.ApplicationSource{},
 					},
 				},
 			},
 		}
 
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, &kubeconfigSecret, &appset)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(&kubeconfigSecret, &appset).Build()
 		err = cti.CreateDay2Applications(ctx, client, "cluster-aas-operator", []string{"foo"})
 		Expect(err).ShouldNot(HaveOccurred())
 
@@ -471,7 +469,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				},
 			}
 
-			objs := []runtime.Object{
+			objs := []client.Object{
 				&rbacv1.RoleBinding{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-role-binding-1",
@@ -535,7 +533,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				},
 			}
 
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, objs...)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(objs...).Build()
 
 			roleSubjects, err := cti.GetSubjectsWithClusterTemplateUserRole(ctx, client)
 			Expect(err).ShouldNot(HaveOccurred())
@@ -560,7 +558,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 			Spec: ClusterTemplateInstanceSpec{},
 		}
-		client := fake.NewFakeClientWithScheme(scheme.Scheme)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 		err := cti.DeleteDay1Application(ctx, client, "default", "foo")
 		Expect(err).ShouldNot(HaveOccurred())
 	})
@@ -573,7 +571,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 			},
 			Spec: ClusterTemplateInstanceSpec{},
 		}
-		client := fake.NewFakeClientWithScheme(scheme.Scheme)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 		err := cti.DeleteDay2Application(ctx, client, "default", []string{"foo", "bar"})
 		Expect(err).ShouldNot(HaveOccurred())
 	})
@@ -595,7 +593,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				Generators: []argo.ApplicationSetGenerator{{}},
 				Template: argo.ApplicationSetTemplate{
 					Spec: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{},
+						Source: &argo.ApplicationSource{},
 						Destination: argo.ApplicationDestination{
 							Namespace: "{{ instance_ns }}",
 						},
@@ -608,7 +606,7 @@ var _ = Describe("ClusterTemplateInstance utils", func() {
 				Name: cti.Namespace,
 			},
 		}
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, defns)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(defns).Build()
 		cti.labelDestionationNamespace(ctx, appset, client, "argocdns")
 		ns := &corev1.Namespace{}
 		err := client.Get(

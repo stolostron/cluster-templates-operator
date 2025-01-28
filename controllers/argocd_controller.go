@@ -29,10 +29,10 @@ import (
 )
 
 const (
-	argoname       = "class-argocd"
-	secretName     = "class-argocd-secret"
-	day2SecretName = "class-argocd-secret-day2"
-	argoCDEnvVar   = "ARGOCD_CLUSTER_CONFIG_NAMESPACES"
+	argoname       string = "class-argocd"
+	secretName     string = "class-argocd-secret"
+	day2SecretName string = "class-argocd-secret-day2"
+	argoCDEnvVar   string = "ARGOCD_CLUSTER_CONFIG_NAMESPACES"
 )
 
 type ArgoCDReconciler struct {
@@ -46,8 +46,8 @@ func (r *ArgoCDReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	initialSync := make(chan event.GenericEvent)
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&argo.ArgoCD{}, builder.WithPredicates(predicate.NewPredicateFuncs(selectArgo))).
-		Watches(&source.Channel{Source: initialSync}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Channel{Source: EnableArgoconfigSync}, &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(source.Channel(initialSync, &handler.EnqueueRequestForObject{})).
+		WatchesRawSource(source.Channel(EnableArgoconfigSync, &handler.EnqueueRequestForObject{})).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to construct controller: %w", err)
 	}

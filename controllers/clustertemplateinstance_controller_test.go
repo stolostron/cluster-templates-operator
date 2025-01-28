@@ -4,7 +4,6 @@ import (
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	"github.com/argoproj/gitops-engine/pkg/health"
@@ -22,8 +21,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	synccommon "github.com/argoproj/gitops-engine/pkg/sync/common"
+	hypershift "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	"github.com/openshift/hypershift/api/util/ipnet"
-	hypershift "github.com/openshift/hypershift/api/v1beta1"
 
 	"github.com/kubernetes-client/go-base/config/api"
 	ocm "github.com/stolostron/cluster-templates-operator/ocm"
@@ -59,10 +58,10 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 		It("Should auto-delete the CTI", func() {
 			Eventually(func() error {
 				return k8sClient.Get(ctx, client.ObjectKeyFromObject(cti), cti)
-			}, timeout, interval).Should(BeNil())
+			}, timeout, interval).Should(Succeed())
 			Eventually(func() error {
 				return k8sClient.Get(ctx, client.ObjectKeyFromObject(cti), cti)
-			}, timeout, interval).ShouldNot(BeNil())
+			}, timeout, interval).ShouldNot(Succeed())
 		})
 	})
 
@@ -632,7 +631,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					},
 				},
 			}
-			client := fake.NewFakeClientWithScheme(scheme.Scheme)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client:               client,
 				EnableManagedCluster: true,
@@ -701,7 +700,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				},
 			}
 
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(kubeconfigSecret).Build()
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client:               client,
 				EnableManagedCluster: true,
@@ -827,7 +826,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				},
 			}
 
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, mc)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(kubeconfigSecret, mc).Build()
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client:               client,
 				EnableManagedCluster: true,
@@ -884,7 +883,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					},
 				},
 			}
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, mc)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(mc).Build()
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client:               client,
 				EnableManagedCluster: true,
@@ -941,7 +940,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 			}
 
 			appset2 := testutils.GetAppset2()
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, appset2)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(kubeconfigSecret, appset2).Build()
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client: client,
 			}
@@ -1000,7 +999,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 
 			app := testutils.GetAppDay2()
 			appset2 := testutils.GetAppset2()
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, appset2, app)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(kubeconfigSecret, appset2, app).Build()
 			err = cti.CreateDay2Applications(ctx, client, defaultArgoCDNs, []string{"appset2"})
 			Expect(err).Should(BeNil())
 			reconciler := &ClusterTemplateInstanceReconciler{
@@ -1065,7 +1064,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 				},
 			}
 
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, kubeconfigSecret, clusterSetupSecret)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(kubeconfigSecret, clusterSetupSecret).Build()
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client: client,
 			}
@@ -1088,7 +1087,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 
 			reconciler := &ClusterTemplateInstanceReconciler{}
 
-			objs := []runtime.Object{
+			objs := []client.Object{
 				&rbacv1.RoleBinding{
 					ObjectMeta: metav1.ObjectMeta{
 						Name:      "test-role-binding-1",
@@ -1115,7 +1114,8 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					},
 				},
 			}
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, objs...)
+
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(objs...).Build()
 			reconciler.ReconcileDynamicRoles(ctx, client, cti)
 
 			role := &rbacv1.Role{}
@@ -1145,7 +1145,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 	Context("CTI delete", func() {
 		cti := testutils.GetCTI()
 		It("Handles missing Kubelet", func() {
-			objs := []runtime.Object{
+			objs := []client.Object{
 				cti,
 				&ocmv1.ManagedCluster{
 					ObjectMeta: metav1.ObjectMeta{
@@ -1157,7 +1157,7 @@ var _ = Describe("ClusterTemplateInstance controller", func() {
 					},
 				},
 			}
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, objs...)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(objs...).Build()
 
 			reconciler := &ClusterTemplateInstanceReconciler{
 				Client:               client,

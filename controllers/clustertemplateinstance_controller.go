@@ -45,7 +45,7 @@ import (
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	agent "github.com/stolostron/klusterlet-addon-controller/pkg/apis/agent/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -1190,7 +1190,7 @@ func StartCTIController(
 		os.Exit(1)
 	}
 
-	ctiReconciller.SetupWatches(ctiController)
+	ctiReconciller.SetupWatches(ctiController, mgr)
 
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -1211,56 +1211,44 @@ func StartCTIController(
 	return cancel
 }
 
-func (r *ClusterTemplateInstanceReconciler) SetupWatches(ctrl controller.Controller) {
-	ctrl.Watch(
-		&source.Kind{Type: &v1alpha1.ClusterTemplateInstance{}},
-		&handler.EnqueueRequestForObject{},
-	)
-	ctrl.Watch(
-		&source.Kind{Type: &argo.Application{}},
-		handler.EnqueueRequestsFromMapFunc(MapObjToInstance),
-	)
+func (r *ClusterTemplateInstanceReconciler) SetupWatches(ctrl controller.Controller, mgr ctrl.Manager) {
+	ctrl.Watch(source.Kind(mgr.GetCache(), &v1alpha1.ClusterTemplateInstance{}, &handler.TypedEnqueueRequestForObject[*v1alpha1.ClusterTemplateInstance]{}))
+
+	ctrl.Watch(source.Kind(mgr.GetCache(), &argo.Application{}, handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj *argo.Application) []reconcile.Request {
+		return MapObjToInstance(ctx, obj)
+	})))
 
 	if r.EnableHive {
-		ctrl.Watch(
-			&source.Kind{Type: &hivev1.ClusterClaim{}},
-			handler.EnqueueRequestsFromMapFunc(
-				r.MapArgoResourceToInstance(v1alpha1.ClusterClaimGVK),
-			),
-		)
+		ctrl.Watch(source.Kind(mgr.GetCache(), &hivev1.ClusterClaim{}, handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj *hivev1.ClusterClaim) []reconcile.Request {
+			return r.MapArgoResourceToInstance(v1alpha1.ClusterClaimGVK)(ctx, obj)
+		})))
 
-		ctrl.Watch(
-			&source.Kind{Type: &hivev1.ClusterDeployment{}},
-			handler.EnqueueRequestsFromMapFunc(
-				r.MapArgoResourceToInstance(v1alpha1.ClusterDeploymentGVK),
-			),
-		)
+		ctrl.Watch(source.Kind(mgr.GetCache(), &hivev1.ClusterDeployment{}, handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj *hivev1.ClusterDeployment) []reconcile.Request {
+			return r.MapArgoResourceToInstance(v1alpha1.ClusterDeploymentGVK)(ctx, obj)
+		})))
 	}
 
 	if r.EnableHypershift {
-		ctrl.Watch(
-			&source.Kind{Type: &hypershiftv1beta1.HostedCluster{}},
-			handler.EnqueueRequestsFromMapFunc(
-				r.MapArgoResourceToInstance(v1alpha1.HostedClusterGVK),
-			),
-		)
-		ctrl.Watch(
-			&source.Kind{Type: &hypershiftv1beta1.NodePool{}},
-			handler.EnqueueRequestsFromMapFunc(r.MapArgoResourceToInstance(v1alpha1.NodePoolGVK)))
+		ctrl.Watch(source.Kind(mgr.GetCache(), &hypershiftv1beta1.HostedCluster{}, handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj *hypershiftv1beta1.HostedCluster) []reconcile.Request {
+			return r.MapArgoResourceToInstance(v1alpha1.HostedClusterGVK)(ctx, obj)
+		})))
+
+		ctrl.Watch(source.Kind(mgr.GetCache(), &hypershiftv1beta1.NodePool{}, handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj *hypershiftv1beta1.NodePool) []reconcile.Request {
+			return r.MapArgoResourceToInstance(v1alpha1.NodePoolGVK)(ctx, obj)
+		})))
 	}
 
 	if r.EnableManagedCluster {
-		ctrl.Watch(
-			&source.Kind{Type: &ocmv1.ManagedCluster{}},
-			handler.EnqueueRequestsFromMapFunc(MapObjToInstance),
-		)
+		ctrl.Watch(source.Kind(mgr.GetCache(), &ocmv1.ManagedCluster{}, handler.TypedEnqueueRequestsFromMapFunc(func(ctx context.Context, obj *ocmv1.ManagedCluster) []reconcile.Request {
+			return MapObjToInstance(ctx, obj)
+		})))
 	}
 }
 
 func (r *ClusterTemplateInstanceReconciler) MapArgoResourceToInstance(
 	resourceGVK schema.GroupVersionResource,
-) func(res client.Object) []reconcile.Request {
-	return func(res client.Object) []reconcile.Request {
+) handler.MapFunc {
+	return func(ctx context.Context, res client.Object) []reconcile.Request {
 		reply := []reconcile.Request{}
 		apps := &argo.ApplicationList{}
 
@@ -1320,7 +1308,7 @@ func (r *ClusterTemplateInstanceReconciler) MapArgoResourceToInstance(
 	}
 }
 
-func MapObjToInstance(obj client.Object) []reconcile.Request {
+func MapObjToInstance(ctx context.Context, obj client.Object) []reconcile.Request {
 	reply := []reconcile.Request{}
 	name := ""
 	namespace := ""

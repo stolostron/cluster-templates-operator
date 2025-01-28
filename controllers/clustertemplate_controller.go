@@ -126,39 +126,41 @@ func (r *ClusterTemplateReconciler) getValuesParamsAndSchema(
 	schema := ""
 	params := []v1alpha1.ClusterTemplateParams{}
 
-	if appSpec.Source.Helm != nil {
-		for _, param := range appSpec.Source.Helm.Parameters {
-			params = append(params, v1alpha1.ClusterTemplateParams{
-				Name:  param.Name,
-				Value: param.Value,
-			})
+	if appSpec.Source != nil {
+		if appSpec.Source.Helm != nil {
+			for _, param := range appSpec.Source.Helm.Parameters {
+				params = append(params, v1alpha1.ClusterTemplateParams{
+					Name:  param.Name,
+					Value: param.Value,
+				})
+			}
 		}
-	}
 
-	if appSpec.Source.Chart != "" {
-		repoURL := appSpec.Source.RepoURL
-		chartName := appSpec.Source.Chart
-		chartVersion := appSpec.Source.TargetRevision
-		chart, err := repository.GetChart(
-			ctx,
-			r.Client,
-			repoURL,
-			chartName,
-			chartVersion,
-			ArgoCDNamespace,
-		)
-		if err != nil {
-			return values, params, schema, err
-		}
-		for _, file := range chart.Raw {
-			if file.Name == "values.yaml" {
-				values = string(file.Data)
+		if appSpec.Source.Chart != "" {
+			repoURL := appSpec.Source.RepoURL
+			chartName := appSpec.Source.Chart
+			chartVersion := appSpec.Source.TargetRevision
+			chart, err := repository.GetChart(
+				ctx,
+				r.Client,
+				repoURL,
+				chartName,
+				chartVersion,
+				ArgoCDNamespace,
+			)
+			if err != nil {
+				return values, params, schema, err
 			}
-			if file.Name == "values.schema.json" {
-				schema = string(file.Data)
+			for _, file := range chart.Raw {
+				if file.Name == "values.yaml" {
+					values = string(file.Data)
+				}
+				if file.Name == "values.schema.json" {
+					schema = string(file.Data)
+				}
 			}
+			return values, params, schema, nil
 		}
-		return values, params, schema, nil
 	}
 	return values, params, schema, nil
 }

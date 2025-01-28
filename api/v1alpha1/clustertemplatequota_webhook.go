@@ -25,6 +25,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 var clustertemplatequotalog = logf.Log.WithName("clustertemplatequota-resource")
@@ -41,7 +42,7 @@ func (r *ClusterTemplateQuota) SetupWebhookWithManager(mgr ctrl.Manager) error {
 
 var _ webhook.Validator = &ClusterTemplateQuota{}
 
-func (r *ClusterTemplateQuota) ValidateCreate() error {
+func (r *ClusterTemplateQuota) ValidateCreate() (admission.Warnings, error) {
 	clustertemplatequotalog.Info("validate create", "name", r.Name)
 
 	quotas := ClusterTemplateQuotaList{}
@@ -49,17 +50,17 @@ func (r *ClusterTemplateQuota) ValidateCreate() error {
 	opts := []client.ListOption{client.InNamespace(r.Namespace)}
 
 	if err := quotaControllerClient.List(context.TODO(), &quotas, opts...); err != nil {
-		return fmt.Errorf("failed to list cluster quotas - %q", err)
+		return []string{}, fmt.Errorf("failed to list cluster quotas - %q", err)
 	}
 
 	if len(quotas.Items) > 0 {
-		return fmt.Errorf("cluster quota for this namespace already exists")
+		return []string{}, fmt.Errorf("cluster quota for this namespace already exists")
 	}
 
 	templates := ClusterTemplateList{}
 
 	if err := quotaControllerClient.List(context.TODO(), &templates); err != nil {
-		return fmt.Errorf("failed to list cluster templates - %q", err)
+		return []string{}, fmt.Errorf("failed to list cluster templates - %q", err)
 	}
 
 	for _, allowedTemplate := range r.Spec.AllowedTemplates {
@@ -70,24 +71,24 @@ func (r *ClusterTemplateQuota) ValidateCreate() error {
 			}
 		}
 		if !templateFound {
-			return fmt.Errorf("template '%s' does not exist", allowedTemplate.Name)
+			return []string{}, fmt.Errorf("template '%s' does not exist", allowedTemplate.Name)
 		}
 	}
-	return nil
+	return []string{}, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *ClusterTemplateQuota) ValidateUpdate(old runtime.Object) error {
+func (r *ClusterTemplateQuota) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	clustertemplatequotalog.Info("validate update", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object update.
-	return nil
+	return []string{}, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *ClusterTemplateQuota) ValidateDelete() error {
+func (r *ClusterTemplateQuota) ValidateDelete() (admission.Warnings, error) {
 	clustertemplatequotalog.Info("validate delete", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
-	return nil
+	return []string{}, nil
 }

@@ -25,7 +25,7 @@ var _ = Describe("Resource utils", func() {
 				"key": []byte("value"),
 			},
 		}
-		client := fake.NewFakeClientWithScheme(scheme)
+		client := fake.NewClientBuilder().WithScheme(scheme).Build()
 		err := EnsureResourceExists(context.TODO(), client, secret, false)
 		Expect(err).To(BeNil())
 
