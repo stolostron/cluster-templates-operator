@@ -49,7 +49,7 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 				}
 				clusterDefinitionCondition := meta.FindStatusCondition(
 					cti.Status.Conditions,
-					string(v1alpha1.ClusterDefinitionCreated),
+					string(v1alpha1.EnvironmentDefinitionCreated),
 				)
 				if clusterDefinitionCondition == nil {
 					return false
@@ -97,7 +97,7 @@ var _ = Describe("ClusterTemplateQuota controller", func() {
 				}
 				clusterDefinitionCondition := meta.FindStatusCondition(
 					cti.Status.Conditions,
-					string(v1alpha1.ClusterDefinitionCreated),
+					string(v1alpha1.EnvironmentDefinitionCreated),
 				)
 				if clusterDefinitionCondition == nil {
 					return false

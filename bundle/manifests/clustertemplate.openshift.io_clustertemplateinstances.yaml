@@ -108,6 +108,11 @@ spec:
               apiServerURL:
                 description: API server URL of the new cluster
                 type: string
+              appLinks:
+                description: Links for any route associated with day2
+                items:
+                  type: string
+                type: array
               clusterSetup:
                 description: Status of each cluster setup
                 items:

@@ -19,6 +19,7 @@ package v1alpha1
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"golang.org/x/exp/slices"
 
@@ -167,6 +168,7 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 	appSet *argo.ApplicationSet,
 	server string,
 	isDay2 bool,
+	day1Ns string,
 ) error {
 	for _, g := range appSet.Spec.Generators {
 		if g.List != nil && g.List.Template.Labels[CTINameLabel] == i.Name && g.List.Template.Labels[CTINamespaceLabel] == i.Namespace {
@@ -174,14 +176,32 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 		}
 	}
 
-	name := string(i.UID)
+	name := i.Namespace + "-" + i.Name
 	if isDay2 {
 		name = name + "-" + appSet.Name
 	}
 
-	elements, _ := json.Marshal(map[string]string{"url": server, "instance_ns": i.Namespace})
+	user := i.Annotations[CTIRequesterAnnotation]
+	if len(user) == 0 {
+		user = "cluster-admin"
+	}
+
+	elements := map[string]string{
+		"instance_ns": i.Namespace,
+		"user":        user,
+	}
+
+	if server != "" {
+		elements["url"] = server
+	}
+
+	if day1Ns != "" {
+		elements["namespace"] = day1Ns
+	}
+
+	raw, _ := json.Marshal(elements)
 	gen := argo.ApplicationSetGenerator{List: &argo.ListGenerator{
-		Elements: []apiextensionsv1.JSON{{Raw: elements}},
+		Elements: []apiextensionsv1.JSON{{Raw: raw}},
 		Template: argo.ApplicationSetTemplate{
 			ApplicationSetTemplateMeta: argo.ApplicationSetTemplateMeta{
 				Name: name,
@@ -229,7 +249,7 @@ func (i *ClusterTemplateInstance) labelDestionationNamespace(ctx context.Context
 		appSetNS = i.Namespace
 	}
 
-	if appSetNS == "" {
+	if appSetNS == "" || appSetNS == "{{ user }}" {
 		return nil
 	}
 	// Set the Argo label for the destination namespace:
@@ -260,6 +280,8 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 	argoCDNamespace string,
 	labelNamespace bool,
 	clusterDefinition string,
+	targetCluster string,
+	targetNamespace string,
 ) error {
 	appSet := &argo.ApplicationSet{}
 	if err := k8sClient.Get(
@@ -276,7 +298,7 @@ func (i *ClusterTemplateInstance) CreateDay1Application(
 		}
 	}
 
-	return i.UpdateApplicationSet(ctx, k8sClient, appSet, "https://kubernetes.default.svc", false)
+	return i.UpdateApplicationSet(ctx, k8sClient, appSet, targetCluster, false, targetNamespace)
 }
 
 func (i *ClusterTemplateInstance) GetDay2Applications(
@@ -319,30 +341,40 @@ func (i *ClusterTemplateInstance) CreateDay2Applications(
 	k8sClient client.Client,
 	argoCDNamespace string,
 	clusterSetup []string,
+	isNamespaceType bool,
+	day1Ns string,
+	targetCluster string,
 ) error {
 	appsets, err := getDay2Appsets(ctx, k8sClient, argoCDNamespace, clusterSetup, true)
 	if err != nil {
 		return err
 	}
 
-	kubeconfigSecret := corev1.Secret{}
-	if err := k8sClient.Get(
-		ctx,
-		client.ObjectKey{
-			Name:      i.GetKubeconfigRef(),
-			Namespace: i.Namespace,
-		},
-		&kubeconfigSecret,
-	); err != nil {
-		return err
-	}
-	kubeconfig := api.Config{}
-	if err := yaml.Unmarshal(kubeconfigSecret.Data["kubeconfig"], &kubeconfig); err != nil {
-		return err
+	server := "https://kubernetes.default.svc"
+
+	if !isNamespaceType {
+		kubeconfigSecret := corev1.Secret{}
+		if err := k8sClient.Get(
+			ctx,
+			client.ObjectKey{
+				Name:      i.GetKubeconfigRef(),
+				Namespace: i.Namespace,
+			},
+			&kubeconfigSecret,
+		); err != nil {
+			return err
+		}
+		kubeconfig := api.Config{}
+		if err := yaml.Unmarshal(kubeconfigSecret.Data["kubeconfig"], &kubeconfig); err != nil {
+			return err
+		}
+		server = kubeconfig.Clusters[0].Cluster.Server
+	} else {
+		server = targetCluster
 	}
 
 	for _, appset := range appsets {
-		if err := i.UpdateApplicationSet(ctx, k8sClient, appset, kubeconfig.Clusters[0].Cluster.Server, true); err != nil {
+		if err := i.UpdateApplicationSet(ctx, k8sClient, appset, server, true, day1Ns); err != nil {
 			return err
 		}
 	}
@@ -522,4 +554,11 @@ func (i *ClusterTemplateInstance) ContainsSetupSecret(secretName string) bool {
 	}
 
 	return false
+}
+
+func (i *ClusterTemplateInstance) SetErrorPhase(phase Phase, msg string, err error) error {
+	i.Status.Phase = phase
+	errMsg := fmt.Sprintf(msg+" - %q", err)
+	i.Status.Message = errMsg
+	return fmt.Errorf(errMsg)
 }
