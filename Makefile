@@ -130,6 +130,19 @@ docker-push: ## Push docker image with the manager.
 build-cli: ## Build kubectl CLI plugin.
 	go build cli/kubectl-cluster.go && go build -ldflags="-X 'github.com/stolostron/cluster-templates-operator/cli/cmd.ocLogin=true'" -o=oc-cluster.go cli/kubectl-cluster.go
 
+.PHONY: k8s-client-gen
+k8s-client-gen: client-gen
+	mkdir gen-tmp
+	$(CLIENTGEN) --clientset-name versioned --input-base "" --input github.com/stolostron/cluster-templates-operator/api//v1alpha1 \
+				--output-package github.com/stolostron/cluster-templates-operator/generated/clientset \
+				--output-base gen-tmp --go-header-file hack/boilerplate.go.txt --v 10
+	# since the api folder structure has no group folder, the client fails to generate client with group prefix and needs to be renamed
+	mv gen-tmp/github.com/stolostron/cluster-templates-operator/generated/clientset/versioned/typed/v1alpha1/_client.go gen-tmp/github.com/stolostron/cluster-templates-operator/generated/clientset/versioned/typed/v1alpha1/client.go
+
+	rm -rf generated
+	mv gen-tmp/github.com/stolostron/cluster-templates-operator/generated ./
+	rm -rf gen-tmp
+
 ##@ Deployment
 
 ifndef ignore-not-found
@@ -163,6 +176,7 @@ $(LOCALBIN):
 ## Tool Binaries
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
+CLIENTGEN = $(LOCALBIN)/client-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 
 ## Tool Versions
@@ -175,6 +189,11 @@ KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/k
 kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
 	curl -s $(KUSTOMIZE_INSTALL_SCRIPT) | bash -s -- $(subst v,,$(KUSTOMIZE_VERSION)) $(LOCALBIN)
+
+.PHONY: client-gen
+client-gen: $(CLIENTGEN) ## Download client-gen locally if necessary.
+$(CLIENTGEN): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install k8s.io/code-generator/cmd/client-gen@v0.23.5
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
