@@ -22,7 +22,7 @@ var _ = Describe("ManagedCluster", func() {
 	utilruntime.Must(ocmv1.AddToScheme(scheme))
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	It("Create managed cluster", func() {
-		client := fake.NewFakeClientWithScheme(scheme)
+		client := fake.NewClientBuilder().WithScheme(scheme).Build()
 		cti := &v1alpha1.ClusterTemplateInstance{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
@@ -49,7 +49,7 @@ var _ = Describe("ManagedCluster", func() {
 				},
 			},
 		}
-		client := fake.NewFakeClientWithScheme(scheme, mc)
+		client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(mc).Build()
 		cti := &v1alpha1.ClusterTemplateInstance{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
@@ -97,7 +97,7 @@ var _ = Describe("ManagedCluster", func() {
 				"kubeconfig": data,
 			},
 		}
-		client := fake.NewFakeClientWithScheme(scheme, mc, kubeconfigSecret)
+		client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(mc, kubeconfigSecret).Build()
 
 		imported, err := ImportManagedCluster(context.TODO(), client, cti)
 		Expect(err).To(BeNil())

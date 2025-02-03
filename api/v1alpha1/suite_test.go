@@ -21,10 +21,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	//+kubebuilder:scaffold:imports
-
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to
@@ -33,7 +30,5 @@ import (
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Webhook Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	RunSpecs(t, "Webhook Suite")
 }

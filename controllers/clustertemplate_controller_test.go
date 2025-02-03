@@ -49,7 +49,7 @@ var _ = Describe("ClusterTemplate controller", func() {
 				Generators: []argo.ApplicationSetGenerator{{}},
 				Template: argo.ApplicationSetTemplate{
 					Spec: argo.ApplicationSpec{
-						Source: argo.ApplicationSource{
+						Source: &argo.ApplicationSource{
 							RepoURL:        server.URL,
 							TargetRevision: "0.0.2",
 							Chart:          "hypershift-template-no-schema",

@@ -34,7 +34,8 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				},
 			},
 		}
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ctq)
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(ctq).Build()
+
 		cti := ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
@@ -44,7 +45,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				ClusterTemplateRef: "foo-tmp",
 			},
 		}
-		err = cti.ValidateCreate()
+		_, err = cti.ValidateCreate()
 		Expect(err).Should(HaveOccurred())
 		Expect(err.Error()).Should(Equal("cluster template does not exist"))
 	})
@@ -74,7 +75,8 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				Cost: &cost,
 			},
 		}
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ctq, ct)
+
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(ctq, ct).Build()
 		cti := ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
@@ -84,7 +86,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				ClusterTemplateRef: "foo-tmp",
 			},
 		}
-		err = cti.ValidateCreate()
+		_, err = cti.ValidateCreate()
 		Expect(err).Should(HaveOccurred())
 		Expect(
 			err.Error(),
@@ -113,7 +115,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			},
 			Spec: ClusterTemplateSpec{},
 		}
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ctq, ct)
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(ctq, ct).Build()
 		cti := ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
@@ -123,7 +125,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				ClusterTemplateRef: "foo-tmp",
 			},
 		}
-		err = cti.ValidateCreate()
+		_, err = cti.ValidateCreate()
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 	It("Fails when max insances reached", func() {
@@ -161,7 +163,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				Cost: &cost,
 			},
 		}
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ctq, ct)
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(ctq, ct).Build()
 		cti := ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
@@ -171,7 +173,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				ClusterTemplateRef: "foo-tmp",
 			},
 		}
-		err = cti.ValidateCreate()
+		_, err = cti.ValidateCreate()
 		Expect(err).Should(HaveOccurred())
 		Expect(
 			err.Error(),
@@ -212,7 +214,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				Cost: &cost,
 			},
 		}
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ctq, ct)
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(ctq, ct).Build()
 		cti := ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "foo-instance",
@@ -222,7 +224,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 				ClusterTemplateRef: "foo-tmp",
 			},
 		}
-		err = cti.ValidateCreate()
+		_, err = cti.ValidateCreate()
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 
@@ -253,7 +255,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			},
 		}
 
-		err := cti.ValidateUpdate(newCti)
+		_, err := cti.ValidateUpdate(newCti)
 		Expect(err).Should(HaveOccurred())
 		Expect(
 			err.Error(),
@@ -287,7 +289,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			},
 		}
 
-		err := cti.ValidateUpdate(newCti)
+		_, err := cti.ValidateUpdate(newCti)
 		Expect(err).Should(HaveOccurred())
 		Expect(
 			err.Error(),
@@ -321,7 +323,7 @@ var _ = Describe("ClusterTemplateInstance validating webhook", func() {
 			},
 		}
 
-		err := cti.ValidateUpdate(newCti)
+		_, err := cti.ValidateUpdate(newCti)
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 })
@@ -337,7 +339,7 @@ var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
 				Name: "foo-template",
 			},
 		}
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ct)
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(ct).Build()
 		secretName := "abc"
 		cti := &ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
@@ -379,7 +381,7 @@ var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
 				"foo": []byte("bar"),
 			},
 		}
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ct, secret)
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(ct, secret).Build()
 		cti := &ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: "foo",
@@ -422,7 +424,7 @@ var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
 				"kubeconfig": kubeconfigFile,
 			},
 		}
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ct, secret)
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(ct, secret).Build()
 		cti := &ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: "foo",
@@ -447,7 +449,7 @@ var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
 		scheme := runtime.NewScheme()
 		err := AddToScheme(scheme)
 		Expect(err).ShouldNot(HaveOccurred())
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme)
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).Build()
 		cti := &ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: "foo",
@@ -476,7 +478,7 @@ var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
 				Name: "foo-template",
 			},
 		}
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ct)
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(ct).Build()
 		cti := &ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: "foo",
@@ -511,7 +513,7 @@ var _ = Describe("ClusterTemplateInstance mutating webhook", func() {
 				},
 			},
 		}
-		instanceControllerClient = fake.NewFakeClientWithScheme(scheme, ct)
+		instanceControllerClient = fake.NewClientBuilder().WithScheme(scheme).WithObjects(ct).Build()
 		cti := &ClusterTemplateInstance{
 			ObjectMeta: v1.ObjectMeta{
 				Namespace: "foo",

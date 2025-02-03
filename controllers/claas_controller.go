@@ -138,6 +138,9 @@ func (r *CLaaSReconciler) SetupWithManager() error {
 	r.enableManagedCluster = isCRDAvailable(client, v1alpha1.ManagedClusterGVK)
 	r.enableKlusterlet = isCRDAvailable(client, v1alpha1.KlusterletAddonGVK)
 
+	if ctiControllerCancel != nil {
+		ctiControllerCancel()
+	}
 	ctiControllerCancel = StartCTIController(
 		r.Manager,
 		r.enableHypershift,
@@ -166,7 +169,7 @@ func (r *CLaaSReconciler) SetupWithManager() error {
 		}
 	}
 
-	return ctrl.NewControllerManagedBy(r.Manager).
+	return ctrl.NewControllerManagedBy(r.Manager).Named("claascontroller").
 		For(&apiextensions.CustomResourceDefinition{}).
 		WithEventFilter(
 			predicate.Funcs{

@@ -54,15 +54,15 @@ type HypershiftTemplateReconciler struct {
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *HypershiftTemplateReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	if err := ctrl.NewControllerManagedBy(mgr).
+	if err := ctrl.NewControllerManagedBy(mgr).Named("hypershifttemplate").
 		For(&v1alpha1.ClusterTemplate{}, builder.WithPredicates(predicate.NewPredicateFuncs(r.selectHypershiftTemplate))).
-		Watches(&source.Channel{Source: initialSync}, &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(source.Channel(initialSync, &handler.EnqueueRequestForObject{})).
 		Watches(
-			&source.Kind{Type: &argo.ApplicationSet{}},
+			&argo.ApplicationSet{},
 			&handler.EnqueueRequestForObject{},
 			builder.WithPredicates(predicate.NewPredicateFuncs(r.selectHypershiftTemplateAppSet)),
 		).
-		Watches(&source.Channel{Source: EnableArgoconfigSync}, &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(source.Channel(EnableArgoconfigSync, &handler.EnqueueRequestForObject{})).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to construct controller: %w", err)
 	}

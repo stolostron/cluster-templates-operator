@@ -23,12 +23,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/kubernetes/scheme"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
@@ -42,9 +41,7 @@ var cancel context.CancelFunc
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Cluster providers Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	RunSpecs(t, "Cluster providers Suite")
 }
 
 var _ = BeforeSuite(func() {

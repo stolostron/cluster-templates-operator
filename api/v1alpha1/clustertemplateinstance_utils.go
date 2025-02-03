@@ -201,14 +201,14 @@ func (i *ClusterTemplateInstance) UpdateApplicationSet(
 		gen.List.Template.ApplicationSetTemplateMeta.Finalizers = append(appSet.Spec.Template.Finalizers, argo.ResourcesFinalizerName)
 	}
 
-	if appSet.Spec.Template.Spec.Source.Chart != "" {
+	if appSet.Spec.Template.Spec.Source != nil && appSet.Spec.Template.Spec.Source.Chart != "" {
 		params, err := i.GetHelmParameters(appSet, isDay2)
 		if err != nil {
 			return err
 		}
 
 		gen.List.Template.Spec = argo.ApplicationSpec{
-			Source: argo.ApplicationSource{
+			Source: &argo.ApplicationSource{
 				Helm: &argo.ApplicationSourceHelm{
 					Parameters: params,
 				},
@@ -381,7 +381,7 @@ func (i *ClusterTemplateInstance) GetHelmParameters(
 	isDay2 bool,
 ) ([]argo.HelmParameter, error) {
 	params := []argo.HelmParameter{}
-	if appset != nil && appset.Spec.Template.Spec.Source.Helm != nil {
+	if appset != nil && appset.Spec.Template.Spec.Source != nil && appset.Spec.Template.Spec.Source.Helm != nil {
 		params = appset.Spec.Template.Spec.Source.Helm.Parameters
 	}
 	for _, param := range i.Spec.Parameters {

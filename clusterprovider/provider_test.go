@@ -9,13 +9,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	"gopkg.in/yaml.v3"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	kubeClient "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
@@ -211,10 +211,10 @@ var _ = Describe("Test cluster providers", func() {
 func testProvider(
 	clusterProvider ClusterProvider,
 	cti v1alpha1.ClusterTemplateInstance,
-	getResources func(opts ResourceOpts) []runtime.Object,
+	getResources func(opts ResourceOpts) []client.Object,
 ) {
 	It("Returns not ready and err when resource does not exist", func() {
-		client := fake.NewFakeClientWithScheme(scheme.Scheme)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).Build()
 
 		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(err).Should(HaveOccurred())
@@ -223,7 +223,7 @@ func testProvider(
 	})
 	It("Returns not ready when resource condition is false", func() {
 		resources := getResources(ResourceOpts{})
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(resources...).Build()
 
 		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(err).NotTo(HaveOccurred())
@@ -232,7 +232,7 @@ func testProvider(
 	})
 	It("Returns not ready when resource condition is true but credentials are missing", func() {
 		resources := getResources(ResourceOpts{isReady: true})
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(resources...).Build()
 
 		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(err).NotTo(HaveOccurred())
@@ -241,7 +241,7 @@ func testProvider(
 	})
 	It("Returns not ready when resource condition is true but kubeconfig is missing", func() {
 		resources := getResources(ResourceOpts{isReady: true, kubeadmin: true})
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(resources...).Build()
 
 		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(err).NotTo(HaveOccurred())
@@ -250,7 +250,7 @@ func testProvider(
 	})
 	It("Returns not ready when resource condition is true but kubeadmin is missing", func() {
 		resources := getResources(ResourceOpts{isReady: true, kubeconfig: true})
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(resources...).Build()
 
 		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(err).NotTo(HaveOccurred())
@@ -266,7 +266,7 @@ func testProvider(
 				kubeadminInvalid: true,
 				kubeconfig:       true,
 			})
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(resources...).Build()
 
 			ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 			Expect(err).To(HaveOccurred())
@@ -283,7 +283,7 @@ func testProvider(
 				kubeconfig:        true,
 				kubeconfigInvalid: true,
 			})
-			client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
+			client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(resources...).Build()
 
 			ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 			Expect(err).To(HaveOccurred())
@@ -297,7 +297,7 @@ func testProvider(
 			kubeadmin:  true,
 			kubeconfig: true,
 		})
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, resources...)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(resources...).Build()
 
 		ready, msg, err := clusterProvider.GetClusterStatus(ctx, client, cti)
 		Expect(err).ToNot(HaveOccurred())
@@ -344,8 +344,8 @@ type ResourceOpts struct {
 	kubeconfigInvalid bool
 }
 
-func getHostedCluster(opts ResourceOpts) []runtime.Object {
-	resources := []runtime.Object{}
+func getHostedCluster(opts ResourceOpts) []client.Object {
+	resources := []client.Object{}
 
 	conditionStatus := metav1.ConditionFalse
 	if opts.isReady {
@@ -423,7 +423,7 @@ func getHostedCluster(opts ResourceOpts) []runtime.Object {
 	return resources
 }
 
-func getHostedClusterWithNodePools(opts ResourceOpts) []runtime.Object {
+func getHostedClusterWithNodePools(opts ResourceOpts) []client.Object {
 	resources := getHostedCluster(opts)
 	conditionStatus := corev1.ConditionFalse
 	if opts.isReady {
@@ -451,8 +451,8 @@ func getHostedClusterWithNodePools(opts ResourceOpts) []runtime.Object {
 	return append(resources, &np)
 }
 
-func getClusterClaim(opts ResourceOpts) []runtime.Object {
-	resources := []runtime.Object{}
+func getClusterClaim(opts ResourceOpts) []client.Object {
+	resources := []client.Object{}
 
 	conditionStatus := corev1.ConditionFalse
 	if opts.isReady {
@@ -558,8 +558,8 @@ func getClusterClaim(opts ResourceOpts) []runtime.Object {
 	return resources
 }
 
-func getClusterDeployment(opts ResourceOpts) []runtime.Object {
-	resources := []runtime.Object{}
+func getClusterDeployment(opts ResourceOpts) []client.Object {
+	resources := []client.Object{}
 
 	conditionStatus := corev1.ConditionFalse
 	if opts.isReady {

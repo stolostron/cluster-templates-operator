@@ -13,14 +13,14 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
-	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	hivev1 "github.com/openshift/hive/apis/hive/v1"
-	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
@@ -35,9 +35,7 @@ var k8sManager manager.Manager
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
-	RunSpecsWithDefaultAndCustomReporters(t,
-		"Helm Suite",
-		[]Reporter{printer.NewlineReporter{}})
+	RunSpecs(t, "Helm Suite")
 }
 
 var _ = BeforeSuite(func() {
@@ -76,8 +74,8 @@ var _ = BeforeSuite(func() {
 	Expect(k8sClient).NotTo(BeNil())
 
 	k8sManager, err = ctrl.NewManager(cfg, ctrl.Options{
-		Scheme:             scheme.Scheme,
-		MetricsBindAddress: "0",
+		Scheme:  scheme.Scheme,
+		Metrics: server.Options{BindAddress: "0"},
 	})
 	Expect(err).ToNot(HaveOccurred())
 

@@ -23,7 +23,7 @@ var _ = Describe("Klusterlet", func() {
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	utilruntime.Must(agent.AddToScheme(scheme))
 	It("Returns error when MC does not exist", func() {
-		client := fake.NewFakeClientWithScheme(scheme)
+		client := fake.NewClientBuilder().WithScheme(scheme).Build()
 		cti := &v1alpha1.ClusterTemplateInstance{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "foo",
@@ -58,7 +58,7 @@ var _ = Describe("Klusterlet", func() {
 				HubAcceptsClient: true,
 			},
 		}
-		client := fake.NewFakeClientWithScheme(scheme, mc)
+		client := fake.NewClientBuilder().WithScheme(scheme).WithObjects(mc).Build()
 		err := CreateKlusterletAddonConfig(context.TODO(), client, cti)
 		Expect(err).ShouldNot(HaveOccurred())
 

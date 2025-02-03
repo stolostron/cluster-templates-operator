@@ -67,7 +67,7 @@ var _ = Describe("Helm client", func() {
 			},
 		}
 
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(secret).Build()
 		chart, err := GetChart(
 			context.TODO(),
 			client,
@@ -95,7 +95,7 @@ var _ = Describe("Helm client", func() {
 			},
 		}
 
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(secret).Build()
 		chart, err := GetChart(
 			context.TODO(),
 			client,
@@ -140,7 +140,7 @@ var _ = Describe("Helm client", func() {
 			},
 		}
 
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret, cm)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(secret, cm).Build()
 
 		chart, err := GetChart(
 			context.TODO(),
@@ -169,7 +169,7 @@ var _ = Describe("Helm client", func() {
 				"password": []byte("password"),
 			},
 		}
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(secret).Build()
 
 		chart, err := GetChart(
 			context.TODO(),
@@ -198,7 +198,7 @@ var _ = Describe("Helm client", func() {
 				"password": []byte("invalid"),
 			},
 		}
-		client := fake.NewFakeClientWithScheme(scheme.Scheme, secret)
+		client := fake.NewClientBuilder().WithScheme(scheme.Scheme).WithObjects(secret).Build()
 
 		chart, err := GetChart(
 			context.TODO(),

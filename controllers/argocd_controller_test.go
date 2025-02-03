@@ -21,13 +21,23 @@ var _ = Describe("ArgoCD controller", func() {
 	})
 
 	It("Default ArgoCD should be eventually created", func() {
-		Eventually(func() error {
-			return k8sClient.Get(ctx, types.NamespacedName{Name: argoname, Namespace: defaultArgoCDNs}, argo)
-		}, timeout, interval).Should(BeNil())
+		argoList := &argooperator.ArgoCDList{}
+
+		Eventually(func() bool {
+			err := k8sApiReader.List(ctx, argoList)
+			if err != nil {
+				return false
+			}
+			if len(argoList.Items) == 0 {
+				return false
+			}
+			argo = &argoList.Items[0]
+			return argoList.Items[0].Name == argoname && argoList.Items[0].Namespace == defaultArgoCDNs
+		}, timeout, interval).Should(BeTrue())
 
 		Eventually(func() string {
 			sub := &operators.Subscription{}
-			if err := k8sClient.Get(ctx, types.NamespacedName{Name: "argocd-operator", Namespace: "openshift-operators"}, sub); err != nil {
+			if err := k8sApiReader.Get(ctx, types.NamespacedName{Name: "argocd-operator", Namespace: "openshift-operators"}, sub); err != nil {
 				return ""
 			}
 			if sub.Spec.Config == nil {
@@ -54,15 +64,15 @@ var _ = Describe("ArgoCD controller with cm", func() {
 
 	It("ArgoCD should be deleted if default namespace is changed", func() {
 		Eventually(func() error {
-			return k8sClient.Get(ctx, types.NamespacedName{Name: secretName, Namespace: defaultArgoCDNs}, s)
+			return k8sApiReader.Get(ctx, types.NamespacedName{Name: secretName, Namespace: defaultArgoCDNs}, s)
 		}, timeout, interval).Should(BeNil())
 		Eventually(func() error {
-			return k8sClient.Get(ctx, types.NamespacedName{Name: argoname, Namespace: defaultArgoCDNs}, argo)
+			return k8sApiReader.Get(ctx, types.NamespacedName{Name: argoname, Namespace: defaultArgoCDNs}, argo)
 		}, timeout, interval).Should(BeNil())
 
 		Eventually(func() string {
 			sub := &operators.Subscription{}
-			if err := k8sClient.Get(ctx, types.NamespacedName{Name: "argocd-operator", Namespace: "openshift-operators"}, sub); err != nil {
+			if err := k8sApiReader.Get(ctx, types.NamespacedName{Name: "argocd-operator", Namespace: "openshift-operators"}, sub); err != nil {
 				return ""
 			}
 			if sub.Spec.Config == nil {
@@ -72,23 +82,23 @@ var _ = Describe("ArgoCD controller with cm", func() {
 		}, timeout, interval).Should(Equal(defaultArgoCDNs))
 
 		Eventually(func() error {
-			return k8sClient.Get(ctx, types.NamespacedName{Name: configName, Namespace: defaultArgoCDNs}, c)
+			return k8sApiReader.Get(ctx, types.NamespacedName{Name: configName, Namespace: defaultArgoCDNs}, c)
 		}, timeout, interval).Should(BeNil())
 		c.Spec.ArgoCDNamespace = "my-argocd-ns"
 		Expect(k8sClient.Update(ctx, c)).ToNot(HaveOccurred())
 
 		Eventually(func() error {
-			return k8sClient.Get(ctx, types.NamespacedName{Name: argoname, Namespace: defaultArgoCDNs}, argo)
+			return k8sApiReader.Get(ctx, types.NamespacedName{Name: argoname, Namespace: defaultArgoCDNs}, argo)
 		}, timeout, interval).ShouldNot(BeNil())
 		Eventually(func() error {
-			return k8sClient.Get(ctx, types.NamespacedName{Name: secretName, Namespace: defaultArgoCDNs}, s)
+			return k8sApiReader.Get(ctx, types.NamespacedName{Name: secretName, Namespace: defaultArgoCDNs}, s)
 		}, timeout, interval).ShouldNot(BeNil())
 		Eventually(func() error {
-			return k8sClient.Get(ctx, types.NamespacedName{Name: secretName, Namespace: "my-argocd-ns"}, s)
+			return k8sApiReader.Get(ctx, types.NamespacedName{Name: secretName, Namespace: "my-argocd-ns"}, s)
 		}, timeout, interval).Should(BeNil())
 		Eventually(func() string {
 			sub := &operators.Subscription{}
-			if err := k8sClient.Get(ctx, types.NamespacedName{Name: "argocd-operator", Namespace: "openshift-operators"}, sub); err != nil {
+			if err := k8sApiReader.Get(ctx, types.NamespacedName{Name: "argocd-operator", Namespace: "openshift-operators"}, sub); err != nil {
 				return "ab"
 			}
 			if sub.Spec.Config == nil {

@@ -2,36 +2,15 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  creationTimestamp: null
   name: manager-role
 rules:
 - apiGroups:
   - ""
   resources:
   - configmaps
-  - services
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - namespaces
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - secrets
+  - services
   verbs:
   - create
   - delete
@@ -120,25 +99,6 @@ rules:
   - clustertemplate.openshift.io
   resources:
   - clustertemplateinstances
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - clustertemplate.openshift.io
-  resources:
-  - clustertemplateinstances/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - clustertemplate.openshift.io
-  resources:
   - clustertemplatequotas
   verbs:
   - create
@@ -151,7 +111,10 @@ rules:
 - apiGroups:
   - clustertemplate.openshift.io
   resources:
+  - clustertemplateinstances/status
   - clustertemplatequotas/status
+  - clustertemplates/status
+  - clustertemplatesetup/status
   verbs:
   - get
   - patch
@@ -169,27 +132,11 @@ rules:
 - apiGroups:
   - clustertemplate.openshift.io
   resources:
-  - clustertemplates/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - clustertemplate.openshift.io
-  resources:
   - clustertemplatesetup
   verbs:
   - get
   - list
   - watch
-- apiGroups:
-  - clustertemplate.openshift.io
-  resources:
-  - clustertemplatesetup/status
-  verbs:
-  - get
-  - patch
-  - update
 - apiGroups:
   - clustertemplate.openshift.io
   resources:
@@ -205,16 +152,6 @@ rules:
   - console.openshift.io
   resources:
   - consoleplugins
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - update
-  - watch
-- apiGroups:
-  - console.openshift.io
-  resources:
   - consolequickstarts
   verbs:
   - create

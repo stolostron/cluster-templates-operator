@@ -100,7 +100,7 @@ func (r *ConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	initialSync := make(chan event.GenericEvent)
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&v1alpha1.Config{}).
-		Watches(&source.Channel{Source: initialSync}, &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(source.Channel(initialSync, &handler.EnqueueRequestForObject{})).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to construct controller: %w", err)
 	}

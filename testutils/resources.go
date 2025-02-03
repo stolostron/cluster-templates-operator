@@ -8,7 +8,7 @@ import (
 
 	argo "github.com/argoproj/argo-cd/v2/pkg/apis/application/v1alpha1"
 	. "github.com/onsi/gomega"
-	hypershiftv1beta1 "github.com/openshift/hypershift/api/v1beta1"
+	hypershiftv1beta1 "github.com/openshift/hypershift/api/hypershift/v1beta1"
 	operators "github.com/operator-framework/api/pkg/operators/v1alpha1"
 	"github.com/stolostron/cluster-templates-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
@@ -130,7 +130,7 @@ func GetAppset2() *argo.ApplicationSet {
 			Generators: []argo.ApplicationSetGenerator{{}},
 			Template: argo.ApplicationSetTemplate{
 				Spec: argo.ApplicationSpec{
-					Source: argo.ApplicationSource{
+					Source: &argo.ApplicationSource{
 						RepoURL:        "http://foo.com",
 						TargetRevision: "0.1.0",
 						Chart:          "hypershift-template",
@@ -158,7 +158,7 @@ func GetAppset() *argo.ApplicationSet {
 					Destination: argo.ApplicationDestination{
 						Namespace: "cluster-aas-operator",
 					},
-					Source: argo.ApplicationSource{
+					Source: &argo.ApplicationSource{
 						RepoURL:        "http://foo.com",
 						TargetRevision: "0.1.0",
 						Chart:          "hypershift-template",
@@ -185,7 +185,7 @@ func GetAppDay2() *argo.Application {
 			},
 		},
 		Spec: argo.ApplicationSpec{
-			Source: argo.ApplicationSource{
+			Source: &argo.ApplicationSource{
 				RepoURL:        "http://foo.com",
 				TargetRevision: "0.1.0",
 				Chart:          "hypershift-template",
@@ -209,7 +209,7 @@ func GetApp() *argo.Application {
 			},
 		},
 		Spec: argo.ApplicationSpec{
-			Source: argo.ApplicationSource{
+			Source: &argo.ApplicationSource{
 				RepoURL:        "http://foo.com",
 				TargetRevision: "0.1.0",
 				Chart:          "hypershift-template",
@@ -333,6 +333,7 @@ func EnsureResourceDoesNotExist(ctx context.Context, obj client.Object, k8sClien
 }
 
 func DeleteResource(ctx context.Context, obj client.Object, k8sClient client.Client) {
-	Expect(k8sClient.Delete(ctx, obj)).Should(Succeed())
+	err := k8sClient.Delete(ctx, obj)
+	Expect(client.IgnoreNotFound(err)).Should(Succeed())
 	EnsureResourceDoesNotExist(ctx, obj, k8sClient)
 }

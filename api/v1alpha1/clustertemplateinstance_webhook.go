@@ -97,17 +97,17 @@ func (r *ClusterTemplateInstance) Default(ctx context.Context, obj runtime.Objec
 
 var _ webhook.Validator = &ClusterTemplateInstance{}
 
-func (r *ClusterTemplateInstance) ValidateCreate() error {
+func (r *ClusterTemplateInstance) ValidateCreate() (admission.Warnings, error) {
 	clustertemplateinstancelog.Info("validate create", "name", r.Name)
 
 	if err := r.checkQuota(); err != nil {
-		return err
+		return []string{}, err
 	}
 	if err := r.checkProps(); err != nil {
-		return err
+		return []string{}, err
 	}
 
-	return nil
+	return []string{}, nil
 }
 
 func (r *ClusterTemplateInstance) checkSecretIsValid() error {
@@ -236,23 +236,23 @@ func (r *ClusterTemplateInstance) checkQuota() error {
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (r *ClusterTemplateInstance) ValidateUpdate(old runtime.Object) error {
+func (r *ClusterTemplateInstance) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
 	clustertemplateinstancelog.Info("validate update", "name", r.Name)
 	oldCti := old.(*ClusterTemplateInstance)
 
 	if oldCti.Annotations[CTIRequesterAnnotation] != r.Annotations[CTIRequesterAnnotation] {
-		return fmt.Errorf("cluster requester cannot be changed")
+		return []string{}, fmt.Errorf("cluster requester cannot be changed")
 	}
 	if !equality.Semantic.DeepEqual(r.Spec, oldCti.Spec) {
-		return fmt.Errorf("spec is immutable")
+		return []string{}, fmt.Errorf("spec is immutable")
 	}
-	return nil
+	return []string{}, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (r *ClusterTemplateInstance) ValidateDelete() error {
+func (r *ClusterTemplateInstance) ValidateDelete() (admission.Warnings, error) {
 	clustertemplateinstancelog.Info("validate delete", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.
-	return nil
+	return []string{}, nil
 }

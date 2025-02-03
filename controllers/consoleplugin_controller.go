@@ -24,8 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	applicationset "github.com/argoproj/applicationset/pkg/utils"
-	consoleV1 "github.com/openshift/api/console/v1"
-	console "github.com/openshift/api/console/v1alpha1"
+	console "github.com/openshift/api/console/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	v1 "k8s.io/api/core/v1"
 
@@ -49,8 +48,8 @@ var (
 	ConsolePluginLog = logf.Log.WithName("consoleplugin-controller")
 )
 
-func getQuickStarts() []*consoleV1.ConsoleQuickStart {
-	return []*consoleV1.ConsoleQuickStart{quickstarts.GetTemplateQuickStart(), quickstarts.GetQuotaQuickStart(), quickstarts.GetShareTemplateQuickStart()}
+func getQuickStarts() []*console.ConsoleQuickStart {
+	return []*console.ConsoleQuickStart{quickstarts.GetTemplateQuickStart(), quickstarts.GetQuotaQuickStart(), quickstarts.GetShareTemplateQuickStart()}
 }
 
 func getQuickStartClientObjects() []client.Object {
@@ -65,7 +64,7 @@ func getQuickStartClientObjects() []client.Object {
 func (r *ConsolePluginReconciler) createOrUpdateQuickStarts(ctx context.Context) error {
 	quickStarts := getQuickStarts()
 	for _, qs := range quickStarts {
-		originalQs := &consoleV1.ConsoleQuickStart{
+		originalQs := &console.ConsoleQuickStart{
 			ObjectMeta: qs.ObjectMeta,
 		}
 		res, err := applicationset.CreateOrUpdate(ctx, r.Client, originalQs, func() error {
@@ -91,24 +90,27 @@ func getConsolePlugin() *console.ConsolePlugin {
 		},
 		Spec: console.ConsolePluginSpec{
 			DisplayName: "Cluster as a Service plugin",
-			Service: console.ConsolePluginService{
-				BasePath:  "/",
-				Name:      pluginResourceName,
-				Namespace: pluginNamespace,
-				Port:      9443,
+			Backend: console.ConsolePluginBackend{
+				Type: console.Service,
+				Service: &console.ConsolePluginService{
+					Name:      pluginResourceName,
+					Namespace: pluginNamespace,
+					Port:      9443,
+					BasePath:  "/",
+				},
 			},
-			Proxy: []console.ConsolePluginProxy{
-				{
-					Type:      "Service",
-					Alias:     "repositories",
-					Authorize: true,
-					Service: console.ConsolePluginProxyServiceConfig{
+			Proxy: []console.ConsolePluginProxy{{
+				Alias: "repositories",
+				Endpoint: console.ConsolePluginProxyEndpoint{
+					Type: console.ProxyTypeService,
+					Service: &console.ConsolePluginProxyServiceConfig{
 						Name:      "cluster-aas-operator-repo-bridge-service",
 						Namespace: pluginNamespace,
 						Port:      8001,
 					},
 				},
-			},
+				Authorization: console.UserToken,
+			}},
 		},
 	}
 }
@@ -291,8 +293,8 @@ func (r *ConsolePluginReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	initialSync := make(chan event.GenericEvent)
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&appsv1.Deployment{}, builder.WithPredicates(predicate.NewPredicateFuncs(r.selectPluginDeployment))).
-		Watches(&source.Channel{Source: initialSync}, &handler.EnqueueRequestForObject{}).
-		Watches(&source.Channel{Source: EnableUIconfigSync}, &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(source.Channel(initialSync, &handler.EnqueueRequestForObject{})).
+		WatchesRawSource(source.Channel(EnableUIconfigSync, &handler.EnqueueRequestForObject{})).
 		Complete(r); err != nil {
 		return fmt.Errorf("failed to construct controller: %w", err)
 	}
